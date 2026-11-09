@@ -1,0 +1,40 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Minka",
+      "hasCanvas": false,
+      "bodyTextLen": 1683,
+      "bodyTextHash": "b5e225bfec892a9eee3990fe30de7fa5853c57594869cbe168e35e14f758bb4b",
+      "bodyTextPrefix": "m minka gestión de personas Inicio Personas Organización Vacacio",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Minka",
+      "hasCanvas": false,
+      "bodyTextLen": 1604,
+      "bodyTextHash": "032d066f4bcdcbf1537ced11ab4a23f255bcdfd387a87f66887ab9ff9b45e8c3",
+      "bodyTextPrefix": "Andes & Cacao S.A.C. RUC 20601455821 · Domingo 8 de noviembre 20",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [
+    "BRAND NOTE: no custom public/og.jpg — the platform will serve the og.grok.me placeholder. Custom cards are the default for games of every kind (DOM board/word games included), whimsical apps, creative tools, and brand-forward pages — only plain utilities (converters, CRUD trackers, admin dashboards) keep the placeholder. If this app is not a plain utility, finish the brand-asset pass per /workspace/.grok/skills/og/SKILL.md."
+  ],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
