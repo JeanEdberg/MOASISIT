@@ -159,6 +159,15 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   TypeScript suite (`node --experimental-strip-types --import
   ./scripts/alias-register.mjs`). Keep both green, plus `npm run typecheck`,
   `npm run lint` (0 errors), `npm run build`, and `npm run check:auth`.
+- **Escalabilidad (plan aprobado, Fase 1 pendiente)**: hoy todas las empresas
+  viven en **una sola fila** `hr_dataset` (JSONB, id=1): cada lectura carga todo
+  el documento y cada escritura lo reescribe entero (`on conflict … do update`),
+  sin transacción ni bloqueo → el último guardado gana. Sirve para ~3 empresas;
+  para **100+** hay que normalizar a tablas por entidad con `company_id` e
+  índices. Diseño completo y plan por fases en `docs/arquitectura-fase1.md`;
+  guía de puesta en producción (Neon + Vercel) en `docs/fase0-neon-vercel.md`.
+  **"Crear empresa" desde la app** (superadmin) es parte de la Fase 1c; hoy las
+  empresas se definen en `src/lib/hr/seed.ts`.
 - **Push**: this sandbox has **no push access** to GitHub — the provided
   `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`), the
   credential-helper token is invalid, and there is no SSH. Commit locally and
