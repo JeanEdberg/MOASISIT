@@ -1,9 +1,9 @@
 import { create } from "zustand";
 import type { HrAction } from "@/lib/hr/actions";
+import { buildCompany } from "@/lib/hr/company";
 import type { NewCompanyInput } from "@/lib/hr/company";
 import type { RucLookupResult } from "@/lib/hr/ruc";
 import type { StatusCheck } from "@/lib/hr/status";
-import { createDemo } from "@/lib/hr/seed";
 import type {
   Area,
   Attendance,
@@ -73,8 +73,29 @@ type HrState = HrData & {
   resetDemo: () => void;
 };
 
+/**
+ * Estado inicial del cliente: una empresa "placeholder" vacía, sin NINGÚN dato
+ * de personas. El navegador solo debe ver lo que llega del servidor tras iniciar
+ * sesión (`loadHr`). Antes este estado se armaba con `createDemo()`, lo que
+ * incrustaba en el bundle público nombres, DNIs y sueldos reales del seed.
+ */
+const EMPTY_COMPANY: Company = buildCompany(
+  {
+    ruc: "",
+    name: "Moasist",
+    shortName: "Moasist",
+    tradeName: "Moasist",
+    city: "",
+    address: "",
+    email: "",
+  },
+  "moasist",
+);
+
 const EMPTY: HrData = {
-  ...createDemo(),
+  company: EMPTY_COMPANY,
+  companies: [EMPTY_COMPANY],
+  areas: [],
   employees: [],
   requests: [],
   attendance: [],
@@ -177,7 +198,7 @@ export const useHr = create<HrState>()((set, get) => {
       }
     },
 
-    updateCompany: (patch) => run({ type: "updateCompany", patch }),
+    updateCompany: (patch) => run({ type: "updateCompany", patch, companyId: get().company.id }),
     updateCompanySubscription: (companyId, patch) => run({ type: "updateCompanySubscription", companyId, patch }),
     removeCompany: (companyId) => run({ type: "removeCompany", companyId }),
     switchCompany: async (companyId) => {

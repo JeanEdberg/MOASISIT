@@ -68,7 +68,7 @@ function CompanyPage() {
       <PageHeader
         kicker="Tu empresa"
         title="Configuración"
-        lede="Cambia la razón social, el RUC y los parámetros de planilla. Los valores iniciales siguen la referencia 2026: RMV S/ 1,130, UIT S/ 5,350 y comisiones AFP por flujo."
+        lede="Cambia la razón social, el RUC y los parámetros de planilla. Los valores iniciales siguen la referencia 2026: RMV, UIT y comisiones AFP por flujo."
         actions={viewerMode === "superadmin" ? <NewCompanyButton /> : undefined}
       />
 

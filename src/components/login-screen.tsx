@@ -68,7 +68,7 @@ export function LoginScreen() {
               maxLength={mode === "employee" ? 8 : undefined}
               value={login}
               onChange={(e) => setLogin(mode === "employee" ? e.target.value.replace(/\D/g, "") : e.target.value)}
-              placeholder={mode === "employee" ? "Ej. 72853279" : "correo@dominio.com"}
+              placeholder={mode === "employee" ? "Ej. 12345678" : "correo@dominio.com"}
               autoComplete="username"
               autoFocus
             />

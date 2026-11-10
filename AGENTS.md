@@ -114,6 +114,26 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
 - **Authorization is server-side**: the client only *requests* a change; the
   server authorizes it in `src/lib/hr/actions.ts` (`authorizeAction` /
   `applyHrAction`). Never trust the client for permission.
+- **Datos personales NUNCA en el bundle público** (auditoría 2026-11): el seed
+  (`src/lib/hr/seed.ts`) contiene personas REALES (nombres, DNI, sueldos, cuentas
+  bancarias) y es **server-only**. El estado inicial del cliente
+  (`store.ts`) NO debe llamar a `createDemo()` — eso incrustaba esos datos en
+  `.vercel/output/static/**` (público). Ahora arranca con una empresa
+  "placeholder" vacía (`buildCompany(...)`, sin empleados) y espera los datos
+  del servidor (`loadHr`). Regla: si un módulo que importa el cliente
+  (`store.ts`, `components/**`, `routes/**`, `calc.ts`) importa `seed.ts`, es un
+  bug. Verifícalo con:
+  `grep -rl "47090484" .vercel/output/static` (debe dar 0).
+- **Sin DNIs incrustados en el código**: `calc.ts` tenía casos especiales por
+  DNI (`if (emp.dni === "47090484") …`) que además filtraban PII al cliente.
+  Ahora el 1/6 de gratificación por CTS viene del campo del colaborador
+  `Employee.sextoGratificacion` (opcional; si falta, `sueldo/6`). No volver a
+  ramificar por DNI.
+- **`updateCompany` edita `companies`** (la fuente de verdad), no solo el
+  snapshot `data.company` de la vista. La acción acepta `companyId?` y el
+  servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para
+  que un RR.HH. no edite otra empresa. `data.company` se recalcula en
+  `sanitizeForViewer` a partir de `companies[activeCompanyId]`.
 - **DB**: `DATABASE_URL` set -> Postgres (Neon/Supabase/RDS/local); unset ->
   embedded **PGLite**, in-memory per process, re-seeded on dev-server restart
   (so DNI/PIN fixtures reset). **VERIFIED** against Postgres 17: with

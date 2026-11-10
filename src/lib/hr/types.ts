@@ -114,6 +114,13 @@ export type Employee = {
   regime: Regime;
   salary: number;
   familyAllowance: boolean;
+  /**
+   * 1/6 de la gratificación percibida en el semestre anterior (S/), usado para
+   * el cálculo de la CTS. Si no se indica, se calcula como sueldo/6. Reemplaza
+   * el antiguo caso especial por DNI, que incrustaba datos personales en el
+   * código de cálculo.
+   */
+  sextoGratificacion?: number | null;
   pension: Pension;
 
   // Seguridad social y seguros (base del cálculo de beneficios y aportes)

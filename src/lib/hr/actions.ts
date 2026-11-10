@@ -31,7 +31,7 @@ export type HrAction =
   | { type: "signDocument"; id: string }
   | { type: "closePeriod"; period: string }
   | { type: "reopenPeriod"; period: string }
-  | { type: "updateCompany"; patch: Partial<Company> }
+  | { type: "updateCompany"; patch: Partial<Company>; companyId?: string }
   | { type: "addCompany"; company: Company }
   | { type: "updateCompanySubscription"; companyId: string; patch: Partial<Subscription> }
   | { type: "removeCompany"; companyId: string }
@@ -189,8 +189,18 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       delete snapshots[action.period];
       return { ...data, snapshots };
     }
-    case "updateCompany":
-      return { ...data, company: { ...data.company, ...action.patch } };
+    case "updateCompany": {
+      // La fuente de verdad es `companies` (el snapshot `company` es solo la
+      // empresa activa de la vista). Se edita la empresa indicada —o la activa—
+      // y se refleja en `company` cuando coincide.
+      const targetId = action.companyId || data.company.id;
+      const companies = data.companies.map((c) =>
+        c.id === targetId ? { ...c, ...action.patch, id: c.id } : c,
+      );
+      const company =
+        data.company.id === targetId ? { ...data.company, ...action.patch, id: data.company.id } : data.company;
+      return { ...data, company, companies };
+    }
     case "addCompany": {
       if (data.companies.some((c) => c.id === action.company.id)) return data;
       const areas = ["Gerencia", "Administración"].map((name) => ({

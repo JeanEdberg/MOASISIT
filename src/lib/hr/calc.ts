@@ -102,13 +102,7 @@ export function ctsSemester(
   // 1/6 de Gratificación percibida
   let sextoGratificacion = 0;
   if (percibeSextoGratifi) {
-    if (emp.dni === "47090484") {
-      sextoGratificacion = 635.83; // Ericka Coveñas
-    } else if (emp.dni === "47720216") {
-      sextoGratificacion = 417.83; // Jean Guevara
-    } else {
-      sextoGratificacion = round2(ordinary / 6);
-    }
+    sextoGratificacion = emp.sextoGratificacion != null ? emp.sextoGratificacion : round2(ordinary / 6);
   }
 
   const computable = ordinary + sextoGratificacion;
@@ -191,9 +185,7 @@ export function calcularConsolidadoMasivo(
       
       let sextoVal = 0;
       if (incluyeSexto) {
-        if (emp.dni === "47090484") sextoVal = 635.83;
-        else if (emp.dni === "47720216") sextoVal = 417.83;
-        else sextoVal = round2(ordinary / 6);
+        sextoVal = emp.sextoGratificacion != null ? emp.sextoGratificacion : round2(ordinary / 6);
       }
       
       detalle = `Sueldo + AF: S/. ${ordinary.toFixed(2)} | 1/6 Grati: ${incluyeSexto ? `S/. ${sextoVal.toFixed(2)}` : "No"}`;

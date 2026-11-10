@@ -145,6 +145,22 @@ describe("applyHrAction", () => {
     assert.notEqual(inmoa?.subscription.status, "cancelada");
   });
 
+  it("updateCompany persiste en companies (no solo en el snapshot de vista)", () => {
+    const data = base();
+    const next = applyHrAction(data, { type: "updateCompany", patch: { name: "Razón nueva" }, companyId: "inmoa" });
+    assert.equal(next.companies.find((c) => c.id === "inmoa")?.name, "Razón nueva");
+    assert.equal(next.company.name, "Razón nueva");
+  });
+
+  it("updateCompany no toca otras empresas cuando se indica su id", () => {
+    const data = base();
+    const original = data.companies.find((c) => c.id === "inmoa")!.name;
+    const next = applyHrAction(data, { type: "updateCompany", patch: { name: "Solo mía" }, companyId: "7pollitos" });
+    assert.equal(next.companies.find((c) => c.id === "7pollitos")?.name, "Solo mía");
+    assert.equal(next.companies.find((c) => c.id === "inmoa")?.name, original);
+  });
+
+
   it("removeCompany deletes the company and everything that belongs to it", () => {
     const data = base();
     const next = applyHrAction(data, { type: "removeCompany", companyId: "7pollitos" });

@@ -195,6 +195,8 @@ export const applyAction = createServerFn({ method: "POST" })
 /** La empresa a la que pertenece el registro que toca una acción (null si global). */
 function companyIdForAction(action: HrAction, data: HrData): string | null {
   switch (action.type) {
+    case "updateCompany":
+      return action.companyId ?? data.company.id;
     case "updateEmployee":
       return data.employees.find((e) => e.id === action.id)?.companyId ?? null;
     case "addEmployee":
