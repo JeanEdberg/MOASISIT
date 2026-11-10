@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import { livePayslips } from "@/lib/hr/calc";
-import { isDemoEmail, createDemo } from "@/lib/hr/seed";
+import type { HrAction } from "@/lib/hr/actions";
+import { createDemo } from "@/lib/hr/seed";
 import type {
   Area,
   Attendance,
@@ -11,11 +10,38 @@ import type {
   HrData,
   RequestStatus,
   TimeRequest,
-  Viewer,
+  ViewerMode,
 } from "@/lib/hr/types";
+
+/**
+ * Client store. It holds a MIRROR of the server's dataset for rendering, but it
+ * has no authority: every mutation is sent to the server (`applyAction`), which
+ * re-checks the caller's role and returns the dataset that role may see. The
+ * role itself comes from the signed-in session, never from a client control.
+ */
+
+export type SessionView = {
+  signedIn: true;
+  role: ViewerMode;
+  employeeId: string;
+  login: string;
+  kind: "employee" | "admin";
+  mustChange: boolean;
+  emailVerified: boolean;
+  displayName: string;
+};
 
 type HrState = HrData & {
   hydrated: boolean;
+  session: SessionView | null;
+  loadError: string | null;
+
+  refresh: () => Promise<void>;
+  signIn: (login: string, secret: string) => Promise<{ ok: boolean; error?: string }>;
+  signOut: () => Promise<void>;
+  changeSecret: (secret: string) => Promise<{ ok: boolean; error?: string }>;
+  resetEmployeePin: (employeeId: string) => Promise<{ ok: boolean; pin?: string; error?: string }>;
+
   updateCompany: (patch: Partial<Company>) => void;
   switchTenantCompany: (ruc: string) => void;
   addArea: (name: string) => void;
@@ -29,258 +55,197 @@ type HrState = HrData & {
   signDocument: (id: string) => void;
   closePeriod: (period: string) => void;
   reopenPeriod: (period: string) => void;
-  setViewer: (viewer: Viewer) => void;
   importPeople: (employees: Employee[], areas: Area[]) => void;
   clearDemoPeople: () => void;
   resetDemo: () => void;
 };
 
-export const useHr = create<HrState>()(
-  persist(
-    (set) => ({
-      ...createDemo(),
-      hydrated: false,
-      updateCompany: (patch) => set((s) => ({ company: { ...s.company, ...patch } })),
-      switchTenantCompany: (ruc: string) =>
-        set((state) => {
-          const tenants: Record<string, Company> = {
-            "20614684772": {
-              id: "inmoa",
-              name: "INMOA Logística y Soluciones E.I.R.L.",
-              tradeName: "INMOA Soluciones",
-              ruc: "20614684772",
-              address: "Av. León Velarde 450, Tambopata",
-              city: "Puerto Maldonado",
-              email: "contacto@inmoa.pe",
-              phone: "082 571 200",
-              brandName: "Moasist",
-              brandMark: "MO",
-              brandColor: "#0284c7",
-              accentColor: "#0369a1",
-              rmv: 1130,
-              uit: 5350,
-              topeAfp: 12599,
-              essalud: 0.09,
-              onp: 0.13,
-              afpAporte: 0.1,
-              afpSeguro: 0.0137,
-              afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-            },
-            "20614684773": {
-              id: "7pollitos",
-              name: "Los 7 Pollitos Inversiones E.I.R.L.",
-              tradeName: "Los 7 Pollitos",
-              ruc: "20614684773",
-              address: "Av. Panamericana Norte Km. 120",
-              city: "Piura",
-              email: "contacto@7pollitos.pe",
-              phone: "073 441 190",
-              brandName: "Moasist",
-              brandMark: "7P",
-              brandColor: "#0284c7",
-              accentColor: "#0369a1",
-              rmv: 1130,
-              uit: 5350,
-              topeAfp: 12599,
-              essalud: 0.09,
-              onp: 0.13,
-              afpAporte: 0.1,
-              afpSeguro: 0.0137,
-              afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-            },
-            "20614684774": {
-              id: "plumifero",
-              name: "Inversiones y Negociaciones Plumífero E.I.R.L.",
-              tradeName: "Plumífero",
-              ruc: "20614684774",
-              address: "Zona Industrial S/N",
-              city: "Talara",
-              email: "contacto@plumifero.pe",
-              phone: "073 382 100",
-              brandName: "Moasist",
-              brandMark: "PL",
-              brandColor: "#0284c7",
-              accentColor: "#0369a1",
-              rmv: 1130,
-              uit: 5350,
-              topeAfp: 12599,
-              essalud: 0.09,
-              onp: 0.13,
-              afpAporte: 0.1,
-              afpSeguro: 0.0137,
-              afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-            },
-          };
-          const target = tenants[ruc] || state.company;
-          return { company: target };
-        }),
-      addArea: (name) =>
-        set((s) => ({
-          areas: [...s.areas, { id: `a-${Date.now().toString(36)}`, name: name.trim() }],
-        })),
-      renameArea: (id, name) =>
-        set((s) => ({
-          areas: s.areas.map((a) => (a.id === id ? { ...a, name: name.trim() } : a)),
-        })),
-      addEmployee: (emp) => set((s) => ({ employees: [...s.employees, emp] })),
-      updateEmployee: (id, patch) =>
-        set((s) => ({
-          employees: s.employees.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
-      addRequest: (req) => set((s) => ({ requests: [req, ...s.requests] })),
-      decideRequest: (id, status) =>
-        set((s) => ({
-          requests: s.requests.map((r) =>
-            r.id === id ? { ...r, status, decidedAt: "2026-11-08" } : r,
-          ),
-        })),
-      upsertAttendance: (row) =>
-        set((s) => {
-          const id = `${row.employeeId}-${row.date}`;
+/** The three companies the operator can switch between (RR.HH. only). */
+export const TENANTS: Record<string, Company> = {
+  "20614684772": {
+    id: "inmoa",
+    name: "INMOA Logística y Soluciones E.I.R.L.",
+    tradeName: "INMOA Soluciones",
+    ruc: "20614684772",
+    address: "Av. León Velarde 450, Tambopata",
+    city: "Puerto Maldonado",
+    email: "contacto@inmoa.pe",
+    phone: "082 571 200",
+    brandName: "Moasist",
+    brandMark: "MO",
+    brandColor: "#0284c7",
+    accentColor: "#0369a1",
+    rmv: 1230,
+    uit: 5500,
+    topeAfp: 12599,
+    essalud: 0.09,
+    onp: 0.13,
+    afpAporte: 0.1,
+    afpSeguro: 0.0137,
+    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
+  },
+  "20614684773": {
+    id: "7pollitos",
+    name: "Los 7 Pollitos Inversiones E.I.R.L.",
+    tradeName: "Los 7 Pollitos",
+    ruc: "20614684773",
+    address: "Av. Panamericana Norte Km. 120",
+    city: "Piura",
+    email: "contacto@7pollitos.pe",
+    phone: "073 441 190",
+    brandName: "Moasist",
+    brandMark: "7P",
+    brandColor: "#0284c7",
+    accentColor: "#0369a1",
+    rmv: 1230,
+    uit: 5500,
+    topeAfp: 12599,
+    essalud: 0.09,
+    onp: 0.13,
+    afpAporte: 0.1,
+    afpSeguro: 0.0137,
+    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
+  },
+  "20614684774": {
+    id: "plumifero",
+    name: "Inversiones y Negociaciones Plumífero E.I.R.L.",
+    tradeName: "Plumífero",
+    ruc: "20614684774",
+    address: "Zona Industrial S/N",
+    city: "Talara",
+    email: "contacto@plumifero.pe",
+    phone: "073 382 100",
+    brandName: "Moasist",
+    brandMark: "PL",
+    brandColor: "#0284c7",
+    accentColor: "#0369a1",
+    rmv: 1230,
+    uit: 5500,
+    topeAfp: 12599,
+    essalud: 0.09,
+    onp: 0.13,
+    afpAporte: 0.1,
+    afpSeguro: 0.0137,
+    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
+  },
+};
 
-          // Reglas de horario INMOA (08:00 a 17:00 con 15 min de tolerancia)
-          const INICIO_OFICIAL = 8 * 60;     // 08:00 a.m. (480 min)
-          const TOLERANCIA_INGRESO = 15;     // 15 minutos
-          const FIN_OFICIAL = 17 * 60;       // 17:00 p.m. (1020 min)
-          const TOLERANCIA_SALIDA = 15;      // 15 minutos posteriores
+const EMPTY: HrData = {
+  ...createDemo(),
+  employees: [],
+  requests: [],
+  attendance: [],
+  documents: [],
+  snapshots: {},
+  viewer: { mode: "colaborador", employeeId: "" },
+};
 
-          const [hIn, mIn] = row.checkIn.split(":").map(Number);
-          const minutosIn = hIn * 60 + mIn;
+async function sendAction(action: HrAction): Promise<{ ok: boolean; data?: HrData; error?: string }> {
+  const { applyAction } = await import("@/lib/hr/api");
+  try {
+    const res = await applyAction({ data: { action } });
+    return res.ok ? { ok: true, data: res.data } : { ok: false, error: res.error };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Error al guardar." };
+  }
+}
 
-          const [hOut, mOut] = row.checkOut.split(":").map(Number);
-          const minutosOut = hOut * 60 + mOut;
+export const useHr = create<HrState>()((set, get) => {
+  /** Fire a mutation and adopt the server's reply (it decides what we may see). */
+  const run = (action: HrAction) => {
+    void sendAction(action).then((res) => {
+      if (res.ok && res.data) set({ ...res.data });
+      else if (res.error) set({ loadError: res.error });
+    });
+  };
 
-          let estado: "presente" | "tardanza" | "falta" | "vacaciones" =
-            row.kind === "falta" || row.kind === "vacaciones"
-              ? row.kind
-              : "presente";
+  return {
+    ...EMPTY,
+    hydrated: false,
+    session: null,
+    loadError: null,
 
-          let extrasIngresoMinutos = 0;
-
-          if (minutosIn < INICIO_OFICIAL) {
-            // Ingreso temprano antes de las 08:00 AM cuenta como hora extra previa
-            extrasIngresoMinutos = INICIO_OFICIAL - minutosIn;
-          } else if (minutosIn > (INICIO_OFICIAL + TOLERANCIA_INGRESO) && estado === "presente") {
-            // Marcó después de las 08:15 AM -> Tardanza
-            estado = "tardanza";
-          }
-
-          let extrasSalidaMinutos = 0;
-          const limiteSalidaConTolerancia = FIN_OFICIAL + TOLERANCIA_SALIDA; // 17:15
-
-          if (minutosOut > limiteSalidaConTolerancia) {
-            // Horas extras a partir de los 15 min posteriores a las 17:00
-            extrasSalidaMinutos = minutosOut - FIN_OFICIAL;
-          }
-
-          const totalMinutosExtras = extrasIngresoMinutos + extrasSalidaMinutos;
-          const horasExtrasCalculadas = Math.round((totalMinutosExtras / 60) * 10) / 10;
-
-          const next: Attendance = {
-            ...row,
-            id,
-            kind: estado,
-            extra25: horasExtrasCalculadas,
-          };
-
-          const i = s.attendance.findIndex((a) => a.id === id);
-          const attendance = [...s.attendance];
-          if (i >= 0) attendance[i] = next;
-          else attendance.push(next);
-          return { attendance };
-        }),
-      addDocument: (doc) => set((s) => ({ documents: [doc, ...s.documents] })),
-      signDocument: (id) =>
-        set((s) => ({
-          documents: s.documents.map((d) => (d.id === id ? { ...d, status: "firmado" } : d)),
-        })),
-      closePeriod: (period) =>
-        set((s) => ({
-          snapshots: {
-            ...s.snapshots,
-            [period]: livePayslips(s, period),
-          },
-        })),
-      reopenPeriod: (period) =>
-        set((s) => {
-          const snapshots = { ...s.snapshots };
-          delete snapshots[period];
-          return { snapshots };
-        }),
-      setViewer: (viewer) => set({ viewer }),
-      importPeople: (employees, areas) =>
-        set((s) => ({
-          areas: [...s.areas, ...areas.filter((a) => !s.areas.some((x) => x.id === a.id))],
-          employees: [
-            ...s.employees.filter((e) => !employees.some((n) => n.dni === e.dni)),
-            ...employees,
-          ],
-        })),
-      clearDemoPeople: () =>
-        set((s) => {
-          const demoIds = new Set(s.employees.filter((e) => isDemoEmail(e.email)).map((e) => e.id));
-          const employees = s.employees.filter((e) => !demoIds.has(e.id));
-          const still = employees.some((e) => e.id === s.viewer.employeeId);
-          return {
-            employees,
-            requests: s.requests.filter((r) => !demoIds.has(r.employeeId)),
-            attendance: s.attendance.filter((a) => !demoIds.has(a.employeeId)),
-            documents: s.documents.filter((d) => !d.employeeId || !demoIds.has(d.employeeId)),
-            snapshots: {},
-            viewer: still ? s.viewer : { mode: "rrhh", employeeId: employees[0]?.id ?? "" },
-          };
-        }),
-      resetDemo: () => set({ ...createDemo() }),
-    }),
-    {
-      name: "moasist-hr-v3",
-      skipHydration: true,
-      version: 4,
-      migrate: (persisted) => {
-        const data = persisted as HrData;
-        if (!data?.company) return data;
-        return {
-          ...data,
-          company: {
-            ...data.company,
-            id: data.company.id || "inmoa",
-          },
-        };
-      },
-      merge: (persisted, current) => {
-        const data = persisted as Partial<HrData> | undefined;
-        if (!data?.company || !data.employees) return current;
-        return {
-          ...current,
-          ...data,
-          company: {
-            ...current.company,
-            ...data.company,
-            brandName: "Moasist",
-            brandMark: "MO",
-            brandColor: "#0284c7",
-            accentColor: "#0369a1",
-          },
-        };
-      },
-      partialize: (s) => ({
-        company: s.company,
-        areas: s.areas,
-        employees: s.employees,
-        requests: s.requests,
-        attendance: s.attendance,
-        documents: s.documents,
-        snapshots: s.snapshots,
-        viewer: s.viewer,
-      }),
+    refresh: async () => {
+      const { loadHr } = await import("@/lib/hr/api");
+      try {
+        const res = await loadHr();
+        if (res.data) set({ ...res.data, session: res.session, hydrated: true, loadError: null });
+        else set({ session: null, hydrated: true });
+      } catch {
+        set({ hydrated: true, loadError: "No se pudo cargar la información." });
+      }
     },
-  ),
-);
+
+    signIn: async (login, secret) => {
+      const { signIn: apiSignIn } = await import("@/lib/hr/api");
+      try {
+        const res = await apiSignIn({ data: { login, secret } });
+        if (res.ok) {
+          set({ ...res.data, session: res.session, hydrated: true, loadError: null });
+          return { ok: true };
+        }
+        return { ok: false, error: res.error };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Error de conexión." };
+      }
+    },
+
+    signOut: async () => {
+      const { signOut: apiSignOut } = await import("@/lib/hr/api");
+      await apiSignOut();
+      set({ ...EMPTY, session: null, hydrated: true, loadError: null });
+    },
+
+    changeSecret: async (secret) => {
+      const { changeSecret: apiChange } = await import("@/lib/hr/api");
+      try {
+        const res = await apiChange({ data: { secret } });
+        if (res.ok) {
+          set((s) => (s.session ? { ...res.data, session: { ...s.session, mustChange: false } } : { ...res.data }));
+          return { ok: true };
+        }
+        return { ok: false, error: res.error };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Error al cambiar." };
+      }
+    },
+
+    resetEmployeePin: async (employeeId) => {
+      const { resetEmployeePin: apiReset } = await import("@/lib/hr/api");
+      try {
+        const res = await apiReset({ data: { employeeId } });
+        return res.ok ? { ok: true, pin: res.pin } : { ok: false, error: res.error };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Error al generar PIN." };
+      }
+    },
+
+    updateCompany: (patch) => run({ type: "updateCompany", patch }),
+    switchTenantCompany: (ruc) => {
+      const target = TENANTS[ruc];
+      if (target) run({ type: "updateCompany", patch: target });
+    },
+    addArea: (name) => run({ type: "addArea", name }),
+    renameArea: (id, name) => run({ type: "renameArea", id, name }),
+    addEmployee: (emp) => run({ type: "addEmployee", employee: emp }),
+    updateEmployee: (id, patch) => run({ type: "updateEmployee", id, patch }),
+    addRequest: (req) => run({ type: "addRequest", request: req }),
+    decideRequest: (id, status) => run({ type: "decideRequest", id, status }),
+    upsertAttendance: (row) => run({ type: "upsertAttendance", row }),
+    addDocument: (doc) => run({ type: "addDocument", doc }),
+    signDocument: (id) => run({ type: "signDocument", id }),
+    closePeriod: (period) => run({ type: "closePeriod", period }),
+    reopenPeriod: (period) => run({ type: "reopenPeriod", period }),
+    importPeople: (employees, areas) => run({ type: "importPeople", employees, areas }),
+    clearDemoPeople: () => run({ type: "clearDemoPeople" }),
+    resetDemo: () => run({ type: "updateCompany", patch: get().company }),
+  };
+});
 
 let hydrateStarted = false;
 
 export function hydrateHr() {
   if (hydrateStarted) return;
   hydrateStarted = true;
-  void useHr.persist.rehydrate();
+  void useHr.getState().refresh();
 }

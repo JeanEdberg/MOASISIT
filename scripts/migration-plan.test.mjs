@@ -58,7 +58,12 @@ test("non-.sql entries are dropped (readdir also yields the auth/ directory)", (
 
 test("the auth schema ships outside the globbed directory", () => {
   const migrationsDir = join(projectRoot(), "migrations");
-  assert.deepEqual(pendingMigrations(readdirSync(migrationsDir), []), []);
+  // App migrations may live here, but the Better Auth schema must NOT be picked
+  // up by the non-recursive glob until sign-in copies it up.
+  assert.equal(
+    pendingMigrations(readdirSync(migrationsDir), []).some((m) => m.name === AUTH_MIGRATION),
+    false,
+  );
   assert.ok(readdirSync(join(migrationsDir, "auth")).includes("0001_auth.sql"));
 });
 

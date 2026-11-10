@@ -188,7 +188,7 @@ function buildPeople(): Employee[] {
       names: "Peter Jhon",
       paternal: "Alanocca",
       maternal: "Peralta",
-      dni: "9635940",
+      dni: "09635940",
       email: "palanocca@inmoa.pe",
       phone: "977 440 119",
       birthDate: "1985-11-22",

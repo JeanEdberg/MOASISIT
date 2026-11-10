@@ -40,6 +40,7 @@ function FichaPage() {
   const { id } = Route.useParams();
   const data = useHr();
   const updateEmployee = useHr((s) => s.updateEmployee);
+  const resetEmployeePin = useHr((s) => s.resetEmployeePin);
   const emp = data.employees.find((e) => e.id === id);
   const allowed = emp && visibleEmployees(data.employees, data.viewer).some((e) => e.id === emp.id);
   const [tab, setTab] = useState<"resumen" | "personal" | "laboral" | "pagos" | "tiempo">("resumen");
@@ -108,6 +109,21 @@ function FichaPage() {
               }}
             >
               Editar ficha
+            </Button>
+            <Button
+              tone="line"
+              onClick={async () => {
+                if (!confirm(`¿Generar un PIN temporal nuevo para ${fullName(emp)}? Se entregará una sola vez.`)) return;
+                const res = await resetEmployeePin(emp.id);
+                if (res.ok && res.pin) {
+                  window.alert(`PIN temporal para ${fullName(emp)} (DNI ${emp.dni}):\n\n${res.pin}\n\nEntrégalo en privado. Deberá cambiarlo al ingresar.`);
+                  toast.success("PIN temporal generado");
+                } else {
+                  toast.error(res.error ?? "No se pudo generar el PIN");
+                }
+              }}
+            >
+              Generar PIN
             </Button>
             {emp.status === "activo" ? (
               <Button

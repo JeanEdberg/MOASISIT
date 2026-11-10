@@ -5,9 +5,10 @@ import {
   CalendarDays,
   Clock,
   Files,
+  KeyRound,
   Landmark,
   LayoutDashboard,
-  Lock,
+  LogOut,
   Network,
   SlidersHorizontal,
   UserRound,
@@ -17,9 +18,10 @@ import {
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { cn } from "@/components/ui";
+import { ChangeSecretModal } from "@/components/change-secret-modal";
+import { LoginScreen } from "@/components/login-screen";
 import { fullName, inkFor, longDate, HOY } from "@/lib/hr/format";
 import { hydrateHr, useHr } from "@/lib/hr/store";
-import { DniLoginModal } from "@/components/dni-login-modal";
 import type { ViewerMode } from "@/lib/hr/types";
 
 type PlainTo =
@@ -34,12 +36,7 @@ type PlainTo =
   | "/empresa"
   | "/manual";
 
-type Item = {
-  to: PlainTo;
-  label: string;
-  icon: LucideIcon;
-  exact?: boolean;
-};
+type Item = { to: PlainTo; label: string; icon: LucideIcon; exact?: boolean };
 
 const RRHH: Item[] = [
   { to: "/", label: "Inicio", icon: LayoutDashboard, exact: true },
@@ -79,20 +76,24 @@ function itemsFor(mode: ViewerMode): Item[] {
   return RRHH;
 }
 
+const ROLE_LABEL: Record<ViewerMode, string> = {
+  rrhh: "Recursos Humanos",
+  jefatura: "Jefatura",
+  colaborador: "Colaborador",
+};
+
 export function Shell({ children }: { children: ReactNode }) {
   const company = useHr((s) => s.company);
   const employees = useHr((s) => s.employees);
   const viewer = useHr((s) => s.viewer);
-  const setViewer = useHr((s) => s.setViewer);
-  const switchTenantCompany = useHr((s) => s.switchTenantCompany);
-  
-  // Bloqueo obligatorio por DNI al iniciar si no hay un empleado válido seleccionado
-  const [showDniModal, setShowDniModal] = useState(!viewer.employeeId);
+  const session = useHr((s) => s.session);
+  const hydrated = useHr((s) => s.hydrated);
+  const signOut = useHr((s) => s.signOut);
 
+  const [showChange, setShowChange] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const me = employees.find((e) => e.id === viewer.employeeId);
   const items = itemsFor(viewer.mode);
-  const activePeople = employees.filter((e) => e.status === "activo");
   const mark = (company.brandMark || company.brandName || "MO").trim().slice(0, 2).toUpperCase();
   const brand = company.brandName?.trim() || "Moasist";
   const theme = {
@@ -112,36 +113,44 @@ export function Shell({ children }: { children: ReactNode }) {
     if (meta) meta.setAttribute("content", company.brandColor || "#0284c7");
   }, [brand, company.brandColor]);
 
-  const changeMode = (mode: ViewerMode) => {
-    const currentOk =
-      viewer.employeeId && activePeople.some((e) => e.id === viewer.employeeId);
-    setViewer({ mode, employeeId: currentOk ? viewer.employeeId : (activePeople[0]?.id ?? "") });
-  };
+  if (!hydrated) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-50 text-sm text-slate-500 dark:bg-slate-950">
+        Cargando…
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <>
+        <LoginScreen />
+        <Toaster position="top-center" />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg text-ink" style={theme}>
-      {/* Modal de Acceso por DNI Obligatorio al Iniciar */}
-      {showDniModal && <DniLoginModal onClose={() => setShowDniModal(false)} />}
+      {(session.mustChange || showChange) && (
+        <ChangeSecretModal forced={session.mustChange} onClose={session.mustChange ? undefined : () => setShowChange(false)} />
+      )}
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
         <Link to="/" className="flex items-center gap-3 px-4 py-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-sky-600 font-display text-xl text-white shadow-md font-bold">
+          <span className="grid size-10 place-items-center rounded-xl bg-sky-600 font-display text-xl font-bold text-white shadow-md">
             {mark}
           </span>
           <div className="flex flex-col">
-            <span className="block font-display text-2xl leading-none font-bold text-slate-900 dark:text-white">
-              {brand}
-            </span>
-            <span className="text-[10px] font-semibold tracking-wider text-sky-600 uppercase">
-              INMOA Soluciones
-            </span>
+            <span className="block font-display text-2xl leading-none font-bold text-slate-900 dark:text-white">{brand}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">INMOA Soluciones</span>
           </div>
         </Link>
         <nav className="flex flex-1 flex-col gap-1 px-3">
           {items.map((item) => (
             <SideLink key={item.to} item={item} pathname={pathname} />
           ))}
-          {viewer.mode === "colaborador" && viewer.employeeId ? (
+          {viewer.mode !== "rrhh" && viewer.employeeId ? (
             <Link
               to="/colaboradores/$id"
               params={{ id: viewer.employeeId }}
@@ -164,48 +173,48 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-20 border-b border-line bg-surface">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sky-600 font-display text-white font-bold lg:hidden">
+              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sky-600 font-display font-bold text-white lg:hidden">
                 {mark}
               </span>
-              <div className="min-w-0 flex flex-col gap-1">
-                <select
-                  className="rounded-md border border-line bg-bg px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  value={company.ruc}
-                  onChange={(e) => switchTenantCompany(e.target.value)}
-                >
-                  <option value="20614684772">INMOA Logística y Soluciones E.I.R.L.</option>
-                  <option value="20614684773">Los 7 Pollitos Inversiones E.I.R.L.</option>
-                  <option value="20614684774">Inversiones y Negociaciones Plumífero E.I.R.L.</option>
-                </select>
-                <p className="text-xs text-muted px-1">
+              <div className="flex min-w-0 flex-col gap-1">
+                {viewer.mode === "rrhh" ? (
+                  <select
+                    className="rounded-md border border-line bg-bg px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    value={company.ruc}
+                    onChange={(e) => useHr.getState().switchTenantCompany(e.target.value)}
+                  >
+                    <option value="20614684772">INMOA Logística y Soluciones E.I.R.L.</option>
+                    <option value="20614684773">Los 7 Pollitos Inversiones E.I.R.L.</option>
+                    <option value="20614684774">Inversiones y Negociaciones Plumífero E.I.R.L.</option>
+                  </select>
+                ) : (
+                  <p className="text-sm font-medium text-ink">{company.name}</p>
+                )}
+                <p className="px-1 text-xs text-muted">
                   RUC {company.ruc} · {longDate(HOY)}
                 </p>
               </div>
             </div>
-            
-            <div className="flex gap-2 sm:ml-auto items-center">
-              {/* Botón para cambiar o reautenticar por DNI */}
-              <button
-                onClick={() => setShowDniModal(true)}
-                className="flex items-center gap-1.5 rounded-md border border-line bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-700 hover:bg-sky-100 dark:bg-sky-950/50 dark:text-sky-300 transition-colors shadow-sm"
-                title="Cambiar o validar sesión por DNI"
-              >
-                <Lock className="size-3.5" />
-                <span>Ingresar por DNI</span>
-              </button>
 
-              <label className="min-w-0 flex-1">
-                <span className="sr-only">Rol</span>
-                <select
-                  className="min-h-11 w-full rounded-md border border-line bg-bg px-2 text-sm"
-                  value={viewer.mode}
-                  onChange={(e) => changeMode(e.target.value as ViewerMode)}
-                >
-                  <option value="rrhh">Ver como RR. HH.</option>
-                  <option value="jefatura">Ver como jefatura</option>
-                  <option value="colaborador">Ver como colaborador</option>
-                </select>
-              </label>
+            <div className="flex items-center gap-2 sm:ml-auto">
+              <div className="text-right">
+                <p className="text-sm font-medium text-ink">{session.displayName}</p>
+                <p className="text-xs text-muted">{ROLE_LABEL[viewer.mode]}</p>
+              </div>
+              <button
+                onClick={() => setShowChange(true)}
+                className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                title="Cambiar mi PIN / contraseña"
+              >
+                <KeyRound className="size-3.5" />
+              </button>
+              <button
+                onClick={() => void signOut()}
+                className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                title="Cerrar sesión"
+              >
+                <LogOut className="size-3.5" />
+              </button>
             </div>
           </div>
         </header>
@@ -216,7 +225,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {items.map((item) => (
           <SideLink key={item.to} item={item} pathname={pathname} compact />
         ))}
-        {viewer.mode === "colaborador" && viewer.employeeId ? (
+        {viewer.mode !== "rrhh" && viewer.employeeId ? (
           <Link
             to="/colaboradores/$id"
             params={{ id: viewer.employeeId }}
@@ -231,7 +240,7 @@ export function Shell({ children }: { children: ReactNode }) {
         ) : null}
       </nav>
       <Toaster position="top-center" />
-      <span className="sr-only">{me ? fullName(me) : "sin persona"}</span>
+      <span className="sr-only">{me ? fullName(me) : session.displayName}</span>
     </div>
   );
 }
@@ -243,10 +252,7 @@ function SideLink({ item, pathname, compact }: { item: Item; pathname: string; c
     return (
       <Link
         to={item.to}
-        className={cn(
-          "flex min-w-16 flex-col items-center gap-1 px-2 py-1 text-xs",
-          on ? "text-sky-600 font-medium" : "text-muted",
-        )}
+        className={cn("flex min-w-16 flex-col items-center gap-1 px-2 py-1 text-xs", on ? "font-medium text-sky-600" : "text-muted")}
       >
         <Icon className="size-5" />
         {item.label}

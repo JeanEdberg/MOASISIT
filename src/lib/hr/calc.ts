@@ -39,7 +39,7 @@ export function getCommercialMonthsAndDays(from: Date, to: Date): { months: numb
   let months = 0;
   let days = 0;
 
-  let cur = new Date(from.getFullYear(), from.getMonth(), 1);
+  const cur = new Date(from.getFullYear(), from.getMonth(), 1);
   const endLimit = new Date(to.getFullYear(), to.getMonth(), 1);
 
   while (cur <= endLimit) {
