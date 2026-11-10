@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Manual de uso — Jefatura — Moasist</title>
+<style>
+  :root { --brand: #7c3aed; --brand-dark: #075985; --ink:#0f172a; --muted:#475569; --line:#e2e8f0; }
+  * { box-sizing: border-box; }
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--ink); font-size: 11.5pt; line-height: 1.55; margin:0; }
+  h1,h2,h3 { font-weight: 700; line-height: 1.2; }
+  h2 { font-size: 15pt; margin: 0 0 6px; }
+  h3 { font-size: 12.5pt; margin: 16px 0 4px; color: var(--brand-dark); }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 6px 4px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  strong { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
+  th { background: color-mix(in srgb, var(--brand) 14%, white); text-align: left; }
+  th, td { border: 1px solid var(--line); padding: 6px 9px; vertical-align: top; }
+  .box { border-radius: 8px; padding: 10px 12px 10px 12px; margin: 12px 0; font-size: 10.5pt; border: 1px solid var(--line); background:#f8fafc; }
+  .box .tag { display:block; font-size: 8.5pt; font-weight:700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; color: var(--brand-dark); }
+  .box.tip { background: color-mix(in srgb, var(--brand) 7%, white); border-color: color-mix(in srgb, var(--brand) 30%, white); }
+  .box.warn { background: #fff7ed; border-color:#fdba74; }
+  .box.warn .tag { color:#b45309; }
+  .box.info { background:#eff6ff; border-color:#bfdbfe; }
+  .box.info .tag { color:#1d4ed8; }
+  .cover { display:flex; flex-direction:column; justify-content:space-between; height: 250mm; }
+  .cover .brandline { display:flex; align-items:center; gap:10px; }
+  .logo { width: 40px; height: 40px; border-radius: 10px; background: var(--brand); color:#fff; display:grid; place-items:center; font-weight:800; font-size:18px; }
+  .brandname { font-size: 20pt; font-weight: 800; letter-spacing:-.02em; }
+  .cover .role { margin-top: 40mm; }
+  .cover .kicker { text-transform: uppercase; letter-spacing:.14em; font-size: 10pt; color: var(--brand); font-weight:700; }
+  .cover h1 { font-size: 30pt; margin: 8px 0 6px; letter-spacing:-.02em; }
+  .cover .tagline { font-size: 14pt; color: var(--muted); }
+  .cover .foot { font-size: 9.5pt; color: var(--muted); border-top:1px solid var(--line); padding-top:8px; }
+  .toc { page-break-before: always; }
+  .toc h2 { border-bottom: 3px solid var(--brand); display:inline-block; padding-bottom:4px; }
+  .toc ol { list-style:none; padding:0; margin-top:12px; counter-reset: n; }
+  .toc li { display:flex; gap:10px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--line); font-size: 12pt; }
+  .toc .num { display:inline-grid; place-items:center; min-width:22px; height:22px; border-radius:6px; background: var(--brand); color:#fff; font-size:10pt; font-weight:700; }
+  .chapter { page-break-before: always; }
+  .chap-head { display:flex; align-items:center; gap:10px; border-bottom: 2px solid var(--brand); padding-bottom:6px; margin-bottom:10px; }
+  .chap-num { display:inline-grid; place-items:center; min-width:26px; height:26px; border-radius:7px; background: var(--brand); color:#fff; font-weight:800; font-size:12pt; }
+  .chap-title { border:0; margin:0; }
+  .docfoot { text-align:center; font-size:9pt; color:var(--muted); margin-top:10px; }
+</style>
+</head>
+<body>
+  <section class="cover">
+    <div class="brandline"><div class="logo">M</div><div class="brandname">Moasist</div></div>
+    <div class="role">
+      <div class="kicker">Manual de uso</div>
+      <h1>Jefatura</h1>
+      <div class="tagline">Gestión de tu equipo</div>
+    </div>
+    <div class="foot">
+      Moasist · Control de Asistencia y Planillas<br/>
+      Documento para Jefatura. Versión 1.0 · Referencia normativa 2026 (RMV, UIT, AFP).
+    </div>
+  </section>
+
+  <section class="toc">
+    <h2>Contenido</h2>
+    <ol><li><span class="num">1</span> Tu rol y lo que puedes hacer</li><li><span class="num">2</span> Equipo</li><li><span class="num">3</span> Vacaciones</li><li><span class="num">4</span> Asistencia</li><li><span class="num">5</span> Documentos</li></ol>
+    <div class="box info" style="margin-top:18px">Este manual está dirigido a las jefaturas. Explica las opciones disponibles para gestionar a tu equipo, sin acceso a las remuneraciones.</div>
+  </section>
+
+  <section class="chapter">
+    <h2>¿Qué es Moasist?</h2><p>Moasist es el sistema de <strong>control de asistencia y planillas</strong> de tu empresa. Reúne en un solo lugar a las personas, su asistencia, sus vacaciones, sus documentos y su boleta de pago, siguiendo la normativa laboral peruana (RMV, UIT, ONP/AFP, EsSalud, CTS y gratificaciones).</p><p>Funciona en el navegador (no hay que instalar nada en la PC). Cada empresa ve únicamente su propia información.</p><h2>Cómo entrar al sistema</h2><p>En la pantalla de inicio de sesión elige la pestaña que te corresponde:</p><table><thead><tr><th>Pestaña</th><th>Qué se escribe</th><th>Para quién</th></tr></thead><tbody><tr><td>Administración</td><td>Correo electrónico y contraseña</td><td>Superadmin (el dueño del sistema)</td></tr><tr><td>Colaborador</td><td>DNI (8 dígitos) y PIN</td><td>Todo el personal con cuenta</td></tr></tbody></table><p>La primera vez que entras, el sistema te obliga a <strong>cambiar tu PIN o contraseña</strong> por seguridad. Los PIN iniciales los entrega Recursos Humanos en privado.</p><div class="box warn"><span class="tag">Importante</span>No compartas tu PIN ni tu contraseña. Cada acción queda registrada con tu usuario.</div>
+  </section>
+
+  <section class="chapter"><div class="chap-head"><span class="chap-num">1</span><h2 class="chap-title">Tu rol y lo que puedes hacer</h2></div><p>Como jefatura gestionas únicamente a <strong>tu equipo</strong> (las personas que te reportan).</p><table><thead><tr><th>Acción</th><th>Jefatura</th></tr></thead><tbody><tr><td>Ver a tu equipo y su organización</td><td>Sí</td></tr><tr><td>Aprobar vacaciones y solicitudes de tu equipo</td><td>Sí</td></tr><tr><td>Registrar asistencia de tu equipo</td><td>Sí</td></tr><tr><td>Ver remuneraciones o sueldos</td><td>No</td></tr><tr><td>Editar la empresa o su planilla</td><td>No</td></tr></tbody></table><p>Tu menú incluye: Inicio, Equipo, Organización, Vacaciones, Asistencia, Documentos y Manual.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">2</span><h2 class="chap-title">Equipo</h2></div><p>Es el directorio de tu equipo. Muestra los datos de la ficha laboral, pero <strong>no las remuneraciones</strong>.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">3</span><h2 class="chap-title">Vacaciones</h2></div><p>Revisa las solicitudes de tu equipo y <strong>aprueba o rechaza</strong> cada una. Solo puedes decidir sobre las personas que te reportan.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">4</span><h2 class="chap-title">Asistencia</h2></div><p>Registra y revisa la asistencia de tu equipo: entradas, salidas, tardanzas y horas extra.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">5</span><h2 class="chap-title">Documentos</h2></div><p>Consulta los documentos que Recursos Humanos ponga a disposición.</p></section>
+
+  <section class="chapter">
+    <div class="chap-head"><span class="chap-num">✓</span><h2 class="chap-title">Contacto y soporte</h2></div>
+    <p>Ante cualquier duda sobre el uso de Moasist, comunícate con el administrador del sistema de tu empresa.</p>
+    <p class="docfoot">Moasist v1.0 · Sistema Integral de Gestión de Asistencia y Planillas · Documento generado automáticamente.</p>
+  </section>
+</body>
+</html>

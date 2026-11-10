@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Manual de uso — Superadministrador (Desarrollador) — Moasist</title>
+<style>
+  :root { --brand: #0284c7; --brand-dark: #075985; --ink:#0f172a; --muted:#475569; --line:#e2e8f0; }
+  * { box-sizing: border-box; }
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: var(--ink); font-size: 11.5pt; line-height: 1.55; margin:0; }
+  h1,h2,h3 { font-weight: 700; line-height: 1.2; }
+  h2 { font-size: 15pt; margin: 0 0 6px; }
+  h3 { font-size: 12.5pt; margin: 16px 0 4px; color: var(--brand-dark); }
+  p { margin: 6px 0; }
+  ul, ol { margin: 6px 0 6px 4px; padding-left: 20px; }
+  li { margin: 3px 0; }
+  strong { color: var(--ink); }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 10.5pt; }
+  th { background: color-mix(in srgb, var(--brand) 14%, white); text-align: left; }
+  th, td { border: 1px solid var(--line); padding: 6px 9px; vertical-align: top; }
+  .box { border-radius: 8px; padding: 10px 12px 10px 12px; margin: 12px 0; font-size: 10.5pt; border: 1px solid var(--line); background:#f8fafc; }
+  .box .tag { display:block; font-size: 8.5pt; font-weight:700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 3px; color: var(--brand-dark); }
+  .box.tip { background: color-mix(in srgb, var(--brand) 7%, white); border-color: color-mix(in srgb, var(--brand) 30%, white); }
+  .box.warn { background: #fff7ed; border-color:#fdba74; }
+  .box.warn .tag { color:#b45309; }
+  .box.info { background:#eff6ff; border-color:#bfdbfe; }
+  .box.info .tag { color:#1d4ed8; }
+  .cover { display:flex; flex-direction:column; justify-content:space-between; height: 250mm; }
+  .cover .brandline { display:flex; align-items:center; gap:10px; }
+  .logo { width: 40px; height: 40px; border-radius: 10px; background: var(--brand); color:#fff; display:grid; place-items:center; font-weight:800; font-size:18px; }
+  .brandname { font-size: 20pt; font-weight: 800; letter-spacing:-.02em; }
+  .cover .role { margin-top: 40mm; }
+  .cover .kicker { text-transform: uppercase; letter-spacing:.14em; font-size: 10pt; color: var(--brand); font-weight:700; }
+  .cover h1 { font-size: 30pt; margin: 8px 0 6px; letter-spacing:-.02em; }
+  .cover .tagline { font-size: 14pt; color: var(--muted); }
+  .cover .foot { font-size: 9.5pt; color: var(--muted); border-top:1px solid var(--line); padding-top:8px; }
+  .toc { page-break-before: always; }
+  .toc h2 { border-bottom: 3px solid var(--brand); display:inline-block; padding-bottom:4px; }
+  .toc ol { list-style:none; padding:0; margin-top:12px; counter-reset: n; }
+  .toc li { display:flex; gap:10px; align-items:baseline; padding:6px 0; border-bottom:1px dashed var(--line); font-size: 12pt; }
+  .toc .num { display:inline-grid; place-items:center; min-width:22px; height:22px; border-radius:6px; background: var(--brand); color:#fff; font-size:10pt; font-weight:700; }
+  .chapter { page-break-before: always; }
+  .chap-head { display:flex; align-items:center; gap:10px; border-bottom: 2px solid var(--brand); padding-bottom:6px; margin-bottom:10px; }
+  .chap-num { display:inline-grid; place-items:center; min-width:26px; height:26px; border-radius:7px; background: var(--brand); color:#fff; font-weight:800; font-size:12pt; }
+  .chap-title { border:0; margin:0; }
+  .docfoot { text-align:center; font-size:9pt; color:var(--muted); margin-top:10px; }
+</style>
+</head>
+<body>
+  <section class="cover">
+    <div class="brandline"><div class="logo">M</div><div class="brandname">Moasist</div></div>
+    <div class="role">
+      <div class="kicker">Manual de uso</div>
+      <h1>Superadministrador (Desarrollador)</h1>
+      <div class="tagline">Cómo funciona toda la aplicación</div>
+    </div>
+    <div class="foot">
+      Moasist · Control de Asistencia y Planillas<br/>
+      Documento para Superadministrador (Desarrollador). Versión 1.0 · Referencia normativa 2026 (RMV, UIT, AFP).
+    </div>
+  </section>
+
+  <section class="toc">
+    <h2>Contenido</h2>
+    <ol><li><span class="num">1</span> Tu rol y lo que puedes hacer</li><li><span class="num">2</span> Selector de empresa</li><li><span class="num">3</span> Inicio (panel general)</li><li><span class="num">4</span> Personas (colaboradores)</li><li><span class="num">5</span> Organización</li><li><span class="num">6</span> Vacaciones</li><li><span class="num">7</span> Asistencia</li><li><span class="num">8</span> Planilla (boletas de pago)</li><li><span class="num">9</span> Consolidado Masivo</li><li><span class="num">10</span> Documentos</li><li><span class="num">11</span> Empresa (configuración)</li><li><span class="num">12</span> Suscripciones (solo superadmin)</li><li><span class="num">13</span> Crear una empresa nueva</li><li><span class="num">14</span> Seguridad y protección de datos</li></ol>
+    <div class="box info" style="margin-top:18px">Este manual está dirigido a la persona que administra el sistema completo (por ejemplo, el responsable de TI o el proveedor). Explica cada módulo y las tareas exclusivas de este rol.</div>
+  </section>
+
+  <section class="chapter">
+    <h2>¿Qué es Moasist?</h2><p>Moasist es el sistema de <strong>control de asistencia y planillas</strong> de tu empresa. Reúne en un solo lugar a las personas, su asistencia, sus vacaciones, sus documentos y su boleta de pago, siguiendo la normativa laboral peruana (RMV, UIT, ONP/AFP, EsSalud, CTS y gratificaciones).</p><p>Funciona en el navegador (no hay que instalar nada en la PC). Cada empresa ve únicamente su propia información.</p><h2>Cómo entrar al sistema</h2><p>En la pantalla de inicio de sesión elige la pestaña que te corresponde:</p><table><thead><tr><th>Pestaña</th><th>Qué se escribe</th><th>Para quién</th></tr></thead><tbody><tr><td>Administración</td><td>Correo electrónico y contraseña</td><td>Superadmin (el dueño del sistema)</td></tr><tr><td>Colaborador</td><td>DNI (8 dígitos) y PIN</td><td>Todo el personal con cuenta</td></tr></tbody></table><p>La primera vez que entras, el sistema te obliga a <strong>cambiar tu PIN o contraseña</strong> por seguridad. Los PIN iniciales los entrega Recursos Humanos en privado.</p><div class="box warn"><span class="tag">Importante</span>No compartas tu PIN ni tu contraseña. Cada acción queda registrada con tu usuario.</div>
+  </section>
+
+  <section class="chapter"><div class="chap-head"><span class="chap-num">1</span><h2 class="chap-title">Tu rol y lo que puedes hacer</h2></div><p>El superadministrador es el único rol que ve <strong>todas las empresas</strong> y puede cambiar entre ellas.</p><table><thead><tr><th>Permiso</th><th>Superadmin</th></tr></thead><tbody><tr><td>Ver todas las empresas y cambiar de empresa</td><td>Sí</td></tr><tr><td>Crear, editar y eliminar empresas</td><td>Sí</td></tr><tr><td>Administrar suscripciones (precio, cobro, vencimiento)</td><td>Sí</td></tr><tr><td>Todo lo que hace Recursos Humanos</td><td>Sí</td></tr></tbody></table><div class="box info"><span class="tag">Nota</span>Los demás roles (RR.HH., jefatura, colaborador) solo ven la empresa a la que pertenecen.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">2</span><h2 class="chap-title">Selector de empresa</h2></div><p>Arriba a la izquierda, junto al nombre del sistema, hay un <strong>selector</strong> con todas las empresas. Al elegir una, toda la aplicación muestra los datos de esa empresa.</p><ol><li>Entra con tu cuenta de Administración.</li><li>Usa el selector de la parte superior para cambiar de empresa.</li><li>Verifica que el nombre y el RUC correspondan a la empresa correcta.</li></ol></section><section class="chapter"><div class="chap-head"><span class="chap-num">3</span><h2 class="chap-title">Inicio (panel general)</h2></div><p>Es el resumen del día. Muestra tarjetas con:</p><ul><li><strong>Personas activas</strong> en la empresa.</li><li><strong>Neto a pagar</strong> en la planilla del mes.</li><li><strong>Marcaciones de hoy</strong> y tardanzas de la semana.</li><li><strong>Solicitudes por revisar</strong> (vacaciones, permisos, descansos).</li><li><strong>CTS del semestre</strong> cuando corresponde.</li></ul></section><section class="chapter"><div class="chap-head"><span class="chap-num">4</span><h2 class="chap-title">Personas (colaboradores)</h2></div><p>Es el directorio del personal. Desde aquí se da de alta a cada persona y se edita su ficha laboral.</p><h3>Agregar una persona</h3><ol><li>Entra a <strong>Personas</strong> y pulsa <strong>Nueva persona</strong>.</li><li>Completa los datos: nombres, apellidos, DNI, correo, teléfono, fecha de nacimiento y dirección.</li><li>Define lo laboral: área, cargo, jefe, tipo de contrato, régimen, sueldo, pensión (ONP/AFP), seguro de salud y modalidad de trabajo.</li><li>Guarda. El sistema genera automáticamente su <strong>contrato en Word</strong> y su cuenta de acceso.</li></ol><h3>Importar varias personas (CSV)</h3><p>Permite cargar todo el personal de una sola vez con una plantilla CSV. Ideal para la puesta en marcha inicial.</p><h3>Cuentas de acceso</h3><p>Cada persona entra con su <strong>DNI</strong>. El PIN inicial se genera solo y se entrega en privado. Desde la ficha se puede <strong>regenerar el PIN</strong> si se olvida.</p><div class="box tip"><span class="tag">Recomendación</span>El DNI es el usuario de acceso. Si cambias el DNI de una persona, el sistema actualiza su usuario automáticamente.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">5</span><h2 class="chap-title">Organización</h2></div><p>Muestra la jerarquía por jefatura y la distribución por áreas. En esta vista <strong>no se muestran sueldos</strong>.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">6</span><h2 class="chap-title">Vacaciones</h2></div><p>Registra y aprueba el descanso vacacional. El saldo se calcula por régimen: <strong>30 días al año</strong> en régimen general y <strong>15 días</strong> en pequeña empresa, microempresa y prácticas.</p><ul><li>Ver el saldo y lo que está en trámite.</li><li>Registrar una solicitud (fechas y tipo).</li><li>Aprobar o rechazar la solicitud.</li></ul></section><section class="chapter"><div class="chap-head"><span class="chap-num">7</span><h2 class="chap-title">Asistencia</h2></div><p>Controla la jornada: entradas, salidas, tardanzas, faltas y horas extra.</p><h3>Cómo se valida la ubicación</h3><p>Depende de la modalidad de cada persona:</p><table><thead><tr><th>Modalidad</th><th>Regla de ubicación</th></tr></thead><tbody><tr><td>Presencial / Híbrido</td><td>Exige estar dentro de la geocerca de la oficina</td></tr><tr><td>Campo / Virtual / Itinerante</td><td>Registra sin geocerca estricta</td></tr></tbody></table><h3>Sin conexión a internet</h3><p>Las marcaciones se guardan en el dispositivo y se <strong>sincronizan solas</strong> al recuperar la red.</p><h3>Reglas de cálculo</h3><ul><li>Una falta descuenta un treintavo del sueldo.</li><li>Las dos primeras horas extra van al 25%; el resto, al 35%.</li></ul></section><section class="chapter"><div class="chap-head"><span class="chap-num">8</span><h2 class="chap-title">Planilla (boletas de pago)</h2></div><p>Calcula la boleta de cada persona: sueldo, asignación familiar, AFP u ONP, quinta categoría, EsSalud y descuentos.</p><ul><li>En <strong>julio y diciembre</strong> se suma la gratificación.</li><li>En <strong>mayo y noviembre</strong> se suma la CTS del semestre.</li></ul><div class="box tip"><span class="tag">Recomendación</span>El cálculo es referencial para gestionar tu planilla; no reemplaza la presentación oficial del PLAME ante SUNAT.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">9</span><h2 class="chap-title">Consolidado Masivo</h2></div><p>Calcula de una sola vez la <strong>CTS y las gratificaciones</strong> de todo el personal, bajo normativa peruana. Sirve para preparar los depósitos bancarios.</p><p>El <strong>Consolidado de Asistencia</strong> resume por mes la asistencia, tardanzas y horas extra de todo el personal.</p></section><section class="chapter"><div class="chap-head"><span class="chap-num">10</span><h2 class="chap-title">Documentos</h2></div><p>Guarda contratos, boletas y políticas en un solo lugar.</p><div class="box warn"><span class="tag">Importante</span>Marcar un documento como <strong>firmado</strong> es un registro interno de la empresa: no es la firma electrónica del Ministerio de Trabajo.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">11</span><h2 class="chap-title">Empresa (configuración)</h2></div><p>Desde <strong>Empresa</strong> se ajusta la identidad y los parámetros de cálculo:</p><ul><li><strong>Identidad:</strong> razón social, nombre comercial, RUC, ciudad, dirección y correo.</li><li><strong>Marca y colores:</strong> nombre del producto, color principal y de acento.</li><li><strong>Parámetros de planilla:</strong> RMV, UIT, tope AFP, EsSalud, ONP, aporte AFP, prima de seguro y comisiones AFP por flujo.</li><li><strong>Aseguradoras y seguros:</strong> EPS, SCTR y Seguro de Vida Ley con sus tasas.</li><li><strong>Áreas:</strong> áreas de la empresa.</li></ul><div class="box tip"><span class="tag">Recomendación</span>Los valores iniciales siguen la referencia 2026. Actualízalos cuando cambie la norma.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">12</span><h2 class="chap-title">Suscripciones (solo superadmin)</h2></div><p>Gestiona el plan de cada empresa: <strong>precio mensual, día de cobro, fecha de alta y vencimiento</strong>. La app calcula el prorrateo del primer mes y avisa cuando toca cobrar.</p><ul><li>Activar o cancelar la suscripción.</li><li>Eliminar una empresa (con confirmación).</li></ul><div class="box warn"><span class="tag">Importante</span>Solo el superadministrador ve y edita esta sección. Los demás roles no tienen acceso.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">13</span><h2 class="chap-title">Crear una empresa nueva</h2></div><ol><li>Entra a <strong>Empresa</strong> y pulsa <strong>Nueva empresa</strong>.</li><li>Escribe el RUC. El sistema consulta SUNAT y autocompleta la razón social y la dirección.</li><li>Confirma el nombre corto (se usa en los saludos) y guarda.</li></ol><div class="box info"><span class="tag">Nota</span>Cada empresa nueva queda aislada: sus datos no se mezclan con los de las demás.</div></section><section class="chapter"><div class="chap-head"><span class="chap-num">14</span><h2 class="chap-title">Seguridad y protección de datos</h2></div><ul><li>Los permisos se validan en el <strong>servidor</strong>, no en el navegador.</li><li>Cada empresa está <strong>aislada</strong>: no se puede leer ni escribir datos de otra.</li><li>Los datos personales (DNI, sueldos, cuentas) <strong>no viajan al navegador</strong> hasta que inicias sesión.</li><li>Tras varios intentos fallidos, la cuenta se bloquea temporalmente.</li></ul><div class="box tip"><span class="tag">Recomendación</span>Recomendado en producción: activar la base de datos persistente (Neon) y apagar el registro de credenciales en consola.</div></section>
+
+  <section class="chapter">
+    <div class="chap-head"><span class="chap-num">✓</span><h2 class="chap-title">Contacto y soporte</h2></div>
+    <p>Ante cualquier duda sobre el uso de Moasist, comunícate con el administrador del sistema de tu empresa.</p>
+    <p class="docfoot">Moasist v1.0 · Sistema Integral de Gestión de Asistencia y Planillas · Documento generado automáticamente.</p>
+  </section>
+</body>
+</html>

@@ -26,3 +26,6 @@ public/descargas/
 *.docx
 *.doc
 *.pdf
+
+# Excepción: los manuales de uso (no contienen datos personales) sí se publican
+!docs/manual/*.pdf
