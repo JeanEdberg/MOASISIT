@@ -142,6 +142,12 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   hacer `...data` y devolver sin filtrar `employees` deja al superadmin viendo
   las tres empresas mezcladas (bug corregido). El admin se siembra con rol
   **`superadmin`** (`ADMIN_ROLE`), que es el único que ve el selector de empresa.
+- **Nombre corto de empresa**: `company.shortName` alimenta el saludo del
+  inicio (`greeting`/`companyShortName` en `src/lib/hr/format.ts`): RR.HH. y
+  superadmin ven "Hola, INMOA"; colaborador/jefatura ven su nombre de pila.
+  Editable en Empresa → Marca y colores. `migrations/0004_company_short_name.sql`
+  agrega y rellena la clave en filas ya sembradas (idempotente); sin ella el
+  saludo cae en `tradeName`.
 - **Admin bootstrap**: `MOASIST_ADMIN_PASSWORD` env var, else a random fallback
   logged at startup. PINs are random per seed — read them from the seed log
   (`[moasist] Credenciales iniciales`). The PIN/secret must be **digits-only**

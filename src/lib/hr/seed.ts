@@ -32,6 +32,7 @@ const companies: Company[] = [
   {
     id: "inmoa",
     name: "INMOA Logística y Soluciones E.I.R.L.",
+    shortName: "INMOA",
     tradeName: "INMOA Soluciones",
     ruc: "20614684772",
     address: "Av. León Velarde 450, Tambopata",
@@ -52,6 +53,7 @@ const companies: Company[] = [
   {
     id: "7pollitos",
     name: "Los 7 Pollitos Inversiones E.I.R.L.",
+    shortName: "Los 7 Pollitos",
     tradeName: "Los 7 Pollitos",
     ruc: "20614684773",
     address: "Av. Panamericana Norte Km. 120",
@@ -72,6 +74,7 @@ const companies: Company[] = [
   {
     id: "plumifero",
     name: "Inversiones y Negociaciones Plumífero E.I.R.L.",
+    shortName: "Plumífero",
     tradeName: "Plumífero",
     ruc: "20614684774",
     address: "Zona Industrial S/N",

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useHr } from "@/lib/hr/store";
 import { Button, Field, fieldClass } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { ShieldCheck } from "lucide-react";
 
 /**
@@ -8,7 +9,6 @@ import { ShieldCheck } from "lucide-react";
  * The role is decided by the server from the credential — never chosen here.
  */
 export function LoginScreen() {
-  const company = useHr((s) => s.company);
   const signIn = useHr((s) => s.signIn);
   const [mode, setMode] = useState<"employee" | "admin">("employee");
   const [login, setLogin] = useState("");
@@ -29,12 +29,10 @@ export function LoginScreen() {
     <div className="grid min-h-screen place-items-center bg-slate-50 px-4 dark:bg-slate-950">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col items-center text-center">
-          <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-sky-600 font-display text-2xl font-bold text-white shadow-lg">
-            {company.brandMark || "MO"}
-          </span>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">{company.name}</h2>
+          <BrandLogo size={72} className="mb-3" />
+          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Moasist</h2>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Sistema de Control de Asistencia y Planillas · Moasist
+            Control de Asistencia y Planillas
           </p>
         </div>
 
@@ -96,7 +94,7 @@ export function LoginScreen() {
         </form>
 
         <p className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-400 dark:border-slate-800">
-          RUC {company.ruc} · Acceso restringido
+          Ingresa con tu DNI y PIN. Acceso restringido.
         </p>
       </div>
     </div>

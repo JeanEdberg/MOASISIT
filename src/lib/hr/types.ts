@@ -34,6 +34,8 @@ export type Insurer = {
 export type Company = {
   id: string; // Identificador único para multiempresa (ej: "inmoa", "7pollitos", "plumifero")
   name: string;
+  /** Nombre corto para el saludo y las cabeceras (ej. "INMOA", "Plumífero"). */
+  shortName: string;
   tradeName: string;
   ruc: string;
   address: string;

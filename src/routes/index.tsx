@@ -10,6 +10,7 @@ import {
   currentPeriod,
   fmtDays,
   fullName,
+  greeting,
   HOY,
   parseDay,
   pen,
@@ -71,7 +72,7 @@ function Dashboard() {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  const hello = me ? `Hola, ${me.names.split(" ")[0]}` : "Hola";
+  const hello = greeting(data.viewer.mode, data.company, me ? me.names : null);
   const showMoney = isCompanyAdmin(data.viewer.mode) || data.viewer.mode === "colaborador";
 
   return (

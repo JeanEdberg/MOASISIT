@@ -118,6 +118,14 @@ function CompanyPage() {
               onChange={(e) => updateCompany({ brandName: e.target.value })}
             />
           </Field>
+          <Field label="Nombre corto" hint="Se usa en el saludo de bienvenida, ej. INMOA.">
+            <input
+              className={fieldClass}
+              value={company.shortName}
+              maxLength={24}
+              onChange={(e) => updateCompany({ shortName: e.target.value })}
+            />
+          </Field>
           <Field label="Inicial del isotipo" hint="Una o dos letras.">
             <input
               className={fieldClass}

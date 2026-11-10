@@ -116,6 +116,30 @@ export function initials(e: { names: string; paternal: string }): string {
   return `${a}${b}`.toUpperCase();
 }
 
+/**
+ * Nombre corto de la empresa para saludos y cabeceras. Usa `shortName` y cae en
+ * `tradeName` o en la primera palabra de la razón social.
+ */
+export function companyShortName(c: { shortName?: string; tradeName?: string; name?: string }): string {
+  return (c.shortName?.trim() || c.tradeName?.trim() || c.name?.trim().split(/\s+/)[0] || "la empresa");
+}
+
+/**
+ * Saludo de bienvenida según quién entra:
+ * - Colaborador / jefatura: saluda por su nombre de pila ("Hola, Randy").
+ * - RR.HH. / superadmin: saluda a la empresa en curso ("Hola, INMOA").
+ */
+export function greeting(
+  viewerMode: ViewerMode,
+  company: { shortName?: string; tradeName?: string; name?: string },
+  employeeName?: string | null,
+): string {
+  const isCompanyAdmin = viewerMode === "rrhh" || viewerMode === "superadmin";
+  const firstName = employeeName?.trim().split(/\s+/)[0];
+  if (isCompanyAdmin || !firstName) return `Hola, ${companyShortName(company)}`;
+  return `Hola, ${firstName}`;
+}
+
 export const PENSION_LABEL: Record<Pension, string> = {
   onp: "ONP",
   habitat: "AFP Habitat",

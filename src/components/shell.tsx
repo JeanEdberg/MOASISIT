@@ -18,6 +18,7 @@ import {
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { cn } from "@/components/ui";
+import { BrandLogo } from "@/components/brand-logo";
 import { ChangeSecretModal } from "@/components/change-secret-modal";
 import { LoginScreen } from "@/components/login-screen";
 import { fullName, inkFor, longDate, HOY } from "@/lib/hr/format";
@@ -97,8 +98,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const me = employees.find((e) => e.id === viewer.employeeId);
   const items = itemsFor(viewer.mode);
-  const mark = (company.brandMark || company.brandName || "MO").trim().slice(0, 2).toUpperCase();
-  const brand = company.brandName?.trim() || "Moasist";
+  const brand = "Moasist";
   const theme = {
     "--brand": company.brandColor || "#0284c7",
     "--brand-ink": inkFor(company.brandColor || "#0284c7"),
@@ -141,12 +141,10 @@ export function Shell({ children }: { children: ReactNode }) {
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
         <Link to="/" className="flex items-center gap-3 px-4 py-5">
-          <span className="grid size-10 place-items-center rounded-xl bg-sky-600 font-display text-xl font-bold text-white shadow-md">
-            {mark}
-          </span>
-          <div className="flex flex-col">
-            <span className="block font-display text-2xl leading-none font-bold text-slate-900 dark:text-white">{brand}</span>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-600">INMOA Soluciones</span>
+          <BrandLogo size={40} />
+          <div className="flex min-w-0 flex-col">
+            <span className="block font-display text-2xl leading-none font-bold text-slate-900 dark:text-white">Moasist</span>
+            <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-sky-600">{company.tradeName}</span>
           </div>
         </Link>
         <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -176,9 +174,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-20 border-b border-line bg-surface">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-md bg-sky-600 font-display font-bold text-white lg:hidden">
-                {mark}
-              </span>
+              <BrandLogo size={36} className="lg:hidden" />
               <div className="flex min-w-0 flex-col gap-1">
                 {viewer.mode === "superadmin" ? (
                   <select
