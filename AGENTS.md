@@ -215,6 +215,20 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `RUC_API_TOKEN` (token gratis en decolecta.com/profile, 1,000 consultas/mes).
   Si el proveedor falla, la UI muestra un mensaje claro y se puede completar la
   empresa a mano.
+- **Manuales en PDF**: los genera `scripts/generate-manual.mjs` (4 manuales por
+  rol) y `scripts/generate-checklist.mjs` (checklist de puesta en marcha, 1
+  hoja). Escriben en **`public/manuales/`** (servido como estático en dev y
+  Vercel), y `src/components/manual-downloads.tsx` los ofrece con un botón
+  **solo al superadmin** al final de `/manual`. Los PDF están en `.gitignore`
+  (`*.pdf`) con excepción `!public/manuales/*.pdf` (no contienen datos
+  personales). Requieren Chromium/Chrome en el PATH para regenerarlos.
+- **Logo de empresa**: `src/lib/hr/logo.ts` (`readLogoFile` valida PNG/JPG/WEBP
+  hasta 1 MB → data URL; `logoImgHtml(company, heightPt?)` arma el `<img>` para
+  documentos impresos/Word). `Company.logo` es un data URL opcional. Se sube en
+  Empresa → Logo de la empresa y aparece arriba a la izquierda en boleta
+  (`boleta.tsx`), contrato (`contract.tsx` + `contractToHtml`) y consolidado
+  (`ConsolidadoMasivoView.tsx`). Nota: `ConsolidadoMasivoView.tsx` usa **CRLF**;
+  edítalo preservando el fin de línea o el diff se infla.
 - **Puesta en marcha (estado del sistema)**: `src/lib/hr/status.ts` es **puro**
   (`buildStatusChecks(facts)`, `overallLevel`, `pendingCount`); `status.server.ts`
   recolecta los hechos del entorno (nunca valores de secretos) y el server fn
