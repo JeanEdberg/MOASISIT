@@ -196,6 +196,9 @@ function FichaPage() {
             <Info label="Cargo" value={emp.position} />
             <Info label="Régimen" value={REGIME_LABEL[emp.regime]} />
             <Info label="Pensión" value={PENSION_LABEL[emp.pension]} />
+            {emp.pension !== "onp" && emp.pension !== "ninguno" ? (
+              <Info label="CUSPP" value={emp.cuspp || "Sin registrar"} />
+            ) : null}
             <Info label="Modalidad" value={WORK_MODE_LABEL[emp.workMode]} />
             <Info label="Banco (sueldo)" value={emp.salaryBank || emp.bank || "—"} />
             <Info label="Cuenta (sueldo)" value={emp.salaryAccount || emp.account || "—"} />
@@ -203,6 +206,7 @@ function FichaPage() {
             <Info label="Cuenta (CTS)" value={emp.ctsAccount || "—"} />
             <Info label="Fin de contrato" value={emp.endDate ? shortDate(emp.endDate) : "Sin fecha"} />
             <Info label="Asignación familiar" value={emp.familyAllowance ? "Sí" : "No"} />
+            <Info label="Renta 5ta categoría" value={emp.fifthCategory ? "Afecto" : "No afecto"} />
           </div>
         ) : null}
         {tab === "seguros" ? (

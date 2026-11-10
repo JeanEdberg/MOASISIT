@@ -154,6 +154,9 @@ export default defineConfig(({ command, isPreview }) => ({
     host: "0.0.0.0",
     port: 8080,
     strictPort: true,
+    // El proxy del sandbox reenvía con su propio Host; sin esto Vite responde
+    // 403 "Blocked request". Solo afecta al dev server, nunca al build.
+    allowedHosts: [".prod-runtime.all-hands.dev", "localhost", "127.0.0.1"],
   },
   preview: {
     host: "127.0.0.1",

@@ -48,6 +48,28 @@ export type Insurer = {
   active: boolean;
 };
 
+/**
+ * Tramo de la escala progresiva acumulativa del impuesto a la renta de quinta
+ * categoría. `span` es el ancho del tramo expresado en UIT; `null` marca el
+ * último tramo (sin tope superior).
+ */
+export type FifthCategoryBand = {
+  span: number | null;
+  rate: number;
+};
+
+/**
+ * Parámetros del cálculo de retención de quinta categoría. Son editables porque
+ * la UIT, la deducción fija y los tramos cambian por norma (la deducción de 7
+ * UIT y la escala pueden variar entre años).
+ */
+export type FifthCategoryParams = {
+  /** Deducción fija expresada en UIT (7 UIT en la referencia 2026). */
+  deductionUit: number;
+  /** Escala progresiva acumulativa, ordenada de menor a mayor renta. */
+  bands: FifthCategoryBand[];
+};
+
 export type Company = {
   id: string; // Identificador único para multiempresa (ej: "inmoa", "7pollitos", "plumifero")
   name: string;
@@ -67,6 +89,8 @@ export type Company = {
   logo?: string;
   rmv: number;
   uit: number;
+  /** Parámetros de la retención de quinta categoría (deducción y tramos). */
+  fifthCategory: FifthCategoryParams;
   topeAfp: number;
   essalud: number;
   onp: number;
@@ -117,6 +141,13 @@ export type Employee = {
   salary: number;
   familyAllowance: boolean;
   /**
+   * Si el colaborador está afecto a la retención de renta de quinta categoría.
+   * Cuando es `true`, la planilla calcula y descuenta la retención mensual a
+   * partir de la proyección anual de sus ingresos. Los practicantes y quienes
+   * no superan la deducción fija quedan fuera.
+   */
+  fifthCategory: boolean;
+  /**
    * 1/6 de la gratificación percibida en el semestre anterior (S/), usado para
    * el cálculo de la CTS. Si no se indica, se calcula como sueldo/6. Reemplaza
    * el antiguo caso especial por DNI, que incrustaba datos personales en el
@@ -124,6 +155,12 @@ export type Employee = {
    */
   sextoGratificacion?: number | null;
   pension: Pension;
+  /**
+   * Código Único de Identificación del Sistema Privado de Pensiones (CUSPP).
+   * Lo asigna la AFP; es obligatorio para declarar en AFPnet. Vacío para ONP o
+   * sin régimen pensionario.
+   */
+  cuspp: string;
 
   // Seguridad social y seguros (base del cálculo de beneficios y aportes)
   /** Cobertura de salud: EsSalud regular o EPS. */
@@ -232,8 +269,12 @@ export type Payslip = {
   essalud: number;
   /** Aporte del empleador a la EPS (complemento/sustituto de EsSalud). */
   eps: number;
-  /** Prima SCTR a cargo del empleador. */
+  /** Prima SCTR total a cargo del empleador (salud + pensión). */
   sctr: number;
+  /** SCTR: prima de salud a cargo del empleador. */
+  sctrSalud: number;
+  /** SCTR: prima de pensión a cargo del empleador. */
+  sctrPension: number;
   /** Prima del Seguro de Vida Ley a cargo del empleador. */
   vidaLey: number;
   pensionBase: number;

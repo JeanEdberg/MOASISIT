@@ -1,4 +1,5 @@
 import { differenceInCalendarDays, differenceInMonths } from "date-fns";
+import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
 import { HOY, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
 import type {
   Attendance,
@@ -215,25 +216,6 @@ export function calcularConsolidadoMasivo(
   }).filter((item) => item.totalPagar > 0);
 }
 
-function taxFromNet(net: number, uit: number): number {
-  const bands = [
-    { span: 5 * uit, rate: 0.08 },
-    { span: 15 * uit, rate: 0.14 },
-    { span: 15 * uit, rate: 0.17 },
-    { span: 10 * uit, rate: 0.2 },
-    { span: Number.POSITIVE_INFINITY, rate: 0.3 },
-  ];
-  let left = net;
-  let tax = 0;
-  for (const band of bands) {
-    if (left <= 0) break;
-    const slice = Math.min(left, band.span);
-    tax += slice * band.rate;
-    left -= slice;
-  }
-  return tax;
-}
-
 function vacationRate(emp: Employee): number {
   if (emp.regime === "general") return 2.5;
   return 1.25;
@@ -291,6 +273,8 @@ export function calcPayslip(
     essalud: 0,
     eps: 0,
     sctr: 0,
+    sctrSalud: 0,
+    sctrPension: 0,
     vidaLey: 0,
     pensionBase: 0,
     fifth: 0,
@@ -381,9 +365,17 @@ export function calcPayslip(
 
   const ordinary = round2(paidBasic + af);
   const gratTimes = emp.regime === "general" ? 2 : emp.regime === "pequena" ? 1 : 0;
-  const annual = ordinary * (12 + gratTimes) + extraPay * 12;
-  const taxable = Math.max(0, annual - 7 * company.uit);
-  const fifth = emp.regime === "practicante" && annual < 7 * company.uit ? 0 : round2(taxFromNet(taxable, company.uit) / 12);
+  // La retención de quinta categoría solo aplica si el colaborador está marcado
+  // como afecto. Se proyecta su renta anual y se descuenta la doceava parte.
+  const fifthParams = fifthCategoryParamsOf(company);
+  const projection = projectFifthCategory({
+    ordinaryMonthly: ordinary,
+    extrasMonthly: extraPay,
+    gratificationsPerYear: gratTimes,
+    params: fifthParams,
+    uit: company.uit,
+  });
+  const fifth = emp.fifthCategory ? projection.monthlyTax : 0;
   push("5TA", "Renta de quinta categoría", fifth, "descuento");
 
   const gross = round2(lines.filter((l) => l.kind === "ingreso").reduce((s, l) => s + l.amount, 0));
@@ -407,12 +399,16 @@ export function calcPayslip(
   const eps = usingEps ? round2(essaludBase * ((epsInsurer?.rate ?? company.epsAporteTrabajador * 100) / 100)) : 0;
   if (eps > 0) push("EPS", `Aporte EPS ${epsInsurer?.name ?? ""}`.trim(), eps, "aporte");
 
-  // SCTR (Seguro Complementario de Trabajo de Riesgo): prima de pensión + salud.
+  // SCTR (Seguro Complementario de Trabajo de Riesgo): la prima se compone de
+  // un componente de salud y otro de pensión. SUNAT los exige desglosados, así
+  // que se calculan y muestran por separado.
   const sctrInsurer = activeInsurer(company, emp.sctrInsurerId);
-  const sctr = sctrInsurer
-    ? round2(essaludBase * (((sctrInsurer.pensionRate ?? 0) + (sctrInsurer.healthRate ?? 0)) / 100))
-    : 0;
-  if (sctr > 0) push("SCTR", `SCTR ${sctrInsurer?.name ?? ""}`.trim(), sctr, "aporte");
+  const sctrSalud = sctrInsurer ? round2(essaludBase * ((sctrInsurer.healthRate ?? 0) / 100)) : 0;
+  const sctrPension = sctrInsurer ? round2(essaludBase * ((sctrInsurer.pensionRate ?? 0) / 100)) : 0;
+  const sctr = round2(sctrSalud + sctrPension);
+  const sctrName = sctrInsurer?.name ?? "";
+  if (sctrSalud > 0) push("SCTR-SAL", `SCTR Salud ${sctrName}`.trim(), sctrSalud, "aporte");
+  if (sctrPension > 0) push("SCTR-PEN", `SCTR Pensión ${sctrName}`.trim(), sctrPension, "aporte");
 
   // Seguro de Vida Ley: prima a cargo del empleador.
   const vidaInsurer = activeInsurer(company, emp.vidaLeyInsurerId);
@@ -433,6 +429,8 @@ export function calcPayslip(
     essalud,
     eps,
     sctr,
+    sctrSalud,
+    sctrPension,
     vidaLey,
     pensionBase: round2(pensionBase),
     fifth,
