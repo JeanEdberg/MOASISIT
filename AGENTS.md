@@ -290,11 +290,18 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   en `loadDataset`) completa datasets antiguos con las aseguradoras faltantes y
   **conserva** las tasas editadas por el usuario; no reescribe la fila si no hay
   cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
-- **Push**: this sandbox has **no push access** to GitHub — the provided
-  `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`; push
-  returns `403 Permission denied`), the credential-helper token is invalid, and
-  there is no SSH. Commit locally and tell the user to push from their own
-  machine.
+- **Push**: the sandbox's `GITHUB_TOKEN` is **read-only** for this repo (API
+  says `push: true`, but writes return `403 Resource not accessible by
+  integration`; the git credential-helper token is also rejected). There is no
+  SSH. A **classic PAT with write access** has been used to push successfully —
+  pass it inline (never commit it) and mask it in output:
+
+  ```sh
+  git push "https://<CLASSIC_PAT>@github.com/JeanEdberg/MOASISIT.git" main:main \
+    2>&1 | sed -E 's/ghp_[A-Za-z0-9]+/<token-hidden>/g' | tail -8
+  ```
+
+  If no write token is at hand, fall back to the bundle/patch handoff below.
 
 ## Handoff between sessions (no-push environments)
 
