@@ -100,6 +100,36 @@ verified `context.userId`** — never a client-sent id, never a demo/mock user.
 
 ## Project instructions
 
+### MOASISIT — project state & gotchas
+
+Peruvian HR/attendance + payroll app ("Control de Asistencia y Planillas") for
+INMOA Logística y Soluciones E.I.R.L. Stack: TanStack Start + React + Vite +
+Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
+
+- **Auth**: employees sign in with **DNI + PIN**; admin with **email +
+  password**. First sign-in forces a secret change (`mustChange`). RR.HH. can
+  regenerate a per-employee PIN from the ficha ("Generar PIN"). Credentials live
+  in `src/lib/hr/credentials.server.ts`; the DNI *is* the login, so changing a
+  DNI must call `renameLogin(old, new)` (already wired in `src/lib/hr/api.ts`).
+- **Authorization is server-side**: the client only *requests* a change; the
+  server authorizes it in `src/lib/hr/actions.ts` (`authorizeAction` /
+  `applyHrAction`). Never trust the client for permission.
+- **DB**: `DATABASE_URL` set -> Neon; unset -> embedded **PGLite**, in-memory
+  per process, re-seeded on dev-server restart (so DNI/PIN fixtures reset).
+- **Admin bootstrap**: `MOASIST_ADMIN_PASSWORD` env var, else a random fallback
+  logged at startup. PINs are random per seed — read them from the seed log.
+- **Native dialogs** (`confirm`/`alert`/`prompt`) are auto-dismissed by the
+  automated browser, so PIN generation can't be verified by clicking; verify the
+  logic with `src/lib/hr/actions.test.ts` instead.
+- **Tests**: `npm test` runs both the `scripts/**/*.test.mjs` suite and the
+  TypeScript suite (`node --experimental-strip-types --import
+  ./scripts/alias-register.mjs`). Keep both green, plus `npm run typecheck`,
+  `npm run lint` (0 errors), `npm run build`, and `npm run check:auth`.
+- **Push**: this sandbox has **no push access** to GitHub — the provided
+  `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`), the
+  credential-helper token is invalid, and there is no SSH. Commit locally and
+  tell the user to push from their own machine.
+
 If `AGENTS.project.md` exists, it holds the user's project instructions. Follow
 it with the same priority as this file.
 
