@@ -134,6 +134,13 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para
   que un RR.HH. no edite otra empresa. `data.company` se recalcula en
   `sanitizeForViewer` a partir de `companies[activeCompanyId]`.
+- **Identificadores**: `uid()` (en `format.ts`) usa `crypto.randomUUID()`, no
+  `Math.random()`. No volver al generador débil.
+- **Correo del admin y log de credenciales**: `ADMIN_LOGIN` se puede sobrescribir
+  con `MOASIST_ADMIN_LOGIN`; el volcado de credenciales iniciales (DNI + PIN) en
+  consola se apaga con `MOASIST_LOG_CREDENTIALS=false` (recomendado en
+  producción). El módulo `src/lib/multiplayer/**` (WebRTC P2P de la plantilla,
+  sin uso en Moasist) se eliminó.
 - **DB**: `DATABASE_URL` set -> Postgres (Neon/Supabase/RDS/local); unset ->
   embedded **PGLite**, in-memory per process, re-seeded on dev-server restart
   (so DNI/PIN fixtures reset). **VERIFIED** against Postgres 17: with

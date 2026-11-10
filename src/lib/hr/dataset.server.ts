@@ -25,7 +25,12 @@ import type { HrData, ViewerMode } from "@/lib/hr/types";
  * before it reaches the row.
  */
 
-export const ADMIN_LOGIN = "inmoalogisticaysoluciones@gmail.com";
+/**
+ * Correo del administrador (superadmin). Se puede definir con la variable de
+ * entorno MOASIST_ADMIN_LOGIN; si no, usa el valor histórico de INMOA. No es un
+ * secreto, pero sacarlo del código permite cambiarlo por despliegue.
+ */
+export const ADMIN_LOGIN = process.env.MOASIST_ADMIN_LOGIN?.trim() || "inmoalogisticaysoluciones@gmail.com";
 /** The developer account: sees and switches across every company. */
 export const ADMIN_ROLE: ViewerMode = "superadmin";
 
@@ -112,6 +117,10 @@ async function seedCredentials(data: HrData): Promise<void> {
     lines.push(`DNI    ${emp.dni}  ${emp.names} ${emp.paternal}  [${company}]  PIN: ${pin}`);
   }
 
+  // El registro de credenciales iniciales muestra DNI y PIN en la consola del
+  // servidor. Es útil en la primera instalación; en un servidor compartido se
+  // desactiva con MOASIST_LOG_CREDENTIALS=false.
+  if (process.env.MOASIST_LOG_CREDENTIALS === "false") return;
   console.log(
     "\n[moasist] Credenciales iniciales (cámbialas en el primer ingreso; entrega cada PIN en privado):\n  " +
       lines.join("\n  ") +

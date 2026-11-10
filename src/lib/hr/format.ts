@@ -42,7 +42,13 @@ export function inkFor(hex: string): string {
 }
 
 export function uid(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
+  // Identificador aleatorio criptográficamente seguro. Antes usaba Math.random(),
+  // que es predecible y puede generar colisiones en datasets grandes.
+  const rand =
+    typeof globalThis.crypto?.randomUUID === "function"
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${rand}`;
 }
 
 export function parseDay(iso: string): Date {
