@@ -63,6 +63,8 @@ export type Company = {
   brandMark: string;
   brandColor: string;
   accentColor: string;
+  /** Logo de la empresa como data URL (PNG/JPG). Vacío = sin logo. */
+  logo?: string;
   rmv: number;
   uit: number;
   topeAfp: number;

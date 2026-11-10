@@ -27,9 +27,18 @@ export function ContractView({ employee, company }: { employee: Employee; compan
           Descargar Word
         </Button>
       </div>
-      <header className="border-b border-line pb-4 text-center">
-        <p className="text-xs uppercase tracking-wide text-muted">{company.name}</p>
-        <h3 className="mt-1 font-display text-lg leading-snug">{contract.title}</h3>
+      <header className="border-b border-line pb-4">
+        {company.logo ? (
+          <img
+            src={company.logo}
+            alt={`Logo de ${company.name}`}
+            className="mb-3 h-14 w-auto max-w-52 object-contain"
+          />
+        ) : null}
+        <div className="text-center">
+          <p className="text-xs uppercase tracking-wide text-muted">{company.name}</p>
+          <h3 className="mt-1 font-display text-lg leading-snug">{contract.title}</h3>
+        </div>
       </header>
 
       <p className="mt-4 whitespace-pre-line text-justify text-sm leading-relaxed">{contract.preamble}</p>

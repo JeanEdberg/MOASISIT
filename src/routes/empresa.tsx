@@ -7,6 +7,7 @@ import { SubscriptionPanel } from "@/components/subscription-panel";
 import { Shell } from "@/components/shell";
 import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
+import { readLogoFile } from "@/lib/hr/logo";
 import { useHr } from "@/lib/hr/store";
 import type { AfpFund, Company, Insurer, InsurerKind } from "@/lib/hr/types";
 
@@ -49,6 +50,19 @@ function CompanyPage() {
   const setNum = (key: keyof Company, raw: string) => {
     const n = Number(raw);
     if (Number.isFinite(n)) updateCompany({ [key]: n });
+  };
+
+  const onLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const res = await readLogoFile(file);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    updateCompany({ logo: res.dataUrl });
+    toast.success("Logo actualizado");
   };
 
   const insurers = company.insurers ?? [];
@@ -161,6 +175,35 @@ function CompanyPage() {
               onChange={(e) => updateCompany({ accentColor: e.target.value })}
             />
           </Field>
+        </div>
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="text-sm font-medium">Logo de la empresa</p>
+          <p className="mt-1 text-xs text-muted">
+            Se muestra arriba a la izquierda en las boletas de pago, el consolidado y los contratos. PNG o JPG, horizontal y con fondo transparente o blanco.
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <div className="grid h-16 min-w-40 place-items-center rounded-md border border-dashed border-line bg-bg px-3">
+              {company.logo ? (
+                <img src={company.logo} alt={`Logo de ${company.name}`} className="max-h-14 w-auto object-contain" />
+              ) : (
+                <span className="text-xs text-muted">Sin logo</span>
+              )}
+            </div>
+            <label className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-line bg-surface px-3 text-sm font-medium">
+              Subir logo
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={onLogoChange}
+              />
+            </label>
+            {company.logo ? (
+              <Button tone="ghost" onClick={() => updateCompany({ logo: undefined })}>
+                Quitar logo
+              </Button>
+            ) : null}
+          </div>
         </div>
       </section>
 

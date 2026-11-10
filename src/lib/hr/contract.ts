@@ -13,6 +13,7 @@
 
 import { differenceInCalendarMonths } from "date-fns";
 import { CONTRACT_LABEL, fullName, parseDay, pen } from "@/lib/hr/format";
+import { logoImgHtml } from "@/lib/hr/logo";
 import type { Company, Employee } from "@/lib/hr/types";
 
 export type ContractClause = {
@@ -270,6 +271,7 @@ export function contractToHtml(company: Company, employee: Employee): string {
   .firmas .rol { font-size: 9pt; color: #333; }
 </style></head>
 <body>
+  ${company.logo ? `<div style="margin-bottom:10pt;">${logoImgHtml(company, 54)}</div>` : ""}
   <p class="emp">${esc(company.name)}</p>
   <h1>${esc(c.title)}</h1>
   <p>${esc(c.preamble)}</p>

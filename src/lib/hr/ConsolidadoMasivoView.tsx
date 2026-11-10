@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useHr } from "@/lib/hr/store";
 import { calcularConsolidadoMasivo } from "@/lib/hr/calc";
+import { logoImgHtml } from "@/lib/hr/logo";
 
 export function ConsolidadoMasivoView() {
   const { employees, company, areas } = useHr();
@@ -159,7 +160,8 @@ export function ConsolidadoMasivoView() {
       <body>
         <div class="header">
           <div>
-            <h1 class="title">${company.name}</h1>
+            ${logoImgHtml(company)}
+            <h1 class="title" style="margin-top:6px;">${company.name}</h1>
             <div class="subtitle">RUC: ${company.ruc} | REPORTE CONSOLIDADO MASIVO DE BENEFICIOS SOCIALES</div>
             <div style="font-weight: bold; margin-top: 4px; color: #0369a1;">${tituloBeneficio} - AÑO ${anioActual}</div>
           </div>
