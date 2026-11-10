@@ -166,7 +166,8 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   para **100+** hay que normalizar a tablas por entidad con `company_id` e
   índices. Diseño completo y plan por fases en `docs/arquitectura-fase1.md`;
   guía de puesta en producción (Neon + Vercel) en `docs/fase0-neon-vercel.md`.
-  **"Crear empresa" desde la app** (superadmin) ya está: botón en Empresa →
+  **"Crear empresa" desde la app** (superadmin) ya está **en producción**
+  (moasisit.vercel.app, commits `5e3eae0`+`2362481`+`701d9ed`): botón en Empresa →
   cabecera, solo visible para `superadmin` (`src/components/new-company.tsx`).
   Consulta el RUC en SUNAT y autocompleta razón social, dirección y estado; al
   guardar crea la empresa (con su catálogo de aseguradoras y dos áreas base) y,
