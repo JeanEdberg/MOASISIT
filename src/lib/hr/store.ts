@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { HrAction } from "@/lib/hr/actions";
 import type { NewCompanyInput } from "@/lib/hr/company";
 import type { RucLookupResult } from "@/lib/hr/ruc";
+import type { StatusCheck } from "@/lib/hr/status";
 import { createDemo } from "@/lib/hr/seed";
 import type {
   Area,
@@ -52,6 +53,7 @@ type HrState = HrData & {
     input: NewCompanyInput,
   ) => Promise<{ ok: boolean; error?: string; adminLogin?: string | null; adminPassword?: string | null }>;
   lookupRuc: (ruc: string) => Promise<RucLookupResult>;
+  getSystemStatus: () => Promise<{ ok: boolean; checks?: StatusCheck[]; error?: string }>;
   addArea: (name: string) => void;
   renameArea: (id: string, name: string) => void;
   addEmployee: (emp: Employee) => void;
@@ -198,6 +200,15 @@ export const useHr = create<HrState>()((set, get) => {
         return await apiLookup({ data: { ruc } });
       } catch {
         return { ok: false, error: "No se pudo consultar el RUC (sin conexión)." };
+      }
+    },
+    getSystemStatus: async () => {
+      const { getSystemStatus: apiStatus } = await import("@/lib/hr/api");
+      try {
+        const res = await apiStatus();
+        return res.ok ? { ok: true, checks: res.checks } : { ok: false, error: res.error };
+      } catch {
+        return { ok: false, error: "No se pudo leer el estado del sistema." };
       }
     },
     addArea: (name) => run({ type: "addArea", name, companyId: get().company.id }),

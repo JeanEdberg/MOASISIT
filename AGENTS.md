@@ -188,6 +188,13 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `RUC_API_TOKEN` (token gratis en decolecta.com/profile, 1,000 consultas/mes).
   Si el proveedor falla, la UI muestra un mensaje claro y se puede completar la
   empresa a mano.
+- **Puesta en marcha (estado del sistema)**: `src/lib/hr/status.ts` es **puro**
+  (`buildStatusChecks(facts)`, `overallLevel`, `pendingCount`); `status.server.ts`
+  recolecta los hechos del entorno (nunca valores de secretos) y el server fn
+  `getSystemStatus` en `api.ts` los expone **solo al superadmin**. La UI es
+  `src/components/status-panel.tsx`, montado arriba en `/empresa`: un panel con
+  semáforo que dice qué está listo, qué falta y cómo resolverlo (BD en memoria =
+  danger; RUC sin token / contraseña automática / datos de ejemplo = warn).
 - **Seguros (EPS / SCTR / Vida Ley)**: el catálogo vive en
   `src/lib/hr/insurers.ts` (`catalogInsurers(companyId)`); el formulario de
   colaborador es dinámico y lee `company.insurers`, así que para ampliar la

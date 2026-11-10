@@ -273,6 +273,22 @@ export const lookupRuc = createServerFn({ method: "POST" })
   });
 
 /**
+ * Superadmin: estado de puesta en marcha del sistema. Devuelve chequeos legibles
+ * (nunca el valor de un secreto) para que la app muestre qué falta configurar.
+ */
+export const getSystemStatus = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ ok: true; checks: import("@/lib/hr/status").StatusCheck[] } | { ok: false; error: string }> => {
+    const session = await currentSession();
+    if (!session) return { ok: false, error: "Sesión expirada." };
+    if (session.role !== "superadmin") {
+      return { ok: false, error: "Solo el superadministrador puede ver el estado del sistema." };
+    }
+    const { collectStatus } = await import("@/lib/hr/status.server");
+    return { ok: true, checks: await collectStatus() };
+  },
+);
+
+/**
  * Superadmin: crear una empresa nueva. Añade la empresa al dataset y, si se
  * indicó un correo, crea su usuario RR.HH. con una contraseña temporal que se
  * devuelve UNA sola vez para entregarla en privado.
