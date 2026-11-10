@@ -3,7 +3,7 @@
  *
  *   node scripts/generate-checklist.mjs
  *
- * Escribe el HTML y el PDF en docs/manual/. Requiere Chromium/Chrome en el PATH
+ * Escribe el HTML y el PDF en public/manuales/. Requiere Chromium/Chrome en el PATH
  * (o la variable CHROME_PATH). No necesita red ni dependencias nuevas.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -12,7 +12,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = resolve(ROOT, "docs/manual");
+const OUT = resolve(ROOT, "public/manuales");
 const BRAND = "#0284c7";
 
 const box = (t) => `<span class="cb">&#9744;</span> ${t}`;
@@ -158,4 +158,4 @@ execFileSync(
   ["--headless=new", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer", "--print-to-pdf-no-header", `--print-to-pdf=${pdfPath}`, `file://${htmlPath}`],
   { stdio: "ignore" },
 );
-console.log(`[checklist] Generado: docs/manual/checklist-configuracion.pdf (Chromium: ${chrome})`);
+console.log(`[checklist] Generado: public/manuales/checklist-configuracion.pdf (Chromium: ${chrome})`);

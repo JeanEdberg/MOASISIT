@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ManualDownloads } from "@/components/manual-downloads";
 import { Shell } from "@/components/shell";
 import { PageHeader } from "@/components/ui";
 
@@ -43,6 +44,7 @@ function ManualPage() {
           </section>
         ))}
       </div>
+      <ManualDownloads />
     </Shell>
   );
 }

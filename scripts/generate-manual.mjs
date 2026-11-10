@@ -3,8 +3,11 @@
  *
  *   node scripts/generate-manual.mjs
  *
- * Escribe los HTML y los PDF en docs/manual/. Requiere Chromium/Chrome en el
+ * Escribe los HTML y los PDF en public/manuales/. Requiere Chromium/Chrome en el
  * PATH (o la variable CHROME_PATH). No necesita red ni dependencias nuevas.
+ *
+ * La carpeta public/manuales/ se sirve como archivos estáticos, por eso el
+ * superadmin puede descargarlos desde la app (botón en la pantalla Manual).
  */
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -12,7 +15,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const OUT = resolve(ROOT, "docs/manual");
+const OUT = resolve(ROOT, "public/manuales");
 
 const BRAND = "#0284c7";
 const BRAND_DARK = "#075985";
@@ -643,7 +646,7 @@ function main() {
       ],
       { stdio: "ignore" },
     );
-    console.log(`[manual] Generado: docs/manual/${m.file}.pdf`);
+    console.log(`[manual] Generado: public/manuales/${m.file}.pdf`);
   }
 
   console.log("[manual] Listo.");

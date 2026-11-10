@@ -27,5 +27,6 @@ public/descargas/
 *.doc
 *.pdf
 
-# Excepción: los manuales de uso (no contienen datos personales) sí se publican
-!docs/manual/*.pdf
+# Excepción: los manuales de uso (no contienen datos personales) sí se publican,
+# porque la app los descarga desde /manuales (solo el superadmin ve el botón).
+!public/manuales/*.pdf
