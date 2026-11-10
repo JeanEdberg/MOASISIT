@@ -179,10 +179,14 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   traduce la respuesta de apis.net.pe a `RucInfo`, `isRucOperativo`); la llamada
   de red vive en `ruc.server.ts` (`lookupRuc`) y se expone por el server fn
   `lookupRuc` en `api.ts`, así que el `RUC_API_TOKEN` **nunca** llega al
-  navegador. Proveedor por defecto `https://api.apis.net.pe/v2/ruc` (funciona
-  sin llave, cuota limitada); se cambia con `RUC_API_ENDPOINT` / `RUC_API_TOKEN`
-  (ver `.env.example`). Si el proveedor falla, la UI muestra un mensaje claro y
-  se puede completar la empresa a mano.
+  navegador. `parseRucResponse` acepta **ambos** formatos: camelCase de
+  apis.net.pe (`razonSocial`) y snake_case de decolecta (`razon_social`) — el
+  proveedor al que migró apis.net.pe. Por defecto usa `https://api.apis.net.pe/v2/ruc`
+  (funciona sin llave, cuota limitada); para producción se recomienda
+  `RUC_API_ENDPOINT=https://api.decolecta.com/v1/sunat/ruc` +
+  `RUC_API_TOKEN` (token gratis en decolecta.com/profile, 1,000 consultas/mes).
+  Si el proveedor falla, la UI muestra un mensaje claro y se puede completar la
+  empresa a mano.
 - **Seguros (EPS / SCTR / Vida Ley)**: el catálogo vive en
   `src/lib/hr/insurers.ts` (`catalogInsurers(companyId)`); el formulario de
   colaborador es dinámico y lee `company.insurers`, así que para ampliar la
