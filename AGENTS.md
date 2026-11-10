@@ -114,10 +114,21 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
 - **Authorization is server-side**: the client only *requests* a change; the
   server authorizes it in `src/lib/hr/actions.ts` (`authorizeAction` /
   `applyHrAction`). Never trust the client for permission.
-- **DB**: `DATABASE_URL` set -> Neon; unset -> embedded **PGLite**, in-memory
-  per process, re-seeded on dev-server restart (so DNI/PIN fixtures reset).
+- **DB**: `DATABASE_URL` set -> Postgres (Neon/Supabase/RDS/local); unset ->
+  embedded **PGLite**, in-memory per process, re-seeded on dev-server restart
+  (so DNI/PIN fixtures reset). **VERIFIED** against Postgres 17: with
+  `DATABASE_URL` set, run `npm run db:migrate` once before `npm run dev`
+  (the `build` script runs it automatically on deploy); seeding is **lazy** —
+  it fires on the first `authenticate()` call (i.e. the first sign-in attempt),
+  not on a plain page load or curl. Data then **persists across restarts** and
+  is not re-seeded.
+- **Env loading**: Nitro loads a `.env` file in dev *and* build, so a local
+  `.env` (copied from `.env.example`) is enough — no need to export vars. `.env`
+  is now in `.gitignore`; commit `.env.example`, never real values.
 - **Admin bootstrap**: `MOASIST_ADMIN_PASSWORD` env var, else a random fallback
-  logged at startup. PINs are random per seed — read them from the seed log.
+  logged at startup. PINs are random per seed — read them from the seed log
+  (`[moasist] Credenciales iniciales`). The PIN/secret must be **digits-only**
+  where the UI says "Mínimo 6 dígitos" (the client rejects letters).
 - **Native dialogs** (`confirm`/`alert`/`prompt`) are auto-dismissed by the
   automated browser, so PIN generation can't be verified by clicking; verify the
   logic with `src/lib/hr/actions.test.ts` instead.

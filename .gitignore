@@ -8,6 +8,13 @@ artifacts/
 .grok/preview.pid
 .grok/status
 
+# Environment / secrets — never commit real values
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
 # Build output
 dist/
 .output/
