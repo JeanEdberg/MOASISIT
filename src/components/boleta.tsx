@@ -17,7 +17,7 @@ export function BoletaView({
     <article className="rounded-lg border border-line bg-surface p-5">
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
         <div>
-          <p className="font-display text-2xl leading-none">{company.brandName || "Minka"}</p>
+          <p className="font-display text-2xl leading-none">{company.brandName || "Moasist"}</p>
           <p className="mt-2 text-sm font-medium">{company.name}</p>
           <p className="text-xs text-muted">RUC {company.ruc}</p>
           <p className="text-xs text-muted">

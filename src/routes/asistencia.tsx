@@ -16,12 +16,16 @@ const KINDS = Object.keys(ATTENDANCE_LABEL) as AttendanceKind[];
 function AttendancePage() {
   const data = useHr();
   const upsert = useHr((s) => s.upsertAttendance);
-  const people = visibleEmployees(data.employees, data.viewer).filter((e) => e.status === "activo");
-  const ids = new Set(people.map((e) => e.id));
-  const marks = useMemo(
-    () => data.attendance.filter((a) => ids.has(a.employeeId)).sort((a, b) => b.date.localeCompare(a.date) || a.employeeId.localeCompare(b.employeeId)),
-    [data.attendance, ids],
+  const people = useMemo(
+    () => visibleEmployees(data.employees, data.viewer).filter((e) => e.status === "activo"),
+    [data.employees, data.viewer],
   );
+  const marks = useMemo(() => {
+    const ids = new Set(people.map((e) => e.id));
+    return data.attendance
+      .filter((a) => ids.has(a.employeeId))
+      .sort((a, b) => b.date.localeCompare(a.date) || a.employeeId.localeCompare(b.employeeId));
+  }, [data.attendance, people]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     employeeId: data.viewer.employeeId || people[0]?.id || "",

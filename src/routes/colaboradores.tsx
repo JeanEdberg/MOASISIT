@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { EmployeeForm, validateDraft, type EmployeeDraft } from "@/components/employee-form";
 import { Shell } from "@/components/shell";
-import { Badge, Button, Empty, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
+import { Badge, Button, Empty, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
 import { parseEmployeeCsv, CSV_SAMPLE } from "@/lib/hr/csv";
 import { fullName, HOY, pen, REGIME_LABEL, uid } from "@/lib/hr/format";

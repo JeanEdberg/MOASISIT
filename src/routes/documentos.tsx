@@ -89,7 +89,7 @@ function DocBody({ doc }: { doc: DocItem }) {
     return (
       <div className="space-y-3 text-sm">
         <p>
-          {company.name} ordena el tiempo de trabajo, los descansos y la documentación laboral de su personal en Minka.
+          {company.name} ordena el tiempo de trabajo, los descansos y la documentación laboral de su personal en Moasist.
         </p>
         {doc.id.includes("vac") ? (
           <p>

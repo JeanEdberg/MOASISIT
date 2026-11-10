@@ -45,7 +45,7 @@ export function AttendanceView() {
         const evaluacion = validarYRegistrarAsistencia(empleadoActual, ubicacionActual);
         procesarRegistro(evaluacion, tipoAccion);
       },
-      (error) => {
+      (_error) => {
         alert("No se pudo obtener la ubicación GPS. Verifica los permisos de ubicación en tu dispositivo.");
         setCargandoGPS(false);
       },

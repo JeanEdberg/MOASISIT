@@ -122,6 +122,14 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   it fires on the first `authenticate()` call (i.e. the first sign-in attempt),
   not on a plain page load or curl. Data then **persists across restarts** and
   is not re-seeded.
+- **PGLite in the Vercel bundle**: PGLite loads `pglite.data` / `pglite.wasm` /
+  `initdb.wasm` from `new URL("./…", import.meta.url)`. Nitro bundles the PGLite
+  module into `.vercel/output/functions/__server.func/_libs/` but does **not**
+  copy those assets, so the deployed serverless function crashed on boot
+  ("ENOENT … pglite.data") whenever `DATABASE_URL` was unset. `vite.config.ts`
+  (`pgliteAssetsPlugin`) now copies all three next to the bundled module at
+  `closeBundle`. The eager boot in `src/lib/db.ts` logs but does **not**
+  re-throw, so a DB failure degrades per-request instead of killing the process.
 - **Env loading**: Nitro loads a `.env` file in dev *and* build, so a local
   `.env` (copied from `.env.example`) is enough — no need to export vars. `.env`
   is now in `.gitignore`; commit `.env.example`, never real values.

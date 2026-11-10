@@ -1,4 +1,4 @@
-import type { Employee, Attendance, Company } from "./types";
+import type { Employee, Attendance } from "./types";
 import { fullName } from "./format";
 
 export interface ResumenColaboradorAsistencia {

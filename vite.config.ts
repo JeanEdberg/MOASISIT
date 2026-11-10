@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { copyFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
@@ -15,6 +15,42 @@ function hasGlobbedMigrations(root: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * PGLite ships its Postgres runtime as sibling assets (`pglite.data`,
+ * `pglite.wasm`) loaded via `new URL("./pglite.data", import.meta.url)`. When
+ * Nitro bundles the Vercel server function it emits the PGLite module into
+ * `_libs/` but does NOT copy those assets, so the serverless function crashes on
+ * boot ("ENOENT … pglite.data") whenever it runs on the embedded PGLite fallback
+ * (no `DATABASE_URL`). Copy them next to the bundled module so the in-memory
+ * fallback actually starts — that is what makes the deployed app "just work"
+ * with nothing configured.
+ */
+function pgliteAssetsPlugin(): Plugin {
+  return {
+    name: "app-builder:pglite-assets",
+    apply: "build",
+    closeBundle() {
+      const root = process.cwd();
+      const dist = join(root, "node_modules/@electric-sql/pglite/dist");
+      const assets = ["pglite.data", "pglite.wasm", "initdb.wasm"].map((f) => join(dist, f));
+      if (!assets.every((a) => existsSync(a))) return;
+
+      const functionsDir = join(root, ".vercel/output/functions");
+      if (!existsSync(functionsDir)) return;
+      for (const entry of readdirSync(functionsDir)) {
+        if (!entry.endsWith(".func")) continue;
+        const libs = join(functionsDir, entry, "_libs");
+        if (!existsSync(libs) || !statSync(libs).isDirectory()) continue;
+        if (!existsSync(join(libs, "electric-sql__pglite.mjs"))) continue;
+        for (const a of assets) {
+          copyFileSync(a, join(libs, a.split("/").pop() as string));
+        }
+        console.log(`[pglite-assets] copied pglite.data + pglite.wasm + initdb.wasm into ${entry}/_libs`);
+      }
+    },
+  };
 }
 
 function pgliteBootstrapPlugin(): Plugin {
@@ -126,6 +162,7 @@ export default defineConfig(({ command, isPreview }) => ({
   },
   resolve: { tsconfigPaths: true },
   plugins: [
+    pgliteAssetsPlugin(),
     pgliteBootstrapPlugin(),
     authPopupPlugin(),
     appEnvPlugin(),

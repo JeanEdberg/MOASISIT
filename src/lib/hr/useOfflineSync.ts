@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useHr } from "./store";
 import { obtenerAsistenciasPendientes, limpiarAsistenciasPendientes } from "./offlineStore";
 
 export function useOfflineSync() {
-  const { attendance, upsertAttendance } = useHr();
+  const upsertAttendance = useHr((s) => s.upsertAttendance);
   const [sincronizando, setSincronizando] = useState(false);
   const [pendientesCount, setPendientesCount] = useState(0);
 
-  const sincronizarPendientes = async () => {
+  const sincronizarPendientes = useCallback(async () => {
     if (!navigator.onLine) return;
 
     setSincronizando(true);
@@ -27,13 +27,13 @@ export function useOfflineSync() {
     } finally {
       setSincronizando(false);
     }
-  };
+  }, [upsertAttendance]);
 
   useEffect(() => {
-    obtenerAsistenciasPendientes().then((items) => setPendientesCount(items.length));
+    sincronizarPendientes();
     window.addEventListener("online", sincronizarPendientes);
     return () => window.removeEventListener("online", sincronizarPendientes);
-  }, [attendance]);
+  }, [sincronizarPendientes]);
 
   return { sincronizando, pendientesCount, sincronizarPendientes };
 }
