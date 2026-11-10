@@ -168,6 +168,15 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   guía de puesta en producción (Neon + Vercel) en `docs/fase0-neon-vercel.md`.
   **"Crear empresa" desde la app** (superadmin) es parte de la Fase 1c; hoy las
   empresas se definen en `src/lib/hr/seed.ts`.
+- **Seguros (EPS / SCTR / Vida Ley)**: el catálogo vive en
+  `src/lib/hr/insurers.ts` (`catalogInsurers(companyId)`); el formulario de
+  colaborador es dinámico y lee `company.insurers`, así que para ampliar la
+  oferta basta con editar ese catálogo. Los ids siguen el patrón
+  `<prefijoEmpresa>-<eps|sctr|vida>-<slug>` (`inmoa`, `7p`, `plu`) para no
+  romper referencias existentes. `withInsurerCatalog(data)` (idempotente, corre
+  en `loadDataset`) completa datasets antiguos con las aseguradoras faltantes y
+  **conserva** las tasas editadas por el usuario; no reescribe la fila si no hay
+  cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
 - **Push**: this sandbox has **no push access** to GitHub — the provided
   `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`), the
   credential-helper token is invalid, and there is no SSH. Commit locally and
