@@ -24,8 +24,7 @@ export function BoletaView({
               className="mb-2 h-12 w-auto max-w-48 object-contain"
             />
           ) : null}
-          <p className="font-display text-2xl leading-none">{company.brandName || "Moasist"}</p>
-          <p className="mt-2 text-sm font-medium">{company.name}</p>
+          <p className="font-display text-2xl leading-none">{company.name}</p>
           <p className="text-xs text-muted">RUC {company.ruc}</p>
           <p className="text-xs text-muted">
             {company.address}, {company.city}
