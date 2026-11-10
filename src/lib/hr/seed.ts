@@ -1,4 +1,5 @@
 import { vacationBalance, vacationEarned, livePayslips } from "@/lib/hr/calc";
+import { catalogInsurers } from "@/lib/hr/insurers";
 import { HOY } from "@/lib/hr/format";
 import type {
   Attendance,
@@ -44,11 +45,7 @@ const companies: Company[] = [
     brandColor: "#0284c7",
     accentColor: "#0369a1",
     ...LEGAL,
-    insurers: [
-      { id: "inmoa-sctr-pacifico", name: "Pacífico Seguros (SCTR)", kind: "sctr", pensionRate: 0.83, healthRate: 0.6, active: true },
-      { id: "inmoa-eps-sanitas", name: "Sanitas EPS", kind: "eps", rate: 2.25, active: true },
-      { id: "inmoa-vida-rimac", name: "Rímac (Vida Ley)", kind: "vida_ley", rate: 0.53, active: true },
-    ],
+    insurers: catalogInsurers("inmoa"),
   },
   {
     id: "7pollitos",
@@ -65,11 +62,7 @@ const companies: Company[] = [
     brandColor: "#0284c7",
     accentColor: "#0369a1",
     ...LEGAL,
-    insurers: [
-      { id: "7p-sctr-lapositiva", name: "La Positiva (SCTR)", kind: "sctr", pensionRate: 0.83, healthRate: 0.75, active: true },
-      { id: "7p-eps-pacifico", name: "Pacífico EPS", kind: "eps", rate: 2.25, active: true },
-      { id: "7p-vida-mapfre", name: "Mapfre (Vida Ley)", kind: "vida_ley", rate: 0.55, active: true },
-    ],
+    insurers: catalogInsurers("7pollitos"),
   },
   {
     id: "plumifero",
@@ -86,11 +79,7 @@ const companies: Company[] = [
     brandColor: "#0284c7",
     accentColor: "#0369a1",
     ...LEGAL,
-    insurers: [
-      { id: "plu-sctr-rimac", name: "Rímac Seguros (SCTR)", kind: "sctr", pensionRate: 0.9, healthRate: 0.6, active: true },
-      { id: "plu-eps-sanitas", name: "Sanitas EPS", kind: "eps", rate: 2.25, active: true },
-      { id: "plu-vida-pacifico", name: "Pacífico (Vida Ley)", kind: "vida_ley", rate: 0.53, active: true },
-    ],
+    insurers: catalogInsurers("plumifero"),
   },
 ];
 
