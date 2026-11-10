@@ -4,9 +4,10 @@ import { toast } from "sonner";
 import { BoletaView } from "@/components/boleta";
 import { Shell } from "@/components/shell";
 import { Button, Empty, Modal, PageHeader } from "@/components/ui";
-import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
+import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { payslipsFor } from "@/lib/hr/calc";
 import { currentPeriod, fullName, HOY, pen, periodLabel, recentPeriods, uid } from "@/lib/hr/format";
+import { buildPayrollRows, exportPayrollExcel, exportPayrollPdf } from "@/lib/hr/payroll-export";
 import { useHr } from "@/lib/hr/store";
 
 export const Route = createFileRoute("/planilla")({ component: PayrollPage });
@@ -50,6 +51,15 @@ function PayrollPage() {
     URL.revokeObjectURL(url);
   };
 
+  const exportExcel = () => {
+    exportPayrollExcel(buildPayrollRows(slips, data.employees), data.company, period);
+    toast.success("Planilla exportada a Excel");
+  };
+
+  const exportPdf = () => {
+    exportPayrollPdf(buildPayrollRows(slips, data.employees), data.company, period);
+  };
+
   const publishSlips = () => {
     let n = 0;
     for (const p of slips) {
@@ -58,6 +68,7 @@ function PayrollPage() {
       addDocument({
         id: uid("d"),
         employeeId: p.employeeId,
+        companyId: data.company.id,
         title: `Boleta ${periodLabel(period)}`,
         kind: "boleta",
         date: HOY,
@@ -76,8 +87,14 @@ function PayrollPage() {
         title={data.viewer.mode === "colaborador" ? "Mi boleta" : "Planilla"}
         lede="Sueldo, asignación familiar, AFP u ONP, quinta categoría y EsSalud. En julio y diciembre se suma la gratificación; en mayo y noviembre, la CTS del semestre."
         actions={
-          data.viewer.mode === "rrhh" ? (
+          isCompanyAdmin(data.viewer.mode) ? (
             <>
+              <Button tone="line" onClick={exportExcel}>
+                Exportar Excel
+              </Button>
+              <Button tone="line" onClick={exportPdf}>
+                Exportar PDF
+              </Button>
               <Button tone="line" onClick={exportCsv}>
                 Exportar CSV
               </Button>

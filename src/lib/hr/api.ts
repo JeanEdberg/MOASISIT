@@ -14,6 +14,7 @@ export type SessionView = {
   signedIn: true;
   role: ViewerMode;
   employeeId: string;
+  companyId: string;
   login: string;
   kind: "employee" | "admin";
   mustChange: boolean;
@@ -64,6 +65,7 @@ function toView(session: NonNullable<Awaited<ReturnType<typeof currentSession>>>
     signedIn: true,
     role: session.role,
     employeeId: session.employeeId,
+    companyId: session.companyId,
     login: session.login,
     kind: session.kind,
     mustChange: session.mustChange,
@@ -134,7 +136,7 @@ export const changeSecret = createServerFn({ method: "POST" })
     await updateSecret(session.login, String(data.secret ?? ""));
     const { loadDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
     const full = await loadDataset();
-    return { ok: true, data: sanitizeForViewer(full, { ...session, mustChange: false }) };
+    return { ok: true, data: sanitizeForViewer(full, session) };
   });
 
 /** Apply a mutation. The role gate runs server-side before anything is written. */
@@ -147,20 +149,104 @@ export const applyAction = createServerFn({ method: "POST" })
     const { loadDataset, saveDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
     const { applyHrAction, authorizeAction } = await import("@/lib/hr/actions");
     const full = await loadDataset();
-    const denial = authorizeAction(action, session.role, session.employeeId, full);
-    if (denial) return { ok: false, error: denial };
+    // Un RR.HH. de empresa solo puede escribir dentro de su propia empresa.
+    if (session.role !== "superadmin" && session.role !== "rrhh") {
+      const denial = authorizeAction(action, session.role, session.employeeId, full);
+      if (denial) return { ok: false, error: denial };
+    } else if (session.role === "rrhh") {
+      const targetCompany = companyIdForAction(action, full);
+      if (targetCompany && targetCompany !== session.companyId) {
+        return { ok: false, error: "Solo puedes editar datos de tu empresa." };
+      }
+    }
     const next = applyHrAction(full, action);
     await saveDataset(next);
     // The DNI is the sign-in login: keep the credential in step with an edit.
-    if (action.type === "updateEmployee" && typeof action.patch.dni === "string") {
-      const before = full.employees.find((e) => e.id === action.id)?.dni;
-      const after = next.employees.find((e) => e.id === action.id)?.dni;
-      if (before && after && before !== after) {
-        const { renameLogin } = await import("@/lib/hr/credentials.server");
-        await renameLogin(before, after);
+    if (action.type === "updateEmployee") {
+      const before = full.employees.find((e) => e.id === action.id);
+      const after = next.employees.find((e) => e.id === action.id);
+      if (before && after) {
+        const { renameLogin, setCredentialCompany } = await import("@/lib/hr/credentials.server");
+        if (before.dni && after.dni && before.dni !== after.dni) {
+          await renameLogin(before.dni, after.dni);
+        }
+        // Reubicar de empresa solo lo autoriza el superadmin.
+        if (session.role === "superadmin" && before.companyId !== after.companyId) {
+          const login = after.dni;
+          await setCredentialCompany(login, after.companyId);
+        }
       }
     }
     return { ok: true, data: sanitizeForViewer(next, session) };
+  });
+
+/** La empresa a la que pertenece el registro que toca una acción (null si global). */
+function companyIdForAction(action: HrAction, data: HrData): string | null {
+  switch (action.type) {
+    case "updateEmployee":
+      return data.employees.find((e) => e.id === action.id)?.companyId ?? null;
+    case "addEmployee":
+      return action.employee.companyId ?? null;
+    case "importPeople":
+      return action.employees[0]?.companyId ?? null;
+    case "upsertAttendance":
+      return data.employees.find((e) => e.id === action.row.employeeId)?.companyId ?? null;
+    case "addRequest":
+      return data.employees.find((e) => e.id === action.request.employeeId)?.companyId ?? null;
+    case "decideRequest":
+      return data.requests.find((r) => r.id === action.id)?.companyId ?? null;
+    case "addDocument":
+    case "signDocument":
+      return null; // documentos usan la empresa activa de la sesión
+    default:
+      return null;
+  }
+}
+
+/** Superadmin: cambiar la empresa activa de la sesión. */
+export const switchCompany = createServerFn({ method: "POST" })
+  .validator((input: { companyId: string }) => input)
+  .handler(async ({ data }): Promise<ActionResult> => {
+    const session = await currentSession();
+    if (!session) return { ok: false, error: "Sesión expirada." };
+    if (session.role !== "superadmin") return { ok: false, error: "Solo el superadministrador puede cambiar de empresa." };
+    const { loadDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
+    const { setSessionCompany } = await import("@/lib/hr/credentials.server");
+    const token = await readSessionToken();
+    const full = await loadDataset();
+    const target = full.companies.find((c) => c.id === data.companyId);
+    if (!target) return { ok: false, error: "Empresa no encontrada." };
+    if (token) await setSessionCompany(token, target.id);
+    return { ok: true, data: sanitizeForViewer(full, { ...session, companyId: target.id }) };
+  });
+
+/**
+ * RR.HH./superadmin: asignar el nivel de acceso de un colaborador. Un RR.HH. de
+ * empresa solo puede administrar el acceso dentro de su empresa.
+ */
+export const setAccessRole = createServerFn({ method: "POST" })
+  .validator((input: { employeeId: string; role: ViewerMode }) => input)
+  .handler(async ({ data }): Promise<ActionResult> => {
+    const session = await currentSession();
+    if (!session) return { ok: false, error: "Sesión expirada." };
+    if (session.role !== "rrhh" && session.role !== "superadmin") {
+      return { ok: false, error: "Solo RR.HH. puede asignar accesos." };
+    }
+    const allowed: ViewerMode[] = ["colaborador", "jefatura", "rrhh"];
+    if (!allowed.includes(data.role)) return { ok: false, error: "Rol no válido." };
+    const { loadDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
+    const { setCredentialRole, getCredential } = await import("@/lib/hr/credentials.server");
+    const full = await loadDataset();
+    const emp = full.employees.find((e) => e.id === data.employeeId);
+    if (!emp) return { ok: false, error: "Colaborador no encontrado." };
+    if (session.role === "rrhh" && emp.companyId !== session.companyId) {
+      return { ok: false, error: "Solo puedes administrar el acceso de tu empresa." };
+    }
+    const cred = await getCredential(emp.dni);
+    if (!cred) return { ok: false, error: "Ese colaborador todavía no tiene credencial. Genera su PIN primero." };
+    if (cred.kind === "admin") return { ok: false, error: "No puedes cambiar el rol de la cuenta administradora." };
+    await setCredentialRole(emp.dni, data.role);
+    return { ok: true, data: sanitizeForViewer(full, session) };
   });
 
 /**
@@ -173,12 +259,15 @@ export const resetEmployeePin = createServerFn({ method: "POST" })
     const employeeId = data.employeeId;
     const session = await currentSession();
     if (!session) return { ok: false, error: "Sesión expirada." };
-    if (session.role !== "rrhh") return { ok: false, error: "Solo RR.HH. puede generar PIN." };
+    if (session.role !== "rrhh" && session.role !== "superadmin") return { ok: false, error: "Solo RR.HH. puede generar PIN." };
     const { loadDataset, regenerateEmployeePin, roleForLogin } = await import("@/lib/hr/dataset.server");
     const full = await loadDataset();
     const emp = full.employees.find((e) => e.id === employeeId);
     if (!emp) return { ok: false, error: "Colaborador no encontrado." };
+    if (session.role === "rrhh" && emp.companyId !== session.companyId) {
+      return { ok: false, error: "Solo puedes generar PIN de tu empresa." };
+    }
     const role = await roleForLogin(emp.dni);
-    const { pin } = await regenerateEmployeePin(emp.id, emp.dni, emp.email || null, role);
+    const { pin } = await regenerateEmployeePin(emp.id, emp.dni, emp.email || null, role, emp.companyId);
     return { ok: true, pin, login: emp.dni };
   });

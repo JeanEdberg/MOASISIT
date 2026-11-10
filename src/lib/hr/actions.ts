@@ -30,10 +30,10 @@ export type HrAction =
   | { type: "closePeriod"; period: string }
   | { type: "reopenPeriod"; period: string }
   | { type: "updateCompany"; patch: Partial<Company> }
-  | { type: "addArea"; name: string }
+  | { type: "addArea"; name: string; companyId: string }
   | { type: "renameArea"; id: string; name: string };
 
-/** Actions only RR.HH. may run (company config, payroll periods, bulk edits). */
+/** Actions only RR.HH./superadmin may run (company config, payroll periods, bulk edits). */
 const RRHH_ONLY = new Set<HrAction["type"]>([
   "updateEmployee",
   "addEmployee",
@@ -61,7 +61,7 @@ export function authorizeAction(
   selfId: string,
   data: HrData,
 ): string | null {
-  if (role === "rrhh") return null;
+  if (role === "rrhh" || role === "superadmin") return null;
   if (RRHH_ONLY.has(action.type)) return "Tu rol no permite esta acción.";
 
   if (role === "jefatura") {
@@ -95,14 +95,14 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         employees: data.employees.map((e) => (e.id === action.id ? { ...e, ...action.patch, id: e.id } : e)),
       };
     case "addEmployee":
-      return { ...data, employees: [...data.employees, action.employee] };
+      return { ...data, employees: [...data.employees, { ...action.employee, companyId: action.employee.companyId || data.company.id }] };
     case "importPeople":
       return {
         ...data,
         areas: [...data.areas, ...action.areas.filter((a) => !data.areas.some((x) => x.id === a.id))],
         employees: [
           ...data.employees.filter((e) => !action.employees.some((n) => n.dni === e.dni)),
-          ...action.employees,
+          ...action.employees.map((e) => ({ ...e, companyId: e.companyId || data.company.id })),
         ],
       };
     case "clearDemoPeople": {
@@ -149,7 +149,7 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
     case "updateCompany":
       return { ...data, company: { ...data.company, ...action.patch } };
     case "addArea":
-      return { ...data, areas: [...data.areas, { id: uid("a"), name: action.name.trim() }] };
+      return { ...data, areas: [...data.areas, { id: uid("a"), name: action.name.trim(), companyId: action.companyId || data.company.id }] };
     case "renameArea":
       return { ...data, areas: data.areas.map((a) => (a.id === action.id ? { ...a, name: action.name.trim() } : a)) };
   }

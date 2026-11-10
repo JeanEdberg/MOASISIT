@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { EmployeeForm, validateDraft, type EmployeeDraft } from "@/components/employee-form";
 import { Shell } from "@/components/shell";
 import { Badge, Button, Empty, fieldClass, Modal, PageHeader } from "@/components/ui";
-import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
+import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { parseEmployeeCsv, CSV_SAMPLE } from "@/lib/hr/csv";
 import { fullName, HOY, pen, REGIME_LABEL, uid } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
@@ -12,8 +12,9 @@ import type { Employee } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/colaboradores")({ component: PeoplePage });
 
-function emptyDraft(areaId: string): EmployeeDraft {
+function emptyDraft(companyId: string, areaId: string): EmployeeDraft {
   return {
+    companyId,
     names: "",
     paternal: "",
     maternal: "",
@@ -33,6 +34,10 @@ function emptyDraft(areaId: string): EmployeeDraft {
     salary: 1130,
     familyAllowance: false,
     pension: "onp",
+    healthInsurance: "essalud",
+    epsInsurerId: null,
+    sctrInsurerId: null,
+    vidaLeyInsurerId: null,
     workMode: "presencial",
     salaryBank: "BCP",
     salaryAccount: "",
@@ -48,6 +53,8 @@ function emptyDraft(areaId: string): EmployeeDraft {
 function PeoplePage() {
   const employees = useHr((s) => s.employees);
   const areas = useHr((s) => s.areas);
+  const companies = useHr((s) => s.companies);
+  const company = useHr((s) => s.company);
   const viewer = useHr((s) => s.viewer);
   const addEmployee = useHr((s) => s.addEmployee);
   const importPeople = useHr((s) => s.importPeople);
@@ -55,11 +62,13 @@ function PeoplePage() {
   const [area, setArea] = useState("todas");
   const [status, setStatus] = useState<"todos" | "activo" | "cesado">("activo");
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<EmployeeDraft>(() => emptyDraft(areas[0]?.id ?? ""));
+  const [draft, setDraft] = useState<EmployeeDraft>(() => emptyDraft(company.id, areas[0]?.id ?? ""));
   const [error, setError] = useState<string | null>(null);
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
 
+  const admin = isCompanyAdmin(viewer.mode);
   const visible = visibleEmployees(employees, viewer);
+  const companyAreas = areas.filter((a) => a.companyId === company.id);
   const rows = useMemo(() => {
     return visible.filter((e) => {
       if (status !== "todos" && e.status !== status) return false;
@@ -87,7 +96,7 @@ function PeoplePage() {
 
   const onCsv = async (file: File) => {
     const text = await file.text();
-    const parsed = parseEmployeeCsv(text, areas, employees.length);
+    const parsed = parseEmployeeCsv(text, areas, employees.length, company.id);
     if (parsed.errors.length && parsed.employees.length === 0) {
       setCsvMsg(parsed.errors.join(" "));
       return;
@@ -109,7 +118,7 @@ function PeoplePage() {
         title={viewer.mode === "jefatura" ? "Tu equipo" : "Colaboradores"}
         lede="Ficha laboral, régimen, pensión y sueldo. La vista de jefatura no muestra remuneraciones."
         actions={
-          viewer.mode === "rrhh" ? (
+          admin ? (
             <>
               <Button tone="line" onClick={() => downloadText("plantilla-colaboradores.csv", CSV_SAMPLE)}>
                 Plantilla CSV
@@ -129,7 +138,7 @@ function PeoplePage() {
               </label>
               <Button
                 onClick={() => {
-                  setDraft(emptyDraft(areas[0]?.id ?? ""));
+                  setDraft(emptyDraft(company.id, companyAreas[0]?.id ?? ""));
                   setError(null);
                   setOpen(true);
                 }}
@@ -147,7 +156,7 @@ function PeoplePage() {
         <input className={fieldClass} placeholder="Buscar nombre, DNI o cargo" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={fieldClass} value={area} onChange={(e) => setArea(e.target.value)}>
           <option value="todas">Todas las áreas</option>
-          {areas.map((a) => (
+          {companyAreas.map((a) => (
             <option key={a.id} value={a.id}>
               {a.name}
             </option>
@@ -171,7 +180,7 @@ function PeoplePage() {
                 <th className="px-4 py-3 font-medium">Cargo</th>
                 <th className="px-4 py-3 font-medium">Área</th>
                 <th className="px-4 py-3 font-medium">Régimen</th>
-                {viewer.mode === "rrhh" ? <th className="px-4 py-3 font-medium">Sueldo</th> : null}
+                {admin ? <th className="px-4 py-3 font-medium">Sueldo</th> : null}
                 <th className="px-4 py-3 font-medium">Estado</th>
               </tr>
             </thead>
@@ -189,7 +198,7 @@ function PeoplePage() {
                   <td className="px-4 py-3">{e.position}</td>
                   <td className="px-4 py-3">{areas.find((a) => a.id === e.areaId)?.name}</td>
                   <td className="px-4 py-3">{REGIME_LABEL[e.regime]}</td>
-                  {viewer.mode === "rrhh" ? (
+                  {admin ? (
                     <td className="num px-4 py-3">{canSeeMoney(viewer, e.id) ? pen(e.salary) : "—"}</td>
                   ) : null}
                   <td className="px-4 py-3">
@@ -203,7 +212,13 @@ function PeoplePage() {
       )}
 
       <Modal open={open} title="Nueva persona" onClose={() => setOpen(false)} wide>
-        <EmployeeForm value={draft} areas={areas} managers={employees.filter((e) => e.status === "activo")} onChange={setDraft} />
+        <EmployeeForm
+          value={draft}
+          areas={areas}
+          managers={employees.filter((e) => e.status === "activo")}
+          companies={companies}
+          onChange={setDraft}
+        />
         {error ? <p className="mt-3 text-sm text-clay">{error}</p> : null}
         <div className="mt-4 flex justify-end gap-2">
           <Button tone="ghost" onClick={() => setOpen(false)}>

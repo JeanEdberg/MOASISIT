@@ -62,6 +62,7 @@ export function AttendanceView() {
       const nuevoRegistro = {
         id: `${empleadoActual.id}-${hoyStr}`,
         employeeId: empleadoActual.id,
+        companyId: empleadoActual.companyId,
         date: hoyStr,
         kind: evaluacion.kind,
         checkIn: tipoAccion === "entrada" ? horaActual : "08:30",

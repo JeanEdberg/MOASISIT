@@ -1,6 +1,21 @@
 import { Field, fieldClass } from "@/components/ui";
-import { CONTRACT_LABEL, PENSION_LABEL, REGIME_LABEL, WORK_MODE_LABEL } from "@/lib/hr/format";
-import type { Area, ContractType, Employee, Pension, Regime, WorkMode } from "@/lib/hr/types";
+import {
+  CONTRACT_LABEL,
+  HEALTH_INSURANCE_LABEL,
+  PENSION_LABEL,
+  REGIME_LABEL,
+  WORK_MODE_LABEL,
+} from "@/lib/hr/format";
+import type {
+  Area,
+  Company,
+  ContractType,
+  Employee,
+  HealthInsurance,
+  Pension,
+  Regime,
+  WorkMode,
+} from "@/lib/hr/types";
 
 export type EmployeeDraft = Omit<Employee, "id" | "code" | "vacationHistory"> & {
   vacationHistory: number;
@@ -18,6 +33,7 @@ export function validateDraft(d: EmployeeDraft): string | null {
   if (!d.areaId) return "Elige un área.";
   if (!Number.isFinite(d.salary) || d.salary < 0) return "El sueldo no es válido.";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.hireDate)) return "La fecha de ingreso no es válida.";
+  if (d.healthInsurance === "eps" && !d.epsInsurerId) return "Elige la EPS del colaborador.";
   return null;
 }
 
@@ -25,17 +41,26 @@ export function EmployeeForm({
   value,
   areas,
   managers,
+  companies,
   isEditing = false,
   onChange,
 }: {
   value: EmployeeDraft;
   areas: Area[];
   managers: Employee[];
+  /** Empresas donde el superadmin puede ubicar al colaborador. Vacío = solo lectura. */
+  companies?: Company[];
   isEditing?: boolean;
   onChange: (next: EmployeeDraft) => void;
 }) {
   const set = <K extends keyof EmployeeDraft>(key: K, v: EmployeeDraft[K]) => onChange({ ...value, [key]: v });
-  
+
+  const activeCompany = companies?.find((c) => c.id === value.companyId);
+  const insurers = activeCompany?.insurers ?? [];
+  const epsOptions = insurers.filter((i) => i.kind === "eps" && i.active);
+  const sctrOptions = insurers.filter((i) => i.kind === "sctr" && i.active);
+  const vidaOptions = insurers.filter((i) => i.kind === "vida_ley" && i.active);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between border-b pb-2">
@@ -48,6 +73,17 @@ export function EmployeeForm({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
+        {companies && companies.length > 1 ? (
+          <Field label="Empresa" hint="Filtra lo que verá este colaborador.">
+            <select className={fieldClass} value={value.companyId} onChange={(e) => set("companyId", e.target.value)}>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         <Field label="Nombres">
           <input className={fieldClass} value={value.names} onChange={(e) => set("names", e.target.value)} />
         </Field>
@@ -58,13 +94,13 @@ export function EmployeeForm({
           <input className={fieldClass} value={value.maternal} onChange={(e) => set("maternal", e.target.value)} />
         </Field>
         <Field label="DNI">
-          <input 
-            className={fieldClass} 
-            inputMode="numeric" 
-            value={value.dni} 
-            disabled={isEditing} 
+          <input
+            className={fieldClass}
+            inputMode="numeric"
+            value={value.dni}
+            disabled={isEditing}
             placeholder="8 dígitos"
-            onChange={(e) => set("dni", e.target.value.replace(/\D/g, "").slice(0, 8))} 
+            onChange={(e) => set("dni", e.target.value.replace(/\D/g, "").slice(0, 8))}
           />
         </Field>
         <Field label="Correo">
@@ -85,11 +121,13 @@ export function EmployeeForm({
         <Field label="Área">
           <select className={fieldClass} value={value.areaId} onChange={(e) => set("areaId", e.target.value)}>
             <option value="">Selecciona un área...</option>
-            {areas.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
+            {areas
+              .filter((a) => !companies || !value.companyId || a.companyId === value.companyId)
+              .map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.name}
+                </option>
+              ))}
           </select>
         </Field>
         <Field label="Jefatura">
@@ -99,11 +137,13 @@ export function EmployeeForm({
             onChange={(e) => set("managerId", e.target.value || null)}
           >
             <option value="">Sin jefatura</option>
-            {managers.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.names} {m.paternal}
-              </option>
-            ))}
+            {managers
+              .filter((m) => !companies || !value.companyId || m.companyId === value.companyId)
+              .map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.names} {m.paternal}
+                </option>
+              ))}
           </select>
         </Field>
         <Field label="Sueldo mensual (S/)">
@@ -173,6 +213,81 @@ export function EmployeeForm({
             }}
           />
         </Field>
+      </div>
+
+      <div className="rounded-lg border border-line bg-surface-2 p-3">
+        <h4 className="text-sm font-semibold text-ink">Seguridad social y seguros</h4>
+        <p className="mt-0.5 text-xs text-muted">
+          Define la cobertura de salud, el SCTR y el Seguro de Vida Ley. Las tasas se configuran por aseguradora en Empresa.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Field label="Cobertura de salud">
+            <select
+              className={fieldClass}
+              value={value.healthInsurance}
+              onChange={(e) => {
+                const healthInsurance = e.target.value as HealthInsurance;
+                onChange({
+                  ...value,
+                  healthInsurance,
+                  epsInsurerId: healthInsurance === "eps" ? value.epsInsurerId ?? epsOptions[0]?.id ?? null : null,
+                });
+              }}
+            >
+              {(Object.keys(HEALTH_INSURANCE_LABEL) as HealthInsurance[]).map((k) => (
+                <option key={k} value={k}>
+                  {HEALTH_INSURANCE_LABEL[k]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="EPS" hint="Solo si la cobertura es EPS.">
+            <select
+              className={fieldClass}
+              value={value.epsInsurerId ?? ""}
+              disabled={value.healthInsurance !== "eps"}
+              onChange={(e) => set("epsInsurerId", e.target.value || null)}
+            >
+              <option value="">Sin EPS</option>
+              {epsOptions.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name} · {i.rate ?? 0}%
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="SCTR" hint="Seguro Complementario de Trabajo de Riesgo.">
+            <select
+              className={fieldClass}
+              value={value.sctrInsurerId ?? ""}
+              onChange={(e) => set("sctrInsurerId", e.target.value || null)}
+            >
+              <option value="">Sin SCTR</option>
+              {sctrOptions.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name} · {(i.pensionRate ?? 0) + (i.healthRate ?? 0)}%
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Seguro de Vida Ley">
+            <select
+              className={fieldClass}
+              value={value.vidaLeyInsurerId ?? ""}
+              onChange={(e) => set("vidaLeyInsurerId", e.target.value || null)}
+            >
+              <option value="">Sin Vida Ley</option>
+              {vidaOptions.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.name} · {i.rate ?? 0}%
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Banco (sueldo)">
           <input className={fieldClass} value={value.salaryBank} onChange={(e) => set("salaryBank", e.target.value)} />
         </Field>

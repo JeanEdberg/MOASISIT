@@ -4,10 +4,13 @@ import type {
   AttendanceKind,
   ContractType,
   DocKind,
+  HealthInsurance,
+  InsurerKind,
   Pension,
   Regime,
   RequestKind,
   RequestStatus,
+  ViewerMode,
   WorkMode,
 } from "@/lib/hr/types";
 
@@ -141,6 +144,24 @@ export const WORK_MODE_LABEL: Record<WorkMode, string> = {
   virtual: "Virtual / remoto",
   hibrido: "Híbrido",
   itinerante: "Itinerante / viajero",
+};
+
+export const HEALTH_INSURANCE_LABEL: Record<HealthInsurance, string> = {
+  essalud: "EsSalud",
+  eps: "EPS",
+};
+
+export const INSURER_KIND_LABEL: Record<InsurerKind, string> = {
+  sctr: "SCTR",
+  eps: "EPS",
+  vida_ley: "Seguro de Vida Ley",
+};
+
+export const ROLE_LABEL: Record<ViewerMode, string> = {
+  superadmin: "Superadministrador (todas las empresas)",
+  rrhh: "RR.HH. (solo mi empresa)",
+  jefatura: "Jefatura (mi equipo)",
+  colaborador: "Colaborador (mi ficha)",
 };
 
 export const REQUEST_LABEL: Record<RequestKind, string> = {

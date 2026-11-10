@@ -11,6 +11,13 @@ import type {
 
 /** Cálculo referencial de planilla peruana bajo D. Leg. 650 y Ley 27735. */
 
+/** Resuelve una aseguradora vigente de la empresa por su id (null si no aplica). */
+export function activeInsurer(company: Company, insurerId: string | null | undefined) {
+  if (!insurerId) return null;
+  const found = company.insurers?.find((i) => i.id === insurerId && i.active);
+  return found ?? null;
+}
+
 export function payFactor(emp: Employee, period: string): number {
   const [y, m] = period.split("-").map(Number);
   const start = new Date(y, (m ?? 1) - 1, 1);
@@ -290,6 +297,9 @@ export function calcPayslip(
     discounts: 0,
     net: 0,
     essalud: 0,
+    eps: 0,
+    sctr: 0,
+    vidaLey: 0,
     pensionBase: 0,
     fifth: 0,
     cts: null,
@@ -386,9 +396,36 @@ export function calcPayslip(
 
   const gross = round2(lines.filter((l) => l.kind === "ingreso").reduce((s, l) => s + l.amount, 0));
   const discounts = round2(lines.filter((l) => l.kind === "descuento").reduce((s, l) => s + l.amount, 0));
+
+  // Base de aportes del empleador (remuneración afecta: básico pagado + AF + horas extra).
   const essaludBase = round2(paidBasic + af + extraPay);
-  const essalud = round2(essaludBase * company.essalud);
-  push("ESS", emp.regime === "practicante" ? "Cobertura de salud practicante" : "EsSalud empleador", essalud, "aporte");
+
+  // Salud: EsSalud (9%) o EPS. La EPS se financia dentro del 9% de EsSalud, con
+  // una porción (2.25% referencial) que se muestra aparte como aporte informativo.
+  const esPracticante = emp.regime === "practicante";
+  const epsInsurer = activeInsurer(company, emp.epsInsurerId);
+  const usingEps = emp.healthInsurance === "eps" && Boolean(epsInsurer);
+  const essalud = esPracticante ? 0 : round2(essaludBase * company.essalud);
+  push(
+    "ESS",
+    esPracticante ? "Cobertura de salud practicante" : usingEps ? "EsSalud empleador (EPS)" : "EsSalud empleador",
+    essalud,
+    "aporte",
+  );
+  const eps = usingEps ? round2(essaludBase * ((epsInsurer?.rate ?? company.epsAporteTrabajador * 100) / 100)) : 0;
+  if (eps > 0) push("EPS", `Aporte EPS ${epsInsurer?.name ?? ""}`.trim(), eps, "aporte");
+
+  // SCTR (Seguro Complementario de Trabajo de Riesgo): prima de pensión + salud.
+  const sctrInsurer = activeInsurer(company, emp.sctrInsurerId);
+  const sctr = sctrInsurer
+    ? round2(essaludBase * (((sctrInsurer.pensionRate ?? 0) + (sctrInsurer.healthRate ?? 0)) / 100))
+    : 0;
+  if (sctr > 0) push("SCTR", `SCTR ${sctrInsurer?.name ?? ""}`.trim(), sctr, "aporte");
+
+  // Seguro de Vida Ley: prima a cargo del empleador.
+  const vidaInsurer = activeInsurer(company, emp.vidaLeyInsurerId);
+  const vidaLey = vidaInsurer ? round2(essaludBase * ((vidaInsurer.rate ?? 0) / 100)) : 0;
+  if (vidaLey > 0) push("VIDALEY", `Seguro Vida Ley ${vidaInsurer?.name ?? ""}`.trim(), vidaLey, "aporte");
 
   const cts =
     month === 5 ? ctsSemester(emp, company, year, "may") : month === 11 ? ctsSemester(emp, company, year, "nov") : null;
@@ -402,6 +439,9 @@ export function calcPayslip(
     discounts,
     net: round2(gross - discounts),
     essalud,
+    eps,
+    sctr,
+    vidaLey,
     pensionBase: round2(pensionBase),
     fifth,
     cts,

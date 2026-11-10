@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Shell } from "@/components/shell";
 import { Badge } from "@/components/ui";
-import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
+import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { ctsSemester, payslipsFor, vacationBalance, vacationPending } from "@/lib/hr/calc";
 import {
   currentPeriod,
@@ -72,7 +72,7 @@ function Dashboard() {
   }, []);
 
   const hello = me ? `Hola, ${me.names.split(" ")[0]}` : "Hola";
-  const showMoney = data.viewer.mode === "rrhh" || data.viewer.mode === "colaborador";
+  const showMoney = isCompanyAdmin(data.viewer.mode) || data.viewer.mode === "colaborador";
 
   return (
     <Shell>
@@ -117,7 +117,7 @@ function Dashboard() {
           >
             <span>📥</span> Fichar Asistencia
           </Link>
-          {data.viewer.mode === "rrhh" && (
+          {isCompanyAdmin(data.viewer.mode) && (
             <Link
               to="/consolidado-asistencia"
               className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-lg shadow-sm text-sm transition-all"
@@ -129,7 +129,7 @@ function Dashboard() {
       </div>
 
       <p className="mt-2 max-w-2xl text-sm text-muted">
-        {data.viewer.mode === "rrhh"
+        {isCompanyAdmin(data.viewer.mode)
           ? `${data.company.tradeName} tiene la planilla de noviembre abierta, el control de tardanzas sincronizado y el depósito de CTS del semestre en puerta.`
           : data.viewer.mode === "jefatura"
             ? "Revisa a tu equipo, las marcaciones de campo/itinerantes de la semana y lo que está esperando tu aprobación."
@@ -147,7 +147,7 @@ function Dashboard() {
       ) : (
         <>
           <section className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Personas activas" value={String(active.length)} hint={data.viewer.mode === "rrhh" ? "en toda la empresa" : "en tu vista"} />
+            <Stat label="Personas activas" value={String(active.length)} hint={isCompanyAdmin(data.viewer.mode) ? "en toda la empresa" : "en tu vista"} />
             
             {showMoney ? (
               <Stat label="Neto a pagar" value={pen(neto)} hint={periodLabel(period)} />
@@ -164,7 +164,7 @@ function Dashboard() {
             )}
           </section>
 
-          {data.viewer.mode === "rrhh" ? (
+          {isCompanyAdmin(data.viewer.mode) ? (
             <section className="mt-3 rounded-lg border border-line border-l-4 border-l-clay bg-surface px-4 py-3 text-sm">
               <p className="font-medium">Depósito de CTS hasta el 15 de noviembre</p>
               <p className="text-muted">
@@ -202,8 +202,8 @@ function Dashboard() {
             </section>
 
             <section className="rounded-lg border border-line bg-surface p-4 lg:col-span-2">
-              <h2 className="text-2xl">{data.viewer.mode === "rrhh" ? "Headcount por área" : "Agenda"}</h2>
-              {data.viewer.mode === "rrhh" && wide ? (
+              <h2 className="text-2xl">{isCompanyAdmin(data.viewer.mode) ? "Headcount por área" : "Agenda"}</h2>
+              {isCompanyAdmin(data.viewer.mode) && wide ? (
                 <div className="mt-3 h-52">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={chart}>

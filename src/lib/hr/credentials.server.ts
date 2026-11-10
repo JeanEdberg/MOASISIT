@@ -18,6 +18,8 @@ export type SessionInfo = {
   kind: CredentialKind;
   role: ViewerMode;
   employeeId: string;
+  /** Empresa a la que pertenece la sesión. Vacío para el superadmin. */
+  companyId: string;
   email: string | null;
   mustChange: boolean;
   emailVerified: boolean;
@@ -55,6 +57,7 @@ type CredRow = {
   kind: CredentialKind;
   employee_id: string | null;
   role: ViewerMode;
+  company_id: string | null;
   email: string | null;
   pin_hash: string | null;
   pin_salt: string | null;
@@ -83,18 +86,20 @@ export async function setEmployeeCredential(input: {
   employeeId: string;
   role: ViewerMode;
   email: string | null;
+  companyId: string;
   pin: string;
   mustChange?: boolean;
 }): Promise<void> {
   const { hash, salt } = hashSecret(input.pin);
   const sql = await getSql();
   await sql`
-    insert into hr_credential (login, kind, employee_id, role, email, pin_hash, pin_salt, password_hash, password_salt, must_change, email_verified, failed_attempts, locked_until, updated_at)
-    values (${input.login}, 'employee', ${input.employeeId}, ${input.role}, ${input.email}, ${hash}, ${salt}, null, null, ${input.mustChange ?? true}, false, 0, null, now())
+    insert into hr_credential (login, kind, employee_id, role, company_id, email, pin_hash, pin_salt, password_hash, password_salt, must_change, email_verified, failed_attempts, locked_until, updated_at)
+    values (${input.login}, 'employee', ${input.employeeId}, ${input.role}, ${input.companyId}, ${input.email}, ${hash}, ${salt}, null, null, ${input.mustChange ?? true}, false, 0, null, now())
     on conflict (login) do update set
       kind = 'employee',
       employee_id = excluded.employee_id,
       role = excluded.role,
+      company_id = excluded.company_id,
       email = excluded.email,
       pin_hash = excluded.pin_hash,
       pin_salt = excluded.pin_salt,
@@ -109,16 +114,19 @@ export async function setAdminPassword(input: {
   login: string;
   password: string;
   email: string | null;
+  /** Nivel de acceso del administrador. Por defecto `superadmin`. */
+  role?: ViewerMode;
   mustChange?: boolean;
 }): Promise<void> {
   const { hash, salt } = hashSecret(input.password);
+  const role: ViewerMode = input.role ?? "superadmin";
   const sql = await getSql();
   await sql`
     insert into hr_credential (login, kind, employee_id, role, email, pin_hash, pin_salt, password_hash, password_salt, must_change, email_verified, failed_attempts, locked_until, updated_at)
-    values (${input.login}, 'admin', null, 'rrhh', ${input.email}, null, null, ${hash}, ${salt}, ${input.mustChange ?? true}, false, 0, null, now())
+    values (${input.login}, 'admin', null, ${role}, ${input.email}, null, null, ${hash}, ${salt}, ${input.mustChange ?? true}, false, 0, null, now())
     on conflict (login) do update set
       kind = 'admin',
-      role = 'rrhh',
+      role = ${role},
       email = excluded.email,
       password_hash = excluded.password_hash,
       password_salt = excluded.password_salt,
@@ -185,8 +193,8 @@ export async function createSession(info: SessionInfo): Promise<string> {
   const sql = await getSql();
   const expires = new Date(Date.now() + SESSION_DAYS * 86_400_000).toISOString();
   await sql`
-    insert into hr_session (token, login, kind, role, employee_id, expires_at)
-    values (${token}, ${info.login}, ${info.kind}, ${info.role}, ${info.employeeId}, ${expires})
+    insert into hr_session (token, login, kind, role, employee_id, active_company_id, expires_at)
+    values (${token}, ${info.login}, ${info.kind}, ${info.role}, ${info.employeeId}, ${info.companyId || null}, ${expires})
   `;
   return token;
 }
@@ -197,6 +205,7 @@ type SessionRow = {
   kind: CredentialKind;
   role: ViewerMode;
   employee_id: string | null;
+  active_company_id: string | null;
   expires_at: string;
 };
 
@@ -212,18 +221,39 @@ export async function getSession(token: string | null): Promise<SessionInfo | nu
   }
   const cred = await getCredential(row.login);
   if (!cred) return null;
+  // El superadmin elige empresa por sesión; los demás quedan fijos a la suya.
+  const companyId = row.role === "superadmin" ? row.active_company_id ?? "" : cred.company_id ?? "";
   return {
     login: row.login,
     kind: row.kind,
     role: row.role,
     employeeId: row.employee_id ?? "",
+    companyId,
     email: cred.email,
     mustChange: cred.must_change,
     emailVerified: cred.email_verified,
   };
 }
 
+/** Cambia la empresa activa de la sesión (solo tiene efecto para el superadmin). */
+export async function setSessionCompany(token: string, companyId: string): Promise<void> {
+  const sql = await getSql();
+  await sql`update hr_session set active_company_id = ${companyId} where token = ${token}`;
+}
+
 export async function deleteSession(token: string): Promise<void> {
   const sql = await getSql();
   await sql`delete from hr_session where token = ${token}`;
+}
+
+/** RR.HH./superadmin: change an employee's access role (colaborador/jefatura/rrhh). */
+export async function setCredentialRole(login: string, role: ViewerMode): Promise<void> {
+  const sql = await getSql();
+  await sql`update hr_credential set role = ${role}, updated_at = now() where login = ${login}`;
+}
+
+/** Move an employee credential to another company (superadmin only). */
+export async function setCredentialCompany(login: string, companyId: string): Promise<void> {
+  const sql = await getSql();
+  await sql`update hr_credential set company_id = ${companyId}, updated_at = now() where login = ${login}`;
 }

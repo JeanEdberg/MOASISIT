@@ -3,10 +3,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Shell } from "@/components/shell";
 import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
+import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
-import type { AfpFund, Company } from "@/lib/hr/types";
+import type { AfpFund, Company, Insurer, InsurerKind } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/empresa")({ component: CompanyPage });
+
+const INSURER_KINDS: InsurerKind[] = ["eps", "sctr", "vida_ley"];
 
 const FUNDS: { id: AfpFund; label: string }[] = [
   { id: "habitat", label: "AFP Habitat" },
@@ -43,6 +46,18 @@ function CompanyPage() {
     const n = Number(raw);
     if (Number.isFinite(n)) updateCompany({ [key]: n });
   };
+
+  const insurers = company.insurers ?? [];
+  const patchInsurer = (id: string, patch: Partial<Insurer>) =>
+    updateCompany({ insurers: insurers.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
+  const addInsurer = () =>
+    updateCompany({
+      insurers: [
+        ...insurers,
+        { id: uid("ins"), name: "Nueva aseguradora", kind: "eps", rate: 0, active: true },
+      ],
+    });
+  const removeInsurer = (id: string) => updateCompany({ insurers: insurers.filter((i) => i.id !== id) });
 
   return (
     <Shell>
@@ -159,6 +174,66 @@ function CompanyPage() {
       </section>
 
       <section className="mt-4 rounded-lg border border-line bg-surface p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-2xl">Aseguradoras y seguros</h2>
+            <p className="mt-1 text-sm text-muted">
+              Registra las aseguradoras vigentes con sus tasas. Las tasas varían por proveedor y año: mantenlas editables.
+              El SCTR usa prima de pensión + salud; la EPS y el Seguro de Vida Ley usan una tasa total.
+            </p>
+          </div>
+          <Button tone="line" onClick={addInsurer}>
+            Agregar aseguradora
+          </Button>
+        </div>
+        <div className="mt-4 space-y-3">
+          {insurers.length === 0 ? (
+            <p className="text-sm text-muted">Sin aseguradoras registradas.</p>
+          ) : null}
+          {insurers.map((ins) => (
+            <div key={ins.id} className="grid items-end gap-3 rounded-lg border border-line bg-bg p-3 sm:grid-cols-[1.4fr_1fr_0.8fr_0.8fr_auto_auto]">
+              <Field label="Nombre">
+                <input className={fieldClass} value={ins.name} onChange={(e) => patchInsurer(ins.id, { name: e.target.value })} />
+              </Field>
+              <Field label="Tipo">
+                <select
+                  className={fieldClass}
+                  value={ins.kind}
+                  onChange={(e) => patchInsurer(ins.id, { kind: e.target.value as InsurerKind })}
+                >
+                  {INSURER_KINDS.map((k) => (
+                    <option key={k} value={k}>
+                      {INSURER_KIND_LABEL[k]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {ins.kind === "sctr" ? (
+                <>
+                  <PctRaw label="Pensión %" value={ins.pensionRate ?? 0} onChange={(n) => patchInsurer(ins.id, { pensionRate: n })} />
+                  <PctRaw label="Salud %" value={ins.healthRate ?? 0} onChange={(n) => patchInsurer(ins.id, { healthRate: n })} />
+                </>
+              ) : (
+                <PctRaw label="Tasa total %" value={ins.rate ?? 0} onChange={(n) => patchInsurer(ins.id, { rate: n })} />
+              )}
+              <label className="flex min-h-11 items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={ins.active}
+                  onChange={(e) => patchInsurer(ins.id, { active: e.target.checked })}
+                />
+                Vigente
+              </label>
+              <Button tone="ghost" onClick={() => removeInsurer(ins.id)}>
+                Quitar
+              </Button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-lg border border-line bg-surface p-4">
         <h2 className="text-2xl">Áreas</h2>
         <ul className="mt-3 space-y-2">
           {areas.map((a) => (
@@ -242,6 +317,23 @@ function Pct({ label, value, onChange }: { label: string; value: number; onChang
         onChange={(e) => {
           const n = Number(e.target.value);
           if (Number.isFinite(n)) onChange(n / 100);
+        }}
+      />
+    </Field>
+  );
+}
+
+/** Igual que `Pct`, pero para valores ya expresados en porcentaje (ej. 2.25). */
+function PctRaw({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+  return (
+    <Field label={label}>
+      <input
+        className={fieldClass}
+        inputMode="decimal"
+        value={String(value)}
+        onChange={(e) => {
+          const n = Number(e.target.value);
+          if (Number.isFinite(n)) onChange(n);
         }}
       />
     </Field>

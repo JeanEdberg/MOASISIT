@@ -24,6 +24,7 @@ export type SessionView = {
   signedIn: true;
   role: ViewerMode;
   employeeId: string;
+  companyId: string;
   login: string;
   kind: "employee" | "admin";
   mustChange: boolean;
@@ -41,9 +42,10 @@ type HrState = HrData & {
   signOut: () => Promise<void>;
   changeSecret: (secret: string) => Promise<{ ok: boolean; error?: string }>;
   resetEmployeePin: (employeeId: string) => Promise<{ ok: boolean; pin?: string; error?: string }>;
+  setAccessRole: (employeeId: string, role: ViewerMode) => Promise<{ ok: boolean; error?: string }>;
 
   updateCompany: (patch: Partial<Company>) => void;
-  switchTenantCompany: (ruc: string) => void;
+  switchCompany: (companyId: string) => Promise<void>;
   addArea: (name: string) => void;
   renameArea: (id: string, name: string) => void;
   addEmployee: (emp: Employee) => void;
@@ -60,76 +62,6 @@ type HrState = HrData & {
   resetDemo: () => void;
 };
 
-/** The three companies the operator can switch between (RR.HH. only). */
-export const TENANTS: Record<string, Company> = {
-  "20614684772": {
-    id: "inmoa",
-    name: "INMOA Logística y Soluciones E.I.R.L.",
-    tradeName: "INMOA Soluciones",
-    ruc: "20614684772",
-    address: "Av. León Velarde 450, Tambopata",
-    city: "Puerto Maldonado",
-    email: "contacto@inmoa.pe",
-    phone: "082 571 200",
-    brandName: "Moasist",
-    brandMark: "MO",
-    brandColor: "#0284c7",
-    accentColor: "#0369a1",
-    rmv: 1230,
-    uit: 5500,
-    topeAfp: 12599,
-    essalud: 0.09,
-    onp: 0.13,
-    afpAporte: 0.1,
-    afpSeguro: 0.0137,
-    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-  },
-  "20614684773": {
-    id: "7pollitos",
-    name: "Los 7 Pollitos Inversiones E.I.R.L.",
-    tradeName: "Los 7 Pollitos",
-    ruc: "20614684773",
-    address: "Av. Panamericana Norte Km. 120",
-    city: "Piura",
-    email: "contacto@7pollitos.pe",
-    phone: "073 441 190",
-    brandName: "Moasist",
-    brandMark: "7P",
-    brandColor: "#0284c7",
-    accentColor: "#0369a1",
-    rmv: 1230,
-    uit: 5500,
-    topeAfp: 12599,
-    essalud: 0.09,
-    onp: 0.13,
-    afpAporte: 0.1,
-    afpSeguro: 0.0137,
-    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-  },
-  "20614684774": {
-    id: "plumifero",
-    name: "Inversiones y Negociaciones Plumífero E.I.R.L.",
-    tradeName: "Plumífero",
-    ruc: "20614684774",
-    address: "Zona Industrial S/N",
-    city: "Talara",
-    email: "contacto@plumifero.pe",
-    phone: "073 382 100",
-    brandName: "Moasist",
-    brandMark: "PL",
-    brandColor: "#0284c7",
-    accentColor: "#0369a1",
-    rmv: 1230,
-    uit: 5500,
-    topeAfp: 12599,
-    essalud: 0.09,
-    onp: 0.13,
-    afpAporte: 0.1,
-    afpSeguro: 0.0137,
-    afpComision: { habitat: 0.0147, integra: 0.0155, prima: 0.016, profuturo: 0.0169 },
-  },
-};
-
 const EMPTY: HrData = {
   ...createDemo(),
   employees: [],
@@ -137,7 +69,7 @@ const EMPTY: HrData = {
   attendance: [],
   documents: [],
   snapshots: {},
-  viewer: { mode: "colaborador", employeeId: "" },
+  viewer: { mode: "colaborador", employeeId: "", companyId: "" },
 };
 
 async function sendAction(action: HrAction): Promise<{ ok: boolean; data?: HrData; error?: string }> {
@@ -220,12 +152,28 @@ export const useHr = create<HrState>()((set, get) => {
       }
     },
 
-    updateCompany: (patch) => run({ type: "updateCompany", patch }),
-    switchTenantCompany: (ruc) => {
-      const target = TENANTS[ruc];
-      if (target) run({ type: "updateCompany", patch: target });
+    setAccessRole: async (employeeId, role) => {
+      const { setAccessRole: apiSet } = await import("@/lib/hr/api");
+      try {
+        const res = await apiSet({ data: { employeeId, role } });
+        if (res.ok) {
+          set({ ...res.data });
+          return { ok: true };
+        }
+        return { ok: false, error: res.error };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "Error al asignar acceso." };
+      }
     },
-    addArea: (name) => run({ type: "addArea", name }),
+
+    updateCompany: (patch) => run({ type: "updateCompany", patch }),
+    switchCompany: async (companyId) => {
+      const { switchCompany: apiSwitch } = await import("@/lib/hr/api");
+      const res = await apiSwitch({ data: { companyId } });
+      if (res.ok) set({ ...res.data, loadError: null });
+      else set({ loadError: res.error });
+    },
+    addArea: (name) => run({ type: "addArea", name, companyId: get().company.id }),
     renameArea: (id, name) => run({ type: "renameArea", id, name }),
     addEmployee: (emp) => run({ type: "addEmployee", employee: emp }),
     updateEmployee: (id, patch) => run({ type: "updateEmployee", id, patch }),

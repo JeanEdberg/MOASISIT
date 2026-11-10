@@ -90,6 +90,7 @@ function VacationsPage() {
     const req: TimeRequest = {
       id: uid("r"),
       employeeId: form.employeeId,
+      companyId: data.company.id,
       kind: form.kind,
       start: form.start,
       end: form.end,

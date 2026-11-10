@@ -133,6 +133,15 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
 - **Env loading**: Nitro loads a `.env` file in dev *and* build, so a local
   `.env` (copied from `.env.example`) is enough — no need to export vars. `.env`
   is now in `.gitignore`; commit `.env.example`, never real values.
+- **Multiempresa**: cada empresa vive en el mismo documento JSONB, pero
+  `sanitizeForViewer` acota la sesión a **una** empresa. Esa función es **pura**
+  y vive en `src/lib/hr/viewer-scope.ts` (con `activeCompanyId`), no en
+  `dataset.server.ts` — así se prueba sin cargar `@/lib/db` (cuyo import en Node
+  dispara el bootstrap de PGLite y falla con `import.meta.glob`). Filtra
+  `employees`, `areas`, `requests`, `attendance`, `documents` **y** `snapshots`:
+  hacer `...data` y devolver sin filtrar `employees` deja al superadmin viendo
+  las tres empresas mezcladas (bug corregido). El admin se siembra con rol
+  **`superadmin`** (`ADMIN_ROLE`), que es el único que ve el selector de empresa.
 - **Admin bootstrap**: `MOASIST_ADMIN_PASSWORD` env var, else a random fallback
   logged at startup. PINs are random per seed — read them from the seed log
   (`[moasist] Credenciales iniciales`). The PIN/secret must be **digits-only**

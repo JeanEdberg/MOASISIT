@@ -15,6 +15,22 @@ export type WorkMode =
   | "hibrido"       // Alterna entre campo y oficina
   | "itinerante";   // Gerencia / Viajeros frecuentes (Jean y Ericka - Bypass geográfico con auditoría GPS)
 
+/** Aseguradoras que la empresa tiene contratadas. Las tasas varían por proveedor. */
+export type InsurerKind = "sctr" | "eps" | "vida_ley";
+
+export type Insurer = {
+  id: string;
+  name: string;
+  kind: InsurerKind;
+  /** SCTR: prima de pensión (%). Solo aplica a kind === "sctr". */
+  pensionRate?: number;
+  /** SCTR: prima de salud (%). Solo aplica a kind === "sctr". */
+  healthRate?: number;
+  /** EPS / Vida Ley: tasa total a cargo del empleador (%). */
+  rate?: number;
+  active: boolean;
+};
+
 export type Company = {
   id: string; // Identificador único para multiempresa (ej: "inmoa", "7pollitos", "plumifero")
   name: string;
@@ -36,16 +52,29 @@ export type Company = {
   afpAporte: number;
   afpSeguro: number;
   afpComision: Record<AfpFund, number>;
+  /** Aporte adicional del trabajador a la EPS (%) sobre la remuneración. */
+  epsAporteTrabajador: number;
+  /** Aseguradoras vigentes (SCTR, EPS, Vida Ley) con sus tasas editables. */
+  insurers: Insurer[];
 };
 
 export type Area = {
   id: string;
   name: string;
+  companyId: string;
 };
+
+/** Cobertura de salud del trabajador: EsSalud regular o EPS. */
+export type HealthInsurance = "essalud" | "eps";
+
+/** Nivel de acceso del colaborador dentro de la app. */
+export type AccessRole = ViewerMode;
 
 export type Employee = {
   id: string;
   code: string;
+  /** Empresa a la que pertenece. Filtra todo lo que ve el colaborador. */
+  companyId: string;
   names: string;
   paternal: string;
   maternal: string;
@@ -65,6 +94,16 @@ export type Employee = {
   salary: number;
   familyAllowance: boolean;
   pension: Pension;
+
+  // Seguridad social y seguros (base del cálculo de beneficios y aportes)
+  /** Cobertura de salud: EsSalud regular o EPS. */
+  healthInsurance: HealthInsurance;
+  /** Aseguradora EPS (id de company.insurers) cuando healthInsurance === "eps". */
+  epsInsurerId: string | null;
+  /** SCTR: aseguradora contratada (id de company.insurers) o null. */
+  sctrInsurerId: string | null;
+  /** Seguro de Vida Ley: aseguradora contratada (id de company.insurers) o null. */
+  vidaLeyInsurerId: string | null;
 
   // Modalidad de Trabajo para Asistencia y Geofencing
   workMode: WorkMode;
@@ -91,6 +130,7 @@ export type RequestStatus = "pendiente" | "aprobada" | "rechazada";
 export type TimeRequest = {
   id: string;
   employeeId: string;
+  companyId: string;
   kind: RequestKind;
   start: string;
   end: string;
@@ -112,6 +152,7 @@ export type AttendanceKind =
 export type Attendance = {
   id: string;
   employeeId: string;
+  companyId: string;
   date: string;
   kind: AttendanceKind;
   checkIn: string;
@@ -125,6 +166,7 @@ export type DocKind = "contrato" | "boleta" | "politica" | "anexo" | "certificad
 export type DocItem = {
   id: string;
   employeeId: string | null;
+  companyId: string;
   title: string;
   kind: DocKind;
   date: string;
@@ -150,21 +192,31 @@ export type Payslip = {
   discounts: number;
   net: number;
   essalud: number;
+  /** Aporte del empleador a la EPS (complemento/sustituto de EsSalud). */
+  eps: number;
+  /** Prima SCTR a cargo del empleador. */
+  sctr: number;
+  /** Prima del Seguro de Vida Ley a cargo del empleador. */
+  vidaLey: number;
   pensionBase: number;
   fifth: number;
   cts: number | null;
   cappedPension: boolean;
 };
 
-export type ViewerMode = "rrhh" | "jefatura" | "colaborador";
+export type ViewerMode = "superadmin" | "rrhh" | "jefatura" | "colaborador";
 
 export type Viewer = {
   mode: ViewerMode;
   employeeId: string;
+  /** Empresa que el viewer está viendo. Un RR.HH. de empresa queda fijado a la suya. */
+  companyId: string;
 };
 
 export type HrData = {
   company: Company;
+  /** Todas las empresas. Solo el superadmin puede cambiarlas; el resto ve solo la suya. */
+  companies: Company[];
   areas: Area[];
   employees: Employee[];
   requests: TimeRequest[];

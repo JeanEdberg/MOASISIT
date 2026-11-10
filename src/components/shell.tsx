@@ -21,6 +21,7 @@ import { cn } from "@/components/ui";
 import { ChangeSecretModal } from "@/components/change-secret-modal";
 import { LoginScreen } from "@/components/login-screen";
 import { fullName, inkFor, longDate, HOY } from "@/lib/hr/format";
+import { isCompanyAdmin } from "@/lib/hr/access";
 import { hydrateHr, useHr } from "@/lib/hr/store";
 import type { ViewerMode } from "@/lib/hr/types";
 
@@ -77,6 +78,7 @@ function itemsFor(mode: ViewerMode): Item[] {
 }
 
 const ROLE_LABEL: Record<ViewerMode, string> = {
+  superadmin: "Desarrollador",
   rrhh: "Recursos Humanos",
   jefatura: "Jefatura",
   colaborador: "Colaborador",
@@ -84,6 +86,7 @@ const ROLE_LABEL: Record<ViewerMode, string> = {
 
 export function Shell({ children }: { children: ReactNode }) {
   const company = useHr((s) => s.company);
+  const companies = useHr((s) => s.companies);
   const employees = useHr((s) => s.employees);
   const viewer = useHr((s) => s.viewer);
   const session = useHr((s) => s.session);
@@ -150,7 +153,7 @@ export function Shell({ children }: { children: ReactNode }) {
           {items.map((item) => (
             <SideLink key={item.to} item={item} pathname={pathname} />
           ))}
-          {viewer.mode !== "rrhh" && viewer.employeeId ? (
+          {!isCompanyAdmin(viewer.mode) && viewer.employeeId ? (
             <Link
               to="/colaboradores/$id"
               params={{ id: viewer.employeeId }}
@@ -177,15 +180,17 @@ export function Shell({ children }: { children: ReactNode }) {
                 {mark}
               </span>
               <div className="flex min-w-0 flex-col gap-1">
-                {viewer.mode === "rrhh" ? (
+                {viewer.mode === "superadmin" ? (
                   <select
                     className="rounded-md border border-line bg-bg px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    value={company.ruc}
-                    onChange={(e) => useHr.getState().switchTenantCompany(e.target.value)}
+                    value={company.id}
+                    onChange={(e) => void useHr.getState().switchCompany(e.target.value)}
                   >
-                    <option value="20614684772">INMOA Logística y Soluciones E.I.R.L.</option>
-                    <option value="20614684773">Los 7 Pollitos Inversiones E.I.R.L.</option>
-                    <option value="20614684774">Inversiones y Negociaciones Plumífero E.I.R.L.</option>
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 ) : (
                   <p className="text-sm font-medium text-ink">{company.name}</p>
@@ -225,7 +230,7 @@ export function Shell({ children }: { children: ReactNode }) {
         {items.map((item) => (
           <SideLink key={item.to} item={item} pathname={pathname} compact />
         ))}
-        {viewer.mode !== "rrhh" && viewer.employeeId ? (
+        {!isCompanyAdmin(viewer.mode) && viewer.employeeId ? (
           <Link
             to="/colaboradores/$id"
             params={{ id: viewer.employeeId }}

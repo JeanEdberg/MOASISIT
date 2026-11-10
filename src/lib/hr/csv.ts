@@ -41,7 +41,7 @@ export type CsvImport = {
   errors: string[];
 };
 
-export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode: number): CsvImport {
+export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode: number, companyId: string): CsvImport {
   const lines = text
     .replace(/^\uFEFF/, "")
     .split(/\r?\n/)
@@ -89,9 +89,9 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
       errors.push(`Fila ${r + 1}: ingreso debe ser AAAA-MM-DD.`);
       continue;
     }
-    let area = areas.find((a) => a.name.toLowerCase() === areaName.toLowerCase());
+    let area = areas.find((a) => a.name.toLowerCase() === areaName.toLowerCase() && a.companyId === companyId);
     if (!area) {
-      area = { id: `a-${dni}`, name: areaName };
+      area = { id: `a-${companyId}-${dni}`, name: areaName, companyId };
       areas.push(area);
     }
     const pensionRaw = (get("pension") || "onp").toLowerCase() as Pension;
@@ -103,6 +103,7 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
     employees.push({
       id: `imp-${dni}`,
       code: `EMP-${String(code).padStart(3, "0")}`,
+      companyId,
       names,
       paternal,
       maternal,
@@ -122,6 +123,10 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
       salary,
       familyAllowance: children > 0,
       pension,
+      healthInsurance: "essalud",
+      epsInsurerId: null,
+      sctrInsurerId: null,
+      vidaLeyInsurerId: null,
       workMode: "presencial",
       salaryBank: "BCP",
       salaryAccount: "",

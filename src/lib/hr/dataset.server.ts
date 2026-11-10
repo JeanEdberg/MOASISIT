@@ -14,26 +14,27 @@ import {
   verifySecret,
   type SessionInfo,
 } from "@/lib/hr/credentials.server";
-import { directReports } from "@/lib/hr/access";
-import { canSeeMoney } from "@/lib/hr/access";
-import type { Employee, HrData, ViewerMode } from "@/lib/hr/types";
+import type { HrData, ViewerMode } from "@/lib/hr/types";
 
 /**
  * Server-authoritative dataset. The whole HR document lives in one `hr_dataset`
  * row (JSONB). The client never receives data its role may not see: every read
- * is filtered here, and every write is role-checked before it reaches the row.
+ * is filtered here (by company AND by role), and every write is role-checked
+ * before it reaches the row.
  */
 
 export const ADMIN_LOGIN = "inmoalogisticaysoluciones@gmail.com";
-export const ADMIN_ROLE: ViewerMode = "rrhh";
+/** The developer account: sees and switches across every company. */
+export const ADMIN_ROLE: ViewerMode = "superadmin";
 
 const DATASET_ID = 1;
 
 /** Roles assigned to the seeded employee accounts, keyed by DNI. */
 const SEED_ROLES: Record<string, ViewerMode> = {
-  "47090484": "rrhh",
-  "47720216": "rrhh",
-  "72853279": "jefatura",
+  "47090484": "rrhh", // Ericka — RR.HH. de INMOA
+  "72853279": "jefatura", // Randy — jefatura de su equipo
+  "45218377": "rrhh", // María Elena — RR.HH. de Los 7 Pollitos
+  "43890125": "rrhh", // Carlos — RR.HH. de Plumífero
 };
 
 type DatasetRow = { data: HrData };
@@ -85,8 +86,8 @@ async function seedCredentials(data: HrData): Promise<void> {
 
   const lines: string[] = [];
   const adminPassword = process.env.MOASIST_ADMIN_PASSWORD?.trim() || generatePin().repeat(3);
-  await setAdminPassword({ login: ADMIN_LOGIN, password: adminPassword, email: ADMIN_LOGIN, mustChange: true });
-  lines.push(`ADMIN  ${ADMIN_LOGIN}  password: ${adminPassword}`);
+  await setAdminPassword({ login: ADMIN_LOGIN, password: adminPassword, email: ADMIN_LOGIN, role: ADMIN_ROLE, mustChange: true });
+  lines.push(`ADMIN  ${ADMIN_LOGIN}  password: ${adminPassword}  (superadmin: todas las empresas)`);
 
   for (const emp of data.employees) {
     const pin = generatePin();
@@ -95,10 +96,12 @@ async function seedCredentials(data: HrData): Promise<void> {
       employeeId: emp.id,
       role: SEED_ROLES[emp.dni] ?? "colaborador",
       email: emp.email || null,
+      companyId: emp.companyId,
       pin,
       mustChange: true,
     });
-    lines.push(`DNI    ${emp.dni}  ${emp.names} ${emp.paternal}  PIN: ${pin}`);
+    const company = data.companies.find((c) => c.id === emp.companyId)?.tradeName ?? emp.companyId;
+    lines.push(`DNI    ${emp.dni}  ${emp.names} ${emp.paternal}  [${company}]  PIN: ${pin}`);
   }
 
   console.log(
@@ -108,54 +111,8 @@ async function seedCredentials(data: HrData): Promise<void> {
   );
 }
 
-/** Roles, stripped of the dataset: what the client is allowed to see. */
-export function viewerFor(session: SessionInfo): { mode: ViewerMode; employeeId: string } {
-  return { mode: session.role, employeeId: session.employeeId };
-}
-
-/**
- * Filter the dataset for the caller's role. RR.HH. sees everything; jefatura
- * sees themselves + direct reports; colaborador sees only themselves. Salaries
- * of OTHER people are removed for non-RR.HH. viewers.
- */
-export function sanitizeForViewer(data: HrData, session: SessionInfo): HrData {
-  const { role, employeeId } = session;
-  if (role === "rrhh") return { ...data, viewer: { mode: role, employeeId } };
-
-  const visibleIds = new Set<string>([employeeId]);
-  if (role === "jefatura") {
-    for (const r of directReports(data.employees, employeeId)) visibleIds.add(r.id);
-  }
-
-  const employees = data.employees
-    .filter((e) => visibleIds.has(e.id))
-    .map((e) => (canSeeMoney({ mode: role, employeeId }, e.id) ? e : stripMoney(e)));
-
-  const inView = (id: string) => visibleIds.has(id);
-
-  return {
-    ...data,
-    employees,
-    requests: data.requests.filter((r) => inView(r.employeeId)),
-    attendance: data.attendance.filter((a) => inView(a.employeeId)),
-    documents: data.documents.filter((d) => !d.employeeId || inView(d.employeeId)),
-    snapshots: {},
-    viewer: { mode: role, employeeId },
-  };
-}
-
-function stripMoney(e: Employee): Employee {
-  return {
-    ...e,
-    salary: 0,
-    salaryAccount: "",
-    ctsAccount: "",
-    salaryBank: "",
-    ctsBank: "",
-    bank: undefined,
-    account: undefined,
-  };
-}
+/** The company a session is scoped to (its active company). */
+export { activeCompanyId, sanitizeForViewer } from "@/lib/hr/viewer-scope";
 
 // ── Sign-in / session orchestration ─────────────────────────────────────────
 
@@ -197,6 +154,7 @@ export async function authenticate(login: string, secret: string): Promise<Login
       kind: cred.kind,
       role: cred.role,
       employeeId: cred.employee_id ?? "",
+      companyId: cred.company_id ?? "",
       email: cred.email,
       mustChange: cred.must_change,
       emailVerified: cred.email_verified,
@@ -212,9 +170,15 @@ export type RegeneratedPin = { employeeId: string; login: string; pin: string };
  * RR.HH. action: mint a fresh random PIN for an employee and return it once so
  * it can be handed over privately. Also forces a change on next sign-in.
  */
-export async function regenerateEmployeePin(employeeId: string, login: string, email: string | null, role: ViewerMode): Promise<RegeneratedPin> {
+export async function regenerateEmployeePin(
+  employeeId: string,
+  login: string,
+  email: string | null,
+  role: ViewerMode,
+  companyId: string,
+): Promise<RegeneratedPin> {
   const pin = generatePin();
-  await setEmployeeCredential({ login, employeeId, role, email, pin, mustChange: true });
+  await setEmployeeCredential({ login, employeeId, role, email, companyId, pin, mustChange: true });
   return { employeeId, login, pin };
 }
 

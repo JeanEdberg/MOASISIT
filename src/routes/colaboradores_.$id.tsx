@@ -5,7 +5,7 @@ import { BoletaView } from "@/components/boleta";
 import { draftFromEmployee, EmployeeForm, validateDraft, type EmployeeDraft } from "@/components/employee-form";
 import { Shell } from "@/components/shell";
 import { Badge, Button, Modal } from "@/components/ui";
-import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
+import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { payslipFor, vacationBalance, vacationEarned, vacationPending, vacationTaken } from "@/lib/hr/calc";
 import {
   ageTone,
@@ -14,6 +14,7 @@ import {
   currentPeriod,
   fmtDays,
   fullName,
+  HEALTH_INSURANCE_LABEL,
   HOY,
   initials,
   PENSION_LABEL,
@@ -22,11 +23,13 @@ import {
   recentPeriods,
   REGIME_LABEL,
   REQUEST_LABEL,
+  ROLE_LABEL,
   shortDate,
   STATUS_LABEL,
   WORK_MODE_LABEL,
 } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
+import type { ViewerMode } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/colaboradores_/$id")({ component: FichaPage });
 
@@ -41,15 +44,19 @@ function FichaPage() {
   const data = useHr();
   const updateEmployee = useHr((s) => s.updateEmployee);
   const resetEmployeePin = useHr((s) => s.resetEmployeePin);
+  const setAccessRole = useHr((s) => s.setAccessRole);
+  const companies = useHr((s) => s.companies);
   const emp = data.employees.find((e) => e.id === id);
   const allowed = emp && visibleEmployees(data.employees, data.viewer).some((e) => e.id === emp.id);
-  const [tab, setTab] = useState<"resumen" | "personal" | "laboral" | "pagos" | "tiempo">("resumen");
+  const [tab, setTab] = useState<"resumen" | "personal" | "laboral" | "seguros" | "pagos" | "tiempo">("resumen");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<EmployeeDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const money = emp ? canSeeMoney(data.viewer, emp.id) : false;
   const area = data.areas.find((a) => a.id === emp?.areaId);
   const boss = data.employees.find((e) => e.id === emp?.managerId);
+  const insurerName = (id: string | null | undefined) =>
+    id ? (data.company.insurers.find((i) => i.id === id)?.name ?? "—") : "—";
 
   if (!emp || !allowed) {
     return (
@@ -98,7 +105,7 @@ function FichaPage() {
           </p>
           <p className="text-sm text-muted">Ingreso {shortDate(emp.hireDate)}</p>
         </div>
-        {data.viewer.mode === "rrhh" ? (
+        {isCompanyAdmin(data.viewer.mode) ? (
           <div className="flex flex-wrap gap-2">
             <Button
               tone="line"
@@ -146,6 +153,7 @@ function FichaPage() {
             ["resumen", "Resumen"],
             ["personal", "Personal"],
             ["laboral", "Laboral"],
+            ["seguros", "Seguros"],
             ["pagos", "Pagos"],
             ["tiempo", "Tiempo"],
           ] as const
@@ -195,6 +203,53 @@ function FichaPage() {
             <Info label="Cuenta (CTS)" value={emp.ctsAccount || "—"} />
             <Info label="Fin de contrato" value={emp.endDate ? shortDate(emp.endDate) : "Sin fecha"} />
             <Info label="Asignación familiar" value={emp.familyAllowance ? "Sí" : "No"} />
+          </div>
+        ) : null}
+        {tab === "seguros" ? (
+          <div className="space-y-4">
+            <section className="rounded-lg border border-line bg-surface p-4">
+              <h2 className="text-2xl">Seguridad social</h2>
+              <p className="mt-1 text-sm text-muted">
+                Cobertura de salud y seguros contratados. Las tasas por aseguradora se administran en Empresa.
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Info label="Cobertura de salud" value={HEALTH_INSURANCE_LABEL[emp.healthInsurance]} />
+                <Info
+                  label="EPS"
+                  value={emp.healthInsurance === "eps" ? insurerName(emp.epsInsurerId) : "No aplica"}
+                />
+                <Info label="SCTR" value={insurerName(emp.sctrInsurerId)} />
+                <Info label="Seguro de Vida Ley" value={insurerName(emp.vidaLeyInsurerId)} />
+              </div>
+            </section>
+            {isCompanyAdmin(data.viewer.mode) ? (
+              <section className="rounded-lg border border-line bg-surface p-4">
+                <h2 className="text-2xl">Acceso a Moasist</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Define qué puede ver y hacer esta persona al ingresar con su DNI.
+                </p>
+                <div className="mt-4 max-w-md">
+                  <label className="block text-xs text-muted">Nivel de acceso</label>
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-md border border-line bg-bg px-3 text-sm"
+                    defaultValue="colaborador"
+                    onChange={async (e) => {
+                      const role = e.target.value as ViewerMode;
+                      const res = await setAccessRole(emp.id, role);
+                      if (res.ok) toast.success(`Acceso actualizado a ${ROLE_LABEL[role]}`);
+                      else toast.error(res.error ?? "No se pudo actualizar el acceso");
+                    }}
+                  >
+                    <option value="colaborador">{ROLE_LABEL.colaborador}</option>
+                    <option value="jefatura">{ROLE_LABEL.jefatura}</option>
+                    <option value="rrhh">{ROLE_LABEL.rrhh}</option>
+                  </select>
+                  <p className="mt-2 text-xs text-muted">
+                    Requiere que el colaborador ya tenga credencial (genera su PIN si aún no la tiene).
+                  </p>
+                </div>
+              </section>
+            ) : null}
           </div>
         ) : null}
         {tab === "pagos" && money ? (
@@ -260,6 +315,8 @@ function FichaPage() {
             value={draft}
             areas={data.areas}
             managers={data.employees.filter((e) => e.id !== emp.id && e.status === "activo")}
+            companies={companies}
+            isEditing
             onChange={setDraft}
           />
         ) : null}

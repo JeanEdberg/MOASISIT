@@ -54,6 +54,7 @@ function AttendancePage() {
     upsert({
       id: `${form.employeeId}-${form.date}`,
       employeeId: form.employeeId,
+      companyId: data.company.id,
       date: form.date,
       kind: form.kind,
       checkIn: absent ? "" : form.checkIn,

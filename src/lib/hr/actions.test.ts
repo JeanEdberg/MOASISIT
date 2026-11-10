@@ -29,7 +29,7 @@ describe("authorizeAction", () => {
     let data = base();
     data = applyHrAction(data, {
       type: "addRequest",
-      request: { id: "r9", employeeId: "e4", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" },
+      request: { id: "r9", employeeId: "e4", companyId: "inmoa", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" },
     });
     const action: HrAction = { type: "decideRequest", id: "r9", status: "aprobada" };
     assert.equal(authorizeAction(action, "jefatura", "e3", data), null);
@@ -45,7 +45,7 @@ describe("authorizeAction", () => {
     let data = base();
     data = applyHrAction(data, {
       type: "addRequest",
-      request: { id: "r8", employeeId: "e6", kind: "permiso", start: "2026-11-21", end: "2026-11-21", status: "pendiente", note: "", createdAt: "2026-11-09" },
+      request: { id: "r8", employeeId: "e6", companyId: "inmoa", kind: "permiso", start: "2026-11-21", end: "2026-11-21", status: "pendiente", note: "", createdAt: "2026-11-09" },
     });
     const action: HrAction = { type: "decideRequest", id: "r8", status: "aprobada" };
     assert.ok(authorizeAction(action, "jefatura", "e3", data));
@@ -55,7 +55,7 @@ describe("authorizeAction", () => {
     const data = base();
     const action: HrAction = {
       type: "upsertAttendance",
-      row: { id: "", employeeId: "e4", date: "2026-11-09", kind: "presente", checkIn: "08:00", checkOut: "17:00", extra25: 0, extra35: 0 },
+      row: { id: "", employeeId: "e4", companyId: "inmoa", date: "2026-11-09", kind: "presente", checkIn: "08:00", checkOut: "17:00", extra25: 0, extra35: 0 },
     };
     assert.ok(authorizeAction(action, "colaborador", "e3", data));
   });
@@ -102,7 +102,7 @@ describe("applyHrAction", () => {
     const data = base();
     const next = applyHrAction(data, {
       type: "upsertAttendance",
-      row: { id: "", employeeId: "e3", date: "2026-11-09", kind: "presente", checkIn: "08:40", checkOut: "17:00", extra25: 0, extra35: 0 },
+      row: { id: "", employeeId: "e3", companyId: "inmoa", date: "2026-11-09", kind: "presente", checkIn: "08:40", checkOut: "17:00", extra25: 0, extra35: 0 },
     });
     const mark = next.attendance.find((a) => a.id === "e3-2026-11-09");
     assert.equal(mark?.kind, "tardanza");
