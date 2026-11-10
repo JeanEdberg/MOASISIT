@@ -38,6 +38,25 @@ test("parseRucResponse traduce la respuesta de apis.net.pe", () => {
   assert.ok(isRucOperativo(info));
 });
 
+test("parseRucResponse traduce la respuesta de decolecta (snake_case)", () => {
+  const info = parseRucResponse({
+    razon_social: "REXTIE S.A.C.",
+    numero_documento: "20601030013",
+    estado: "ACTIVO",
+    condicion: "HABIDO",
+    direccion: "AV. JOSE GALVEZ BARRENECHEA NRO 566",
+    distrito: "SAN ISIDRO",
+    provincia: "LIMA",
+    departamento: "LIMA",
+  });
+  assert.ok(info);
+  assert.equal(info.ruc, "20601030013");
+  assert.equal(info.razonSocial, "REXTIE S.A.C.");
+  assert.equal(info.distrito, "SAN ISIDRO");
+  assert.equal(rucStatusLabel(info), "ACTIVO · HABIDO");
+  assert.ok(isRucOperativo(info));
+});
+
 test("parseRucResponse devuelve null cuando el RUC no existe", () => {
   assert.equal(parseRucResponse({ message: "ruc no valido" }), null);
   assert.equal(parseRucResponse(null), null);

@@ -33,25 +33,35 @@ function str(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/** Primer valor no vacío entre varios nombres de campo (camelCase o snake_case). */
+function pick(row: Record<string, unknown>, ...keys: string[]): string {
+  for (const key of keys) {
+    const value = str(row[key]);
+    if (value) return value;
+  }
+  return "";
+}
+
 /**
- * Traduce la respuesta de apis.net.pe a `RucInfo`. Devuelve `null` cuando el
- * proveedor no reconoce el RUC (responde `{ message: "ruc no valido" }`).
+ * Traduce la respuesta del proveedor a `RucInfo`. Acepta tanto apis.net.pe
+ * (`razonSocial`, camelCase) como decolecta (`razon_social`, snake_case).
+ * Devuelve `null` cuando el proveedor no reconoce el RUC.
  */
 export function parseRucResponse(payload: unknown): RucInfo | null {
   if (!payload || typeof payload !== "object") return null;
   const row = payload as Record<string, unknown>;
-  const razonSocial = str(row.razonSocial);
-  const ruc = normalizeRuc(str(row.numeroDocumento));
+  const razonSocial = pick(row, "razonSocial", "razon_social");
+  const ruc = normalizeRuc(pick(row, "numeroDocumento", "numero_documento"));
   if (!razonSocial || ruc.length !== 11) return null;
   return {
     ruc,
     razonSocial,
-    direccion: str(row.direccion),
-    distrito: str(row.distrito),
-    provincia: str(row.provincia),
-    departamento: str(row.departamento),
-    estado: str(row.estado),
-    condicion: str(row.condicion),
+    direccion: pick(row, "direccion", "dirección"),
+    distrito: pick(row, "distrito"),
+    provincia: pick(row, "provincia"),
+    departamento: pick(row, "departamento"),
+    estado: pick(row, "estado"),
+    condicion: pick(row, "condicion"),
   };
 }
 
