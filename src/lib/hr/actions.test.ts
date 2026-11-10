@@ -177,3 +177,68 @@ describe("applyHrAction", () => {
     assert.equal(authorizeAction({ type: "removeCompany", companyId: "inmoa" }, "superadmin", "", data), null);
   });
 });
+
+describe("contrato automático al dar de alta", () => {
+  const newEmployee = (over: Partial<HrData["employees"][number]> = {}): HrData["employees"][number] => ({
+    id: "e99",
+    code: "EMP-099",
+    companyId: "inmoa",
+    names: "Ana",
+    paternal: "Quispe",
+    maternal: "Rojas",
+    dni: "12345678",
+    email: "ana@inmoa.pe",
+    phone: "",
+    birthDate: "1994-05-05",
+    address: "Puerto Maldonado",
+    hireDate: "2026-11-01",
+    endDate: "2027-05-01",
+    status: "activo",
+    areaId: "a2",
+    position: "Asistente",
+    managerId: null,
+    contract: "plazo_fijo",
+    regime: "general",
+    salary: 2000,
+    familyAllowance: false,
+    pension: "onp",
+    healthInsurance: "essalud",
+    epsInsurerId: null,
+    sctrInsurerId: null,
+    vidaLeyInsurerId: null,
+    workMode: "presencial",
+    salaryBank: "",
+    salaryAccount: "",
+    ctsBank: "",
+    ctsAccount: "",
+    children: 0,
+    vacationHistory: 0,
+    isDemo: false,
+    ...over,
+  });
+
+  it("crea el documento de contrato pendiente al agregar una persona", () => {
+    const next = applyHrAction(base(), { type: "addEmployee", employee: newEmployee() });
+    const doc = next.documents.find((d) => d.employeeId === "e99" && d.kind === "contrato");
+    assert.ok(doc, "debe existir el contrato");
+    assert.equal(doc!.status, "pendiente");
+    assert.equal(doc!.date, "2026-11-01");
+  });
+
+  it("no duplica el contrato si el id ya existe", () => {
+    const once = applyHrAction(base(), { type: "addEmployee", employee: newEmployee() });
+    const twice = applyHrAction(once, { type: "addEmployee", employee: newEmployee() });
+    const count = twice.documents.filter((d) => d.id === "d-cto-e99").length;
+    assert.equal(count, 1);
+  });
+
+  it("genera un contrato por cada persona importada", () => {
+    const next = applyHrAction(base(), {
+      type: "importPeople",
+      employees: [newEmployee({ id: "e98", dni: "87654321" }), newEmployee({ id: "e97", dni: "11223344" })],
+      areas: [],
+    });
+    assert.ok(next.documents.some((d) => d.id === "d-cto-e98"));
+    assert.ok(next.documents.some((d) => d.id === "d-cto-e97"));
+  });
+});

@@ -105,8 +105,26 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         ...data,
         employees: data.employees.map((e) => (e.id === action.id ? { ...e, ...action.patch, id: e.id } : e)),
       };
-    case "addEmployee":
-      return { ...data, employees: [...data.employees, { ...action.employee, companyId: action.employee.companyId || data.company.id }] };
+    case "addEmployee": {
+      const employee = { ...action.employee, companyId: action.employee.companyId || data.company.id };
+      // Al dar de alta a la persona se genera su contrato como documento del
+      // legajo, pendiente de firma (el texto se arma solo en el visor).
+      const contractDoc: DocItem = {
+        id: `d-cto-${employee.id}`,
+        employeeId: employee.id,
+        companyId: employee.companyId,
+        title: "Contrato de trabajo",
+        kind: "contrato",
+        date: employee.hireDate,
+        status: "pendiente",
+      };
+      const hasDoc = data.documents.some((d) => d.id === contractDoc.id);
+      return {
+        ...data,
+        employees: [...data.employees, employee],
+        documents: hasDoc ? data.documents : [contractDoc, ...data.documents],
+      };
+    }
     case "importPeople":
       return {
         ...data,
@@ -114,6 +132,20 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         employees: [
           ...data.employees.filter((e) => !action.employees.some((n) => n.dni === e.dni)),
           ...action.employees.map((e) => ({ ...e, companyId: e.companyId || data.company.id })),
+        ],
+        documents: [
+          ...action.employees
+            .filter((e) => !data.documents.some((d) => d.id === `d-cto-${e.id}`))
+            .map((e) => ({
+              id: `d-cto-${e.id}`,
+              employeeId: e.id,
+              companyId: e.companyId || data.company.id,
+              title: "Contrato de trabajo",
+              kind: "contrato" as const,
+              date: e.hireDate,
+              status: "pendiente" as const,
+            })),
+          ...data.documents,
         ],
       };
     case "clearDemoPeople": {

@@ -21,3 +21,8 @@ dist/
 
 # Descargas temporales (bundle/patch para pasar cambios a GitHub)
 public/descargas/
+
+# Documentos con datos personales (contratos, boletas) — no subir al repo
+*.docx
+*.doc
+*.pdf

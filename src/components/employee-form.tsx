@@ -33,6 +33,8 @@ export function validateDraft(d: EmployeeDraft): string | null {
   if (!d.areaId) return "Elige un área.";
   if (!Number.isFinite(d.salary) || d.salary < 0) return "El sueldo no es válido.";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.hireDate)) return "La fecha de ingreso no es válida.";
+  if (d.contract === "plazo_fijo" && !d.endDate) return "Indica la fecha de fin para el contrato a plazo fijo.";
+  if (d.endDate && d.endDate < d.hireDate) return "La fecha de fin no puede ser anterior al ingreso.";
   if (d.healthInsurance === "eps" && !d.epsInsurerId) return "Elige la EPS del colaborador.";
   return null;
 }
@@ -108,6 +110,14 @@ export function EmployeeForm({
         </Field>
         <Field label="Celular">
           <input className={fieldClass} value={value.phone} onChange={(e) => set("phone", e.target.value)} />
+        </Field>
+        <Field label="Domicilio" hint="Aparece en el contrato de trabajo.">
+          <input
+            className={fieldClass}
+            value={value.address}
+            placeholder="Ej. Av. León Velarde 450, Tambopata"
+            onChange={(e) => set("address", e.target.value)}
+          />
         </Field>
         <Field label="Fecha de nacimiento">
           <input className={fieldClass} type="date" value={value.birthDate} onChange={(e) => set("birthDate", e.target.value)} />

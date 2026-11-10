@@ -208,14 +208,21 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `removeCompany`, también superadmin-only, que limpia las credenciales de esa
   empresa). El prorrateo del primer mes se calcula solo y se muestra en S/.
 - **Modelo de contrato**: `src/lib/hr/contract.ts` es **puro**
-  (`buildContract`, `trialPeriodDays`): arma las cláusulas del contrato de
-  trabajo (partes, objeto, duración y periodo de prueba, jornada, remuneración,
-  beneficios, seguridad social, obligaciones, confidencialidad, terminación y
-  ley aplicable) según el régimen y el tipo de contrato del colaborador. La UI
-  es `src/components/contract.tsx`, mostrada en `/documentos` al abrir un
-  documento de tipo `contrato`. Es un **modelo editable**: incluye una
-  advertencia de que debe validarlo la asesoría laboral; no es firma
-  electrónica ni registro ante la AAT.
+  (`buildContract`, `contractToHtml`, `contractFileName`): arma las cláusulas
+  del contrato de trabajo tal como la plantilla real de INMOA (partes, objeto,
+  plazo, jornada, remuneración con **monto en letras**, beneficios, ley
+  aplicable, etc.) según el régimen y el tipo de contrato del colaborador. La UI
+  es `src/components/contract.tsx` (`ContractView`), mostrada en `/documentos`
+  al abrir un documento de tipo `contrato`; incluye **Descargar Word**
+  (`contractToHtml` genera un `.doc` con Times New Roman). Es un **modelo
+  editable**: incluye una advertencia de que debe validarlo la asesoría laboral;
+  no es firma electrónica ni registro ante la AAT.
+- **Contrato automático al dar de alta**: el reducer `addEmployee` (en
+  `src/lib/hr/actions.ts`) crea solo un `DocItem` de tipo `contrato` (id
+  `d-cto-<employeeId>`, estado `pendiente`, fecha = ingreso) para cada persona
+  nueva; `importPeople` hace lo mismo para cada fila importada. Es idempotente:
+  si el documento ya existe, no se duplica. El **domicilio** del colaborador
+  (`employee.address`, campo "Domicilio" del formulario) se usa en el contrato.
 - **Importación CSV**: `src/lib/hr/csv.ts` (`parseEmployeeCsv`, `CSV_SAMPLE`,
   `CSV_COLUMNS`). La **plantilla completa** tiene 24 columnas; solo siete son
   obligatorias (`nombres`, `paterno`, `dni`, `cargo`, `area`, `sueldo`,
