@@ -86,7 +86,7 @@ superior o lateral).
 
 **⏸️ PAUSA 8** — Debes ver una sección titulada **Environment Variables** y un
 botón **Add New** (o **Add Environment Variable**). Si ya hay variables
-listadas, no las toques; solo agregaremos dos.
+listadas, no las toques; solo agregaremos las que falten.
 
 ### B4. Crear la primera variable: `DATABASE_URL`
 1. Pulsa **Add New** (o el campo **Key**).
@@ -126,7 +126,23 @@ correcto.
 
 **⏸️ PAUSA 10** — La lista debe mostrar **dos** filas: `DATABASE_URL` y
 `MOASIST_ADMIN_PASSWORD`, cada una con los tres entornos. Si las ves, ya está
-todo lo de Vercel configurado.
+lo mínimo de Vercel configurado.
+
+### B5b. Variables opcionales (recomendadas)
+Estas no son obligatorias, pero mejoran la seguridad y el funcionamiento. Si
+quieres, agrégalas con **Add New** de la misma forma (marca los tres entornos y
+guarda):
+
+| Variable | Valor | Para qué sirve |
+|---|---|---|
+| `MOASIST_ADMIN_LOGIN` | el correo del administrador | Cambia el correo del admin (si se deja vacío usa el de INMOA) |
+| `MOASIST_LOG_CREDENTIALS` | `false` | **Recomendado en producción.** Evita que la contraseña del admin y los PIN de los empleados se impriman en los registros del servidor |
+| `RUC_API_ENDPOINT` | el endpoint del servicio | Consulta el RUC en SUNAT al crear una empresa (autocompleta razón social y dirección) |
+| `RUC_API_TOKEN` | el token del servicio | Autenticación de esa consulta de RUC |
+
+**⏸️ PAUSA 10b** — Si agregaste alguna, deben aparecer en la lista junto a las
+dos primeras, también con los tres entornos. Si prefieres dejar solo lo mínimo,
+está bien: puedes volver a esta sección cuando quieras.
 
 ### B6. Redesplegar para que tome las variables
 > Las variables **no se aplican solas**: hay que volver a desplegar.

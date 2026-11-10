@@ -1,7 +1,7 @@
 # Moasist — Fase 0: base de datos persistente en Neon
 
 Objetivo: dejar de perder datos al reiniciar. **No requiere cambios de código**:
-solo crear la base en Neon y definir dos variables en Vercel.
+solo crear la base en Neon y definir las variables en Vercel.
 
 ---
 
@@ -35,13 +35,18 @@ Neon → tu proyecto → **Dashboard → Connection string** → copiar (Pooled)
 
 1. Entra a **https://vercel.com** → tu proyecto **MOASISIT**.
 2. **Settings → Environment Variables**.
-3. Agrega dos variables (marca los tres entornos: Production, Preview,
-   Development):
+3. Agrega las variables (marca los tres entornos: Production, Preview,
+   Development). Solo `DATABASE_URL` es obligatoria; las demás son opcionales
+   pero recomendadas:
 
 | Variable | Valor |
 |---|---|
-| `DATABASE_URL` | la cadena **pooled** copiada de Neon |
+| `DATABASE_URL` | la cadena **pooled** copiada de Neon (obligatoria) |
 | `MOASIST_ADMIN_PASSWORD` | la contraseña inicial de tu cuenta de Administración (mín. 10 caracteres, con mayúscula, minúscula y número) |
+| `MOASIST_ADMIN_LOGIN` | el correo del administrador (opcional; si se deja vacío usa el de INMOA) |
+| `MOASIST_LOG_CREDENTIALS` | `false` en producción (opcional y recomendado: evita que la contraseña del admin y los PIN se impriman en los registros del servidor) |
+| `RUC_API_ENDPOINT` | (opcional) endpoint para consultar el RUC en SUNAT al crear una empresa |
+| `RUC_API_TOKEN` | (opcional) token de ese servicio de consulta de RUC |
 
 4. **Redeploy** (Deployments → … → Redeploy) para que tome las variables.
 
