@@ -16,7 +16,7 @@
     "preview:stop": "node scripts/preview.mjs stop",
     "typecheck": "tsc --noEmit",
     "check:auth": "node scripts/check-auth-invariant.mjs",
-    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --import ./scripts/alias-register.mjs --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/preview-path-prefix.test.ts src/lib/hr/actions.test.ts src/lib/hr/viewer-scope.test.ts src/lib/hr/payroll-export.test.ts src/lib/hr/format.test.ts src/lib/hr/insurers.test.ts src/lib/hr/ruc.test.ts src/lib/hr/company.test.ts src/lib/hr/status.test.ts src/lib/hr/subscription.test.ts src/lib/hr/contract.test.ts src/lib/hr/logo.test.ts src/lib/hr/csv.test.ts",
+    "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --import ./scripts/alias-register.mjs --test src/lib/app-data/app-data.test.ts src/lib/app-data/readiness-schedule.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts src/lib/preview-path-prefix.test.ts src/lib/hr/actions.test.ts src/lib/hr/afpnet.test.ts src/lib/hr/fifth.test.ts src/lib/hr/viewer-scope.test.ts src/lib/hr/payroll-export.test.ts src/lib/hr/format.test.ts src/lib/hr/insurers.test.ts src/lib/hr/ruc.test.ts src/lib/hr/company.test.ts src/lib/hr/status.test.ts src/lib/hr/subscription.test.ts src/lib/hr/contract.test.ts src/lib/hr/logo.test.ts src/lib/hr/csv.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

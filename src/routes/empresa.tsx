@@ -7,9 +7,10 @@ import { SubscriptionPanel } from "@/components/subscription-panel";
 import { Shell } from "@/components/shell";
 import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
+import { fifthCategoryParamsOf } from "@/lib/hr/fifth";
 import { readLogoFile } from "@/lib/hr/logo";
 import { useHr } from "@/lib/hr/store";
-import type { AfpFund, Company, Insurer, InsurerKind } from "@/lib/hr/types";
+import type { AfpFund, Company, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/empresa")({ component: CompanyPage });
 
@@ -235,6 +236,8 @@ function CompanyPage() {
         </div>
       </section>
 
+      <FifthCategorySection company={company} updateCompany={updateCompany} />
+
       <section className="mt-4 rounded-lg border border-line bg-surface p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -399,5 +402,102 @@ function PctRaw({ label, value, onChange }: { label: string; value: number; onCh
         }}
       />
     </Field>
+  );
+}
+
+/**
+ * Parámetros editables de la retención de quinta categoría: la deducción fija
+ * (en UIT) y los tramos de la escala progresiva. Se guardan por empresa para
+ * poder ajustarlos cuando cambie la norma (p. ej. si la UIT o los tramos varían
+ * el próximo año).
+ */
+function FifthCategorySection({
+  company,
+  updateCompany,
+}: {
+  company: Company;
+  updateCompany: (patch: Partial<Company>) => void;
+}) {
+  const params = fifthCategoryParamsOf(company);
+  const uit = company.uit;
+
+  const setDeduction = (n: number) => updateCompany({ fifthCategory: { ...params, deductionUit: n } });
+  const setBand = (index: number, patch: Partial<FifthCategoryBand>) =>
+    updateCompany({
+      fifthCategory: {
+        ...params,
+        bands: params.bands.map((b, i) => (i === index ? { ...b, ...patch } : b)),
+      },
+    });
+  const addBand = () => updateCompany({ fifthCategory: { ...params, bands: [...params.bands, { span: null, rate: 0 }] } });
+  const removeBand = (index: number) =>
+    updateCompany({ fifthCategory: { ...params, bands: params.bands.filter((_, i) => i !== index) } });
+
+  return (
+    <section className="mt-4 rounded-lg border border-line bg-surface p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-2xl">Renta de quinta categoría</h2>
+          <p className="mt-1 text-sm text-muted">
+            Deducción fija y escala progresiva para retener la renta de quinta categoría. La UIT vigente es S/{" "}
+            {uit.toLocaleString("es-PE")}; ajústala arriba en «Parámetros de planilla» si cambia. Los tramos se expresan
+            en UIT.
+          </p>
+        </div>
+        <Button tone="line" onClick={addBand}>
+          Agregar tramo
+        </Button>
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <Field label="Deducción fija (UIT)" hint={`Equivale a S/ ${(params.deductionUit * uit).toLocaleString("es-PE")} al año.`}>
+          <input
+            className={fieldClass}
+            inputMode="decimal"
+            value={String(params.deductionUit)}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              if (Number.isFinite(n) && n >= 0) setDeduction(n);
+            }}
+          />
+        </Field>
+      </div>
+      <div className="mt-3 space-y-2">
+        {params.bands.map((band, i) => (
+          <div key={i} className="grid items-end gap-3 rounded-lg border border-line bg-bg p-3 sm:grid-cols-[1fr_1fr_auto]">
+            <Field
+              label="Tramo (UIT)"
+              hint={band.span == null ? "Sin tope: aplica al exceso." : `Hasta ${band.span} UIT por tramo`}
+            >
+              <input
+                className={fieldClass}
+                inputMode="decimal"
+                placeholder="Sin tope"
+                value={band.span == null ? "" : String(band.span)}
+                onChange={(e) => {
+                  const raw = e.target.value.trim();
+                  const n = Number(raw);
+                  setBand(i, { span: raw === "" || !Number.isFinite(n) ? null : n });
+                }}
+              />
+            </Field>
+            <Field label="Tasa (%)">
+              <input
+                className={fieldClass}
+                inputMode="decimal"
+                value={String(Math.round(band.rate * 10000) / 100)}
+                onChange={(e) => {
+                  const n = Number(e.target.value);
+                  if (Number.isFinite(n)) setBand(i, { rate: n / 100 });
+                }}
+              />
+            </Field>
+            <Button tone="ghost" onClick={() => removeBand(i)}>
+              Quitar
+            </Button>
+          </div>
+        ))}
+        {params.bands.length === 0 ? <p className="text-sm text-muted">Sin tramos: no se retendrá quinta categoría.</p> : null}
+      </div>
+    </section>
   );
 }

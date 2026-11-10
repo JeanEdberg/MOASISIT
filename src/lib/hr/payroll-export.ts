@@ -9,10 +9,13 @@ export type PayrollRow = {
   position: string;
   gross: number;
   discounts: number;
+  fifth: number;
   net: number;
   essalud: number;
   eps: number;
   sctr: number;
+  sctrSalud: number;
+  sctrPension: number;
   vidaLey: number;
   cts: number | null;
 };
@@ -30,10 +33,13 @@ export function buildPayrollRows(
       position: e?.position ?? "",
       gross: p.gross,
       discounts: p.discounts,
+      fifth: p.fifth,
       net: p.net,
       essalud: p.essalud,
       eps: p.eps,
       sctr: p.sctr,
+      sctrSalud: p.sctrSalud,
+      sctrPension: p.sctrPension,
       vidaLey: p.vidaLey,
       cts: p.cts,
     };
@@ -45,14 +51,20 @@ function totals(rows: PayrollRow[]) {
   return {
     gross: sum((r) => r.gross),
     discounts: sum((r) => r.discounts),
+    fifth: sum((r) => r.fifth),
     net: sum((r) => r.net),
     essalud: sum((r) => r.essalud),
     eps: sum((r) => r.eps),
     sctr: sum((r) => r.sctr),
+    sctrSalud: sum((r) => r.sctrSalud),
+    sctrPension: sum((r) => r.sctrPension),
     vidaLey: sum((r) => r.vidaLey),
     cts: sum((r) => r.cts ?? 0),
   };
 }
+
+/** Columnas de aportes del empleador, con el SCTR desglosado (SUNAT). */
+const APORTE_HEADERS = ["EsSalud", "EPS", "SCTR Salud", "SCTR Pensión", "Vida Ley"] as const;
 
 /** Genera y descarga un libro Excel (.xlsx) con la planilla del periodo. */
 export function exportPayrollExcel(rows: PayrollRow[], company: Company, period: string): void {
@@ -66,11 +78,9 @@ export function exportPayrollExcel(rows: PayrollRow[], company: Company, period:
     "Cargo",
     "Ingresos",
     "Descuentos",
+    "Renta 5ta",
     "Neto",
-    "EsSalud",
-    "EPS",
-    "SCTR",
-    "Vida Ley",
+    ...APORTE_HEADERS,
     ...(showCts ? ["CTS del semestre"] : []),
   ];
 
@@ -81,10 +91,12 @@ export function exportPayrollExcel(rows: PayrollRow[], company: Company, period:
     r.position,
     r.gross,
     r.discounts,
+    r.fifth,
     r.net,
     r.essalud,
     r.eps,
-    r.sctr,
+    r.sctrSalud,
+    r.sctrPension,
     r.vidaLey,
     ...(showCts ? [r.cts ?? 0] : []),
   ]);
@@ -96,10 +108,12 @@ export function exportPayrollExcel(rows: PayrollRow[], company: Company, period:
     "",
     t.gross,
     t.discounts,
+    t.fifth,
     t.net,
     t.essalud,
     t.eps,
-    t.sctr,
+    t.sctrSalud,
+    t.sctrPension,
     t.vidaLey,
     ...(showCts ? [t.cts] : []),
   ];
@@ -123,9 +137,11 @@ export function exportPayrollExcel(rows: PayrollRow[], company: Company, period:
     { wch: 12 },
     { wch: 12 },
     { wch: 12 },
+    { wch: 12 },
     { wch: 10 },
     { wch: 10 },
     { wch: 10 },
+    { wch: 12 },
     { wch: 10 },
     ...(showCts ? [{ wch: 14 }] : []),
   ];
@@ -153,15 +169,13 @@ export function exportPayrollPdf(rows: PayrollRow[], company: Company, period: s
     "Cargo",
     "Ingresos",
     "Descuentos",
+    "Renta 5ta",
     "Neto",
-    "EsSalud",
-    "EPS",
-    "SCTR",
-    "Vida Ley",
+    ...APORTE_HEADERS,
     ...(showCts ? ["CTS semestre"] : []),
   ];
   const cols = headCells.length;
-  const numericCols = 7 + (showCts ? 1 : 0);
+  const numericCols = 10 + (showCts ? 1 : 0);
 
   const bodyRows = rows
     .map(
@@ -173,10 +187,12 @@ export function exportPayrollPdf(rows: PayrollRow[], company: Company, period: s
         <td>${esc(r.position)}</td>
         <td class="num">${money(r.gross)}</td>
         <td class="num">${money(r.discounts)}</td>
+        <td class="num">${money(r.fifth)}</td>
         <td class="num strong">${money(r.net)}</td>
         <td class="num">${money(r.essalud)}</td>
         <td class="num">${money(r.eps)}</td>
-        <td class="num">${money(r.sctr)}</td>
+        <td class="num">${money(r.sctrSalud)}</td>
+        <td class="num">${money(r.sctrPension)}</td>
         <td class="num">${money(r.vidaLey)}</td>
         ${showCts ? `<td class="num">${money(r.cts ?? 0)}</td>` : ""}
       </tr>`,
@@ -230,10 +246,12 @@ export function exportPayrollPdf(rows: PayrollRow[], company: Company, period: s
             <td colspan="${cols - numericCols}" style="text-align:right;">TOTAL GENERAL:</td>
             <td class="num">${money(t.gross)}</td>
             <td class="num">${money(t.discounts)}</td>
+            <td class="num">${money(t.fifth)}</td>
             <td class="num">${money(t.net)}</td>
             <td class="num">${money(t.essalud)}</td>
             <td class="num">${money(t.eps)}</td>
-            <td class="num">${money(t.sctr)}</td>
+            <td class="num">${money(t.sctrSalud)}</td>
+            <td class="num">${money(t.sctrPension)}</td>
             <td class="num">${money(t.vidaLey)}</td>
             ${showCts ? `<td class="num">${money(t.cts)}</td>` : ""}
           </tr>

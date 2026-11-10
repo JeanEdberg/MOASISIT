@@ -21,10 +21,10 @@ const WORK_MODES = new Set<WorkMode>(["presencial", "campo", "virtual", "hibrido
  * defecto. El orden de las columnas no importa: se lee por el nombre del
  * encabezado. Sirve tanto de ejemplo como de archivo listo para llenar.
  */
-export const CSV_SAMPLE = `nombres,paterno,materno,dni,email,telefono,nacimiento,direccion,cargo,area,sueldo,ingreso,fin,contrato,regimen,pension,hijos,salud,modalidad,banco,cuenta,banco_cts,cuenta_cts,jefe_dni
-Ana,Pérez,López,45678912,ana.perez@miempresa.pe,987654321,1992-04-18,Av. Siempre Viva 123,Analista,Finanzas,3500,2024-01-15,,indefinido,general,onp,1,essalud,presencial,BCP,1931234567890,BCP,1931234567890,
-Luis,García,Quispe,40112233,luis.garcia@miempresa.pe,912345678,1988-09-02,Jr. Los Álamos 456,Asistente,Operaciones,1800,2025-03-01,,plazo_fijo,general,habitat,0,essalud,campo,Interbank,2003001234567,Interbank,2003001234567,45678912
-Rosa,Mendoza,Silva,45566778,rosa.mendoza@miempresa.pe,,1995-12-30,,Practicante,Administración,1200,2026-02-01,2026-08-01,practicas,practicante,ninguno,0,essalud,presencial,,,,
+export const CSV_SAMPLE = `nombres,paterno,materno,dni,email,telefono,nacimiento,direccion,cargo,area,sueldo,ingreso,fin,contrato,regimen,pension,cuspp,hijos,quinta,salud,modalidad,banco,cuenta,banco_cts,cuenta_cts,jefe_dni
+Ana,Pérez,López,45678912,ana.perez@miempresa.pe,987654321,1992-04-18,Av. Siempre Viva 123,Analista,Finanzas,3500,2024-01-15,,indefinido,general,onp,,1,si,essalud,presencial,BCP,1931234567890,BCP,1931234567890,
+Luis,García,Quispe,40112233,luis.garcia@miempresa.pe,912345678,1988-09-02,Jr. Los Álamos 456,Asistente,Operaciones,1800,2025-03-01,,plazo_fijo,general,habitat,610789HABIT3,0,si,essalud,campo,Interbank,2003001234567,Interbank,2003001234567,45678912
+Rosa,Mendoza,Silva,45566778,rosa.mendoza@miempresa.pe,,1995-12-30,,Practicante,Administración,1200,2026-02-01,2026-08-01,practicas,practicante,ninguno,,0,no,essalud,presencial,,,,
 `;
 
 /** Encabezados válidos de la plantilla (para el mensaje de ayuda y la validación). */
@@ -45,7 +45,9 @@ export const CSV_COLUMNS = [
   "contrato",
   "regimen",
   "pension",
+  "cuspp",
   "hijos",
+  "quinta",
   "salud",
   "modalidad",
   "banco",
@@ -155,6 +157,7 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
 
     const pensionRaw = (get("pension") || "onp").toLowerCase() as Pension;
     const pension = PENSIONS.has(pensionRaw) ? pensionRaw : "onp";
+    const cuspp = pension === "onp" || pension === "ninguno" ? "" : get("cuspp").toUpperCase().trim();
     const contractRaw = (get("contrato") || "indefinido").toLowerCase() as ContractType;
     const contract = CONTRACTS.has(contractRaw) ? contractRaw : "indefinido";
     const regimeRaw = (get("regimen") || "general").toLowerCase() as Regime;
@@ -164,6 +167,8 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
     const workRaw = (get("modalidad") || "presencial").toLowerCase() as WorkMode;
     const workMode = WORK_MODES.has(workRaw) ? workRaw : "presencial";
     const children = Math.max(0, Number(get("hijos") || "0") || 0);
+    const quintaRaw = get("quinta").toLowerCase();
+    const fifthCategory = quintaRaw ? ["si", "sí", "1", "true", "x"].includes(quintaRaw) : regime === "general";
     const maternal = get("materno");
     const email = get("email") || `${names}.${paternal}`.toLowerCase().replace(/\s+/g, "") + "@empresa.pe";
     const bank = get("banco") || "BCP";
@@ -191,7 +196,9 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
       regime,
       salary,
       familyAllowance: children > 0,
+      fifthCategory,
       pension,
+      cuspp,
       healthInsurance,
       epsInsurerId: null,
       sctrInsurerId: null,

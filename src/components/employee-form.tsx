@@ -36,6 +36,8 @@ export function validateDraft(d: EmployeeDraft): string | null {
   if (d.contract === "plazo_fijo" && !d.endDate) return "Indica la fecha de fin para el contrato a plazo fijo.";
   if (d.endDate && d.endDate < d.hireDate) return "La fecha de fin no puede ser anterior al ingreso.";
   if (d.healthInsurance === "eps" && !d.epsInsurerId) return "Elige la EPS del colaborador.";
+  const esAfp = d.pension !== "onp" && d.pension !== "ninguno";
+  if (esAfp && !(d.cuspp ?? "").trim()) return "Indica el CUSPP del colaborador (lo entrega su AFP).";
   return null;
 }
 
@@ -184,6 +186,7 @@ export function EmployeeForm({
                 regime,
                 pension: regime === "practicante" ? "ninguno" : value.pension,
                 contract: regime === "practicante" ? "practicas" : value.contract,
+                fifthCategory: regime === "general" ? value.fifthCategory : false,
               });
             }}
           >
@@ -195,13 +198,33 @@ export function EmployeeForm({
           </select>
         </Field>
         <Field label="Pensión">
-          <select className={fieldClass} value={value.pension} onChange={(e) => set("pension", e.target.value as Pension)}>
+          <select
+            className={fieldClass}
+            value={value.pension}
+            onChange={(e) => {
+              const pension = e.target.value as Pension;
+              const sinAfp = pension === "onp" || pension === "ninguno";
+              onChange({ ...value, pension, cuspp: sinAfp ? "" : value.cuspp });
+            }}
+          >
             {(Object.keys(PENSION_LABEL) as Pension[]).map((k) => (
               <option key={k} value={k}>
                 {PENSION_LABEL[k]}
               </option>
             ))}
           </select>
+        </Field>
+        <Field
+          label="CUSPP"
+          hint="Código de la AFP (ej. 660661RCANU6). Obligatorio para declarar en AFPnet."
+        >
+          <input
+            className={fieldClass}
+            value={value.cuspp ?? ""}
+            placeholder="Ej. 660661RCANU6"
+            disabled={value.pension === "onp" || value.pension === "ninguno"}
+            onChange={(e) => set("cuspp", e.target.value.toUpperCase().trim())}
+          />
         </Field>
         <Field label="Modalidad de trabajo" hint="Define cómo se valida la asistencia.">
           <select className={fieldClass} value={value.workMode} onChange={(e) => set("workMode", e.target.value as WorkMode)}>
@@ -318,6 +341,15 @@ export function EmployeeForm({
             onChange={(e) => set("familyAllowance", e.target.checked)}
           />
           Asignación familiar (10% de la RMV)
+        </label>
+        <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2 cursor-pointer">
+          <input
+            type="checkbox"
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            checked={value.fifthCategory}
+            onChange={(e) => set("fifthCategory", e.target.checked)}
+          />
+          Afecto a renta de quinta categoría (se retiene según su sueldo proyectado)
         </label>
         <Field label="Vacaciones ya gozadas" hint="Sirve al migrar el saldo histórico.">
           <input

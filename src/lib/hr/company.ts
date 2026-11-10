@@ -1,4 +1,5 @@
 import { catalogInsurers } from "@/lib/hr/insurers";
+import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { normalizeRuc } from "@/lib/hr/ruc";
 import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
 import type { Company } from "@/lib/hr/types";
@@ -10,6 +11,7 @@ import type { Company } from "@/lib/hr/types";
 export const LEGAL_DEFAULTS = {
   rmv: 1230,
   uit: 5500,
+  fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,
   essalud: 0.09,
   onp: 0.13,

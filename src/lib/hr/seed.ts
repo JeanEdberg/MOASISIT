@@ -1,4 +1,5 @@
 import { vacationBalance, vacationEarned, livePayslips } from "@/lib/hr/calc";
+import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { HOY } from "@/lib/hr/format";
 import type {
@@ -53,6 +54,7 @@ export function withDemoFlags(data: HrData): HrData {
 const LEGAL = {
   rmv: 1230,
   uit: 5500,
+  fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,
   essalud: 0.09,
   onp: 0.13,
@@ -128,8 +130,11 @@ const companies: Company[] = [
   },
 ];
 
-function person(partial: Employee): Employee {
-  return { isDemo: true, ...partial };
+function person(partial: Omit<Employee, "fifthCategory"> & { fifthCategory?: boolean }): Employee {
+  // Afecto a quinta por defecto en el régimen general; los practicantes y el
+  // régimen especial quedan fuera. El cálculo igual devuelve 0 si la renta
+  // proyectada no supera la deducción fija.
+  return { isDemo: true, fifthCategory: partial.fifthCategory ?? partial.regime === "general", ...partial };
 }
 
 const INMOA = companies[0]!;
@@ -162,6 +167,7 @@ function buildPeople(): Employee[] {
       familyAllowance: false,
       sextoGratificacion: 635.83,
       pension: "integra",
+      cuspp: "660661RCANU6",
       healthInsurance: "eps",
       epsInsurerId: "inmoa-eps-sanitas",
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -203,6 +209,7 @@ function buildPeople(): Employee[] {
       familyAllowance: false,
       sextoGratificacion: 417.83,
       pension: "habitat",
+      cuspp: "620123HABIT4",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -243,6 +250,7 @@ function buildPeople(): Employee[] {
       salary: 3400,
       familyAllowance: true,
       pension: "prima",
+      cuspp: "660661RCANU6",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -283,6 +291,7 @@ function buildPeople(): Employee[] {
       salary: 2500,
       familyAllowance: false,
       pension: "onp",
+      cuspp: "",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -323,6 +332,7 @@ function buildPeople(): Employee[] {
       salary: 2300,
       familyAllowance: true,
       pension: "profuturo",
+      cuspp: "630456PROFU2",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -363,6 +373,7 @@ function buildPeople(): Employee[] {
       salary: 2500,
       familyAllowance: true,
       pension: "habitat",
+      cuspp: "610789HABIT9",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "inmoa-sctr-pacifico",
@@ -404,6 +415,7 @@ function buildPeople(): Employee[] {
       salary: 3100,
       familyAllowance: true,
       pension: "integra",
+      cuspp: "620123INTEG8",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "7p-sctr-lapositiva",
@@ -439,6 +451,7 @@ function buildPeople(): Employee[] {
       salary: 2800,
       familyAllowance: false,
       pension: "habitat",
+      cuspp: "610789HABIT3",
       healthInsurance: "eps",
       epsInsurerId: "7p-eps-pacifico",
       sctrInsurerId: "7p-sctr-lapositiva",
@@ -474,6 +487,7 @@ function buildPeople(): Employee[] {
       salary: 1400,
       familyAllowance: false,
       pension: "onp",
+      cuspp: "",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "7p-sctr-lapositiva",
@@ -510,6 +524,7 @@ function buildPeople(): Employee[] {
       salary: 4200,
       familyAllowance: true,
       pension: "prima",
+      cuspp: "660661PRIMA7",
       healthInsurance: "eps",
       epsInsurerId: "plu-eps-sanitas",
       sctrInsurerId: "plu-sctr-rimac",
@@ -545,6 +560,7 @@ function buildPeople(): Employee[] {
       salary: 2600,
       familyAllowance: false,
       pension: "profuturo",
+      cuspp: "630456PROFU5",
       healthInsurance: "essalud",
       epsInsurerId: null,
       sctrInsurerId: "plu-sctr-rimac",

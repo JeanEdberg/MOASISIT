@@ -15,6 +15,8 @@ function slip(over: Partial<Payslip> & { employeeId: string }): Payslip {
     essalud: 180,
     eps: 0,
     sctr: 0,
+    sctrSalud: 0,
+    sctrPension: 0,
     vidaLey: 0,
     pensionBase: 2000,
     fifth: 0,

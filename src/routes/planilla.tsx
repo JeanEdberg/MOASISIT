@@ -5,6 +5,7 @@ import { BoletaView } from "@/components/boleta";
 import { Shell } from "@/components/shell";
 import { Button, Empty, Modal, PageHeader } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
+import { buildAfpnetRows, exportAfpnetExcel, exportAfpnetTxt } from "@/lib/hr/afpnet";
 import { payslipsFor } from "@/lib/hr/calc";
 import { currentPeriod, fullName, HOY, pen, periodLabel, recentPeriods, uid } from "@/lib/hr/format";
 import { buildPayrollRows, exportPayrollExcel, exportPayrollPdf } from "@/lib/hr/payroll-export";
@@ -36,10 +37,10 @@ function PayrollPage() {
   const selectedEmp = data.employees.find((e) => e.id === openId);
 
   const exportCsv = () => {
-    const header = ["codigo", "nombre", "dni", "ingresos", "descuentos", "neto", "essalud", "cts"];
+    const header = ["codigo", "nombre", "dni", "ingresos", "descuentos", "renta_5ta", "neto", "essalud", "cts"];
     const lines = slips.map((p) => {
       const e = data.employees.find((x) => x.id === p.employeeId);
-      return [e?.code ?? "", e ? fullName(e) : "", e?.dni ?? "", p.gross, p.discounts, p.net, p.essalud, p.cts ?? ""];
+      return [e?.code ?? "", e ? fullName(e) : "", e?.dni ?? "", p.gross, p.discounts, p.fifth, p.net, p.essalud, p.cts ?? ""];
     });
     const csv = [header, ...lines].map((row) => row.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
@@ -58,6 +59,30 @@ function PayrollPage() {
 
   const exportPdf = () => {
     exportPayrollPdf(buildPayrollRows(slips, data.employees), data.company, period);
+  };
+
+  const afpnet = () => buildAfpnetRows(slips, data.employees, period);
+
+  /** Exporta AFPnet en el formato pedido, avisando si faltan CUSPP. */
+  const exportAfpnet = (format: "excel" | "txt") => {
+    const { rows, sinCuspp } = afpnet();
+    const etiqueta = format === "excel" ? "AFPnet" : "AFPnet TXT";
+    if (rows.length === 0) {
+      toast.error(
+        sinCuspp.length
+          ? `Faltan los CUSPP de ${sinCuspp.length} afiliado(s) a AFP. Complétalos en su ficha para poder declarar.`
+          : "No hay afiliados a AFP en este periodo.",
+      );
+      return;
+    }
+    if (format === "excel") exportAfpnetExcel(rows, data.company, period);
+    else exportAfpnetTxt(rows, data.company, period);
+    const plural = rows.length === 1 ? "" : "s";
+    toast.success(
+      sinCuspp.length
+        ? `${etiqueta} exportado (${rows.length}). Quedaron fuera ${sinCuspp.length} sin CUSPP.`
+        : `${etiqueta} exportado (${rows.length} afiliado${plural})`,
+    );
   };
 
   const publishSlips = () => {
@@ -97,6 +122,12 @@ function PayrollPage() {
               </Button>
               <Button tone="line" onClick={exportCsv}>
                 Exportar CSV
+              </Button>
+              <Button tone="line" onClick={() => exportAfpnet("excel")}>
+                AFPnet (Excel)
+              </Button>
+              <Button tone="line" onClick={() => exportAfpnet("txt")}>
+                AFPnet (TXT)
               </Button>
               <Button tone="line" onClick={publishSlips}>
                 Publicar boletas
@@ -146,6 +177,7 @@ function PayrollPage() {
                 <th className="px-4 py-3 font-medium">Colaborador</th>
                 <th className="px-4 py-3 font-medium">Ingresos</th>
                 <th className="px-4 py-3 font-medium">Descuentos</th>
+                <th className="px-4 py-3 font-medium">Renta 5ta</th>
                 <th className="px-4 py-3 font-medium">Neto</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
@@ -161,6 +193,7 @@ function PayrollPage() {
                     </td>
                     <td className="num px-4 py-3">{pen(p.gross)}</td>
                     <td className="num px-4 py-3">{pen(p.discounts)}</td>
+                    <td className="num px-4 py-3">{pen(p.fifth)}</td>
                     <td className="num px-4 py-3 font-medium">{pen(p.net)}</td>
                     <td className="px-4 py-3">
                       <button type="button" className="min-h-11 text-sm text-clay" onClick={() => setOpenId(p.employeeId)}>

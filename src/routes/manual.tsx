@@ -20,7 +20,11 @@ const SECCIONES: { title: string; body: string }[] = [
   },
   {
     title: "Planilla y consolidados",
-    body: "Calcula boletas con ONP o AFP, asignación familiar, quinta categoría, ESSALUD y CTS. El consolidado masivo reúne beneficios sociales por empresa para el depósito bancario.",
+    body: "Calcula boletas con ONP o AFP, asignación familiar, quinta categoría, ESSALUD y CTS. La retención de quinta categoría se calcula sola cuando marcas al colaborador como afecto: proyecta su sueldo del año, resta la deducción fija y aplica la escala progresiva. El consolidado masivo reúne beneficios sociales por empresa para el depósito bancario.",
+  },
+  {
+    title: "Renta de quinta categoría",
+    body: "La deducción fija (7 UIT de referencia) y los tramos de la escala se editan en Empresa → Renta de quinta categoría. Ajusta la UIT en Parámetros de planilla cuando cambie la norma: el cálculo de cada boleta usa esos valores.",
   },
   {
     title: "Organización y empresa",

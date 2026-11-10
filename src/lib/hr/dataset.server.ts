@@ -1,4 +1,5 @@
 import { getSql } from "@/lib/db";
+import { withFifthCategory } from "@/lib/hr/fifth";
 import { withInsurerCatalog } from "@/lib/hr/insurers";
 import { createDemo, withDemoFlags } from "@/lib/hr/seed";
 import { withSubscriptions } from "@/lib/hr/subscription";
@@ -52,7 +53,8 @@ export async function loadDataset(): Promise<HrData> {
   if (rows[0]?.data) {
     const normalized = withInsurerCatalog(rows[0].data);
     const flagged = withDemoFlags(normalized);
-    const migrated = withSubscriptions(flagged);
+    const withSubs = withSubscriptions(flagged);
+    const migrated = withFifthCategory(withSubs);
     if (migrated !== rows[0].data) await saveDataset(migrated);
     return migrated;
   }
