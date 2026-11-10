@@ -150,8 +150,8 @@ export const useHr = create<HrState>()(
           const [hOut, mOut] = row.checkOut.split(":").map(Number);
           const minutosOut = hOut * 60 + mOut;
 
-          let estado: "presente" | "tardanza" | "falta" | "permiso" | "vacaciones" =
-            row.kind === "falta" || row.kind === "permiso" || row.kind === "vacaciones"
+          let estado: "presente" | "tardanza" | "falta" | "vacaciones" =
+            row.kind === "falta" || row.kind === "vacaciones"
               ? row.kind
               : "presente";
 
@@ -242,14 +242,8 @@ export const useHr = create<HrState>()(
         return {
           ...data,
           company: {
-            id: "inmoa",
-            brandName: "Moasist",
-            brandMark: "MO",
-            brandColor: "#0284c7",
-            accentColor: "#0369a1",
-            name: "INMOA Logística y Soluciones E.I.R.L.",
-            ruc: "20614684772",
             ...data.company,
+            id: data.company.id || "inmoa",
           },
         };
       },

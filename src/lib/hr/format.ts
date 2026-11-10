@@ -8,6 +8,7 @@ import type {
   Regime,
   RequestKind,
   RequestStatus,
+  WorkMode,
 } from "@/lib/hr/types";
 
 export const HOY = "2026-11-08";
@@ -132,6 +133,14 @@ export const CONTRACT_LABEL: Record<ContractType, string> = {
   indefinido: "Indefinido",
   plazo_fijo: "Plazo fijo",
   practicas: "Convenio de prácticas",
+};
+
+export const WORK_MODE_LABEL: Record<WorkMode, string> = {
+  presencial: "Presencial (oficina central)",
+  campo: "Campo / galpón",
+  virtual: "Virtual / remoto",
+  hibrido: "Híbrido",
+  itinerante: "Itinerante / viajero",
 };
 
 export const REQUEST_LABEL: Record<RequestKind, string> = {

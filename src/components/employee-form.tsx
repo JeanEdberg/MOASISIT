@@ -1,6 +1,6 @@
 import { Field, fieldClass } from "@/components/ui";
-import { CONTRACT_LABEL, PENSION_LABEL, REGIME_LABEL } from "@/lib/hr/format";
-import type { Area, ContractType, Employee, Pension, Regime } from "@/lib/hr/types";
+import { CONTRACT_LABEL, PENSION_LABEL, REGIME_LABEL, WORK_MODE_LABEL } from "@/lib/hr/format";
+import type { Area, ContractType, Employee, Pension, Regime, WorkMode } from "@/lib/hr/types";
 
 export type EmployeeDraft = Omit<Employee, "id" | "code" | "vacationHistory"> & {
   vacationHistory: number;
@@ -153,6 +153,15 @@ export function EmployeeForm({
             ))}
           </select>
         </Field>
+        <Field label="Modalidad de trabajo" hint="Define cómo se valida la asistencia.">
+          <select className={fieldClass} value={value.workMode} onChange={(e) => set("workMode", e.target.value as WorkMode)}>
+            {(Object.keys(WORK_MODE_LABEL) as WorkMode[]).map((k) => (
+              <option key={k} value={k}>
+                {WORK_MODE_LABEL[k]}
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Hijos">
           <input
             className={fieldClass}
@@ -164,11 +173,17 @@ export function EmployeeForm({
             }}
           />
         </Field>
-        <Field label="Banco">
-          <input className={fieldClass} value={value.bank} onChange={(e) => set("bank", e.target.value)} />
+        <Field label="Banco (sueldo)">
+          <input className={fieldClass} value={value.salaryBank} onChange={(e) => set("salaryBank", e.target.value)} />
         </Field>
-        <Field label="Cuenta">
-          <input className={fieldClass} value={value.account} onChange={(e) => set("account", e.target.value)} />
+        <Field label="Cuenta (sueldo)">
+          <input className={fieldClass} value={value.salaryAccount} onChange={(e) => set("salaryAccount", e.target.value)} />
+        </Field>
+        <Field label="Banco (CTS)">
+          <input className={fieldClass} value={value.ctsBank} onChange={(e) => set("ctsBank", e.target.value)} />
+        </Field>
+        <Field label="Cuenta (CTS)">
+          <input className={fieldClass} value={value.ctsAccount} onChange={(e) => set("ctsAccount", e.target.value)} />
         </Field>
         <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2 cursor-pointer">
           <input

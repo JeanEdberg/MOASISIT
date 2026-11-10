@@ -16,10 +16,11 @@ import { Route as ConsolidadoRouteImport } from './routes/consolidado'
 import { Route as ConsolidadoAsistenciaRouteImport } from './routes/consolidado-asistencia'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EmpresaRouteImport } from './routes/empresa'
+import { Route as ManualRouteImport } from './routes/manual'
 import { Route as OrganizacionRouteImport } from './routes/organizacion'
 import { Route as PlanillaRouteImport } from './routes/planilla'
 import { Route as VacacionesRouteImport } from './routes/vacaciones'
-import { Route as ColaboradoresIdRouteImport } from './routes/colaboradores.$id'
+import { Route as ColaboradoresIdRouteImport } from './routes/colaboradores_.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -56,6 +57,11 @@ const EmpresaRoute = EmpresaRouteImport.update({
   path: '/empresa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManualRoute = ManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrganizacionRoute = OrganizacionRouteImport.update({
   id: '/organizacion',
   path: '/organizacion',
@@ -72,19 +78,20 @@ const VacacionesRoute = VacacionesRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ColaboradoresIdRoute = ColaboradoresIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ColaboradoresRoute,
+  id: '/colaboradores_/$id',
+  path: '/colaboradores/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/asistencia': typeof AsistenciaRoute
-  '/colaboradores': typeof ColaboradoresRouteWithChildren
+  '/colaboradores': typeof ColaboradoresRoute
   '/consolidado': typeof ConsolidadoRoute
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
   '/planilla': typeof PlanillaRoute
   '/vacaciones': typeof VacacionesRoute
@@ -93,11 +100,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/asistencia': typeof AsistenciaRoute
-  '/colaboradores': typeof ColaboradoresRouteWithChildren
+  '/colaboradores': typeof ColaboradoresRoute
   '/consolidado': typeof ConsolidadoRoute
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
   '/planilla': typeof PlanillaRoute
   '/vacaciones': typeof VacacionesRoute
@@ -107,15 +115,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/asistencia': typeof AsistenciaRoute
-  '/colaboradores': typeof ColaboradoresRouteWithChildren
+  '/colaboradores': typeof ColaboradoresRoute
   '/consolidado': typeof ConsolidadoRoute
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
   '/planilla': typeof PlanillaRoute
   '/vacaciones': typeof VacacionesRoute
-  '/colaboradores/$id': typeof ColaboradoresIdRoute
+  '/colaboradores_/$id': typeof ColaboradoresIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/manual'
     | '/organizacion'
     | '/planilla'
     | '/vacaciones'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/manual'
     | '/organizacion'
     | '/planilla'
     | '/vacaciones'
@@ -153,23 +164,26 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/manual'
     | '/organizacion'
     | '/planilla'
     | '/vacaciones'
-    | '/colaboradores/$id'
+    | '/colaboradores_/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AsistenciaRoute: typeof AsistenciaRoute
-  ColaboradoresRoute: typeof ColaboradoresRouteWithChildren
+  ColaboradoresRoute: typeof ColaboradoresRoute
   ConsolidadoRoute: typeof ConsolidadoRoute
   ConsolidadoAsistenciaRoute: typeof ConsolidadoAsistenciaRoute
   DocumentosRoute: typeof DocumentosRoute
   EmpresaRoute: typeof EmpresaRoute
+  ManualRoute: typeof ManualRoute
   OrganizacionRoute: typeof OrganizacionRoute
   PlanillaRoute: typeof PlanillaRoute
   VacacionesRoute: typeof VacacionesRoute
+  ColaboradoresIdRoute: typeof ColaboradoresIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -223,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmpresaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manual': {
+      id: '/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof ManualRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/organizacion': {
       id: '/organizacion'
       path: '/organizacion'
@@ -244,39 +265,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VacacionesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/colaboradores/$id': {
-      id: '/colaboradores/$id'
-      path: '/$id'
+    '/colaboradores_/$id': {
+      id: '/colaboradores_/$id'
+      path: '/colaboradores/$id'
       fullPath: '/colaboradores/$id'
       preLoaderRoute: typeof ColaboradoresIdRouteImport
-      parentRoute: typeof ColaboradoresRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface ColaboradoresRouteChildren {
-  ColaboradoresIdRoute: typeof ColaboradoresIdRoute
-}
-
-const ColaboradoresRouteChildren: ColaboradoresRouteChildren = {
-  ColaboradoresIdRoute: ColaboradoresIdRoute,
-}
-
-const ColaboradoresRouteWithChildren = ColaboradoresRoute._addFileChildren(
-  ColaboradoresRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AsistenciaRoute: AsistenciaRoute,
-  ColaboradoresRoute: ColaboradoresRouteWithChildren,
+  ColaboradoresRoute: ColaboradoresRoute,
   ConsolidadoRoute: ConsolidadoRoute,
   ConsolidadoAsistenciaRoute: ConsolidadoAsistenciaRoute,
   DocumentosRoute: DocumentosRoute,
   EmpresaRoute: EmpresaRoute,
+  ManualRoute: ManualRoute,
   OrganizacionRoute: OrganizacionRoute,
   PlanillaRoute: PlanillaRoute,
   VacacionesRoute: VacacionesRoute,
+  ColaboradoresIdRoute: ColaboradoresIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

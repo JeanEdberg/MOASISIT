@@ -24,10 +24,11 @@ import {
   REQUEST_LABEL,
   shortDate,
   STATUS_LABEL,
+  WORK_MODE_LABEL,
 } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
 
-export const Route = createFileRoute("/colaboradores/$id")({ component: FichaPage });
+export const Route = createFileRoute("/colaboradores_/$id")({ component: FichaPage });
 
 const TONES = {
   clay: "bg-clay text-clay-ink",
@@ -171,8 +172,11 @@ function FichaPage() {
             <Info label="Cargo" value={emp.position} />
             <Info label="Régimen" value={REGIME_LABEL[emp.regime]} />
             <Info label="Pensión" value={PENSION_LABEL[emp.pension]} />
-            <Info label="Banco" value={emp.bank || "—"} />
-            <Info label="Cuenta" value={emp.account || "—"} />
+            <Info label="Modalidad" value={WORK_MODE_LABEL[emp.workMode]} />
+            <Info label="Banco (sueldo)" value={emp.salaryBank || emp.bank || "—"} />
+            <Info label="Cuenta (sueldo)" value={emp.salaryAccount || emp.account || "—"} />
+            <Info label="Banco (CTS)" value={emp.ctsBank || "—"} />
+            <Info label="Cuenta (CTS)" value={emp.ctsAccount || "—"} />
             <Info label="Fin de contrato" value={emp.endDate ? shortDate(emp.endDate) : "Sin fecha"} />
             <Info label="Asignación familiar" value={emp.familyAllowance ? "Sí" : "No"} />
           </div>
