@@ -277,9 +277,52 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   **conserva** las tasas editadas por el usuario; no reescribe la fila si no hay
   cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
 - **Push**: this sandbox has **no push access** to GitHub — the provided
-  `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`), the
-  credential-helper token is invalid, and there is no SSH. Commit locally and
-  tell the user to push from their own machine.
+  `GITHUB_TOKEN` is read-only (`Resource not accessible by integration`; push
+  returns `403 Permission denied`), the credential-helper token is invalid, and
+  there is no SSH. Commit locally and tell the user to push from their own
+  machine.
+
+## Handoff between sessions (no-push environments)
+
+Each conversation runs in its **own container**: a chat does **not** see commits
+made in another chat, and this sandbox cannot push. So local commits are
+invisible to the next chat unless you export them. Whenever you finish a turn
+with **unpushed commits**, publish a handoff and tell the user how to apply it.
+
+**Export (run at the end of the turn, from `/workspace/project`):**
+
+```sh
+rm -f public/descargas/moasist-cambios.bundle public/descargas/moasist-cambios.patch
+git bundle create public/descargas/moasist-cambios.bundle main --not origin/main
+git format-patch origin/main..main --stdout > public/descargas/moasist-cambios.patch
+git bundle verify public/descargas/moasist-cambios.bundle   # must be "okay"
+```
+
+`public/descargas/` is git-ignored and served by the dev server, so the files
+are downloadable at (host is **beyta**, not "beya"):
+
+- `https://work-1-raueodajienbeyta.prod-runtime.all-hands.dev/descargas/moasist-cambios.bundle`
+- `https://work-1-raueodajienbeyta.prod-runtime.all-hands.dev/descargas/moasist-cambios.patch`
+
+**Import (the next chat, or the user's machine):**
+
+```sh
+curl -fsSL "…/descargas/moasist-cambios.bundle" -o /tmp/c.bundle
+git bundle verify /tmp/c.bundle
+git fetch /tmp/c.bundle main:refs/remotes/bundle/main
+git rev-list --count origin/main..refs/remotes/bundle/main   # how many commits
+# then fast-forward local main onto it (no merge/rebase):
+git checkout main && git merge --ff-only refs/remotes/bundle/main
+```
+
+Fallback when the bundle is unavailable: `git am /tmp/c.patch` (applies the same
+commits; hashes differ but the tree is identical — verify with
+`git rev-parse HEAD^{tree}`).
+
+**Always verify before handing off:** apply the bundle/patch to a clean clone of
+`origin` and confirm the resulting tree matches your local `main`
+(`git rev-parse main^{tree}`). Never hand off without telling the user which
+commits are pending and the exact commands to push them.
 
 If `AGENTS.project.md` exists, it holds the user's project instructions. Follow
 it with the same priority as this file.
