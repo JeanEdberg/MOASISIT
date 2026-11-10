@@ -155,11 +155,11 @@ export const applyAction = createServerFn({ method: "POST" })
     const { loadDataset, saveDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
     const { applyHrAction, authorizeAction } = await import("@/lib/hr/actions");
     const full = await loadDataset();
-    // Un RR.HH. de empresa solo puede escribir dentro de su propia empresa.
-    if (session.role !== "superadmin" && session.role !== "rrhh") {
-      const denial = authorizeAction(action, session.role, session.employeeId, full);
-      if (denial) return { ok: false, error: denial };
-    } else if (session.role === "rrhh") {
+    // El gate de rol corre para TODOS: cubre las acciones solo-superadmin
+    // (crear/eliminar empresa, suscripción) y el alcance por empresa de RR.HH.
+    const denial = authorizeAction(action, session.role, session.employeeId, full);
+    if (denial) return { ok: false, error: denial };
+    if (session.role === "rrhh") {
       const targetCompany = companyIdForAction(action, full);
       if (targetCompany && targetCompany !== session.companyId) {
         return { ok: false, error: "Solo puedes editar datos de tu empresa." };
@@ -167,6 +167,12 @@ export const applyAction = createServerFn({ method: "POST" })
     }
     const next = applyHrAction(full, action);
     await saveDataset(next);
+    // Al eliminar una empresa se borran también sus credenciales (colaboradores
+    // y usuarios RR.HH.): esas cuentas no deben seguir pudiendo iniciar sesión.
+    if (action.type === "removeCompany") {
+      const { deleteCredentialsForCompany } = await import("@/lib/hr/credentials.server");
+      await deleteCredentialsForCompany(action.companyId);
+    }
     // The DNI is the sign-in login: keep the credential in step with an edit.
     if (action.type === "updateEmployee") {
       const before = full.employees.find((e) => e.id === action.id);

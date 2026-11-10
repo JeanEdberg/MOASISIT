@@ -34,6 +34,10 @@ export type StatusFacts = {
   hasDemoPeople: boolean;
   /** true = la app corre en producción (NODE_ENV=production). */
   isProduction: boolean;
+  /** Cuántas suscripciones están vencidas (danger). */
+  subscriptionsOverdue: number;
+  /** Cuántas suscripciones vencen dentro de 7 días (warn). */
+  subscriptionsDueSoon: number;
 };
 
 /**
@@ -42,6 +46,7 @@ export type StatusFacts = {
  */
 export function buildStatusChecks(facts: StatusFacts): StatusCheck[] {
   const checks: StatusCheck[] = [];
+  const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
   checks.push(
     facts.databasePersistent
@@ -125,6 +130,24 @@ export function buildStatusChecks(facts: StatusFacts): StatusCheck[] {
         'Todavía aparecen personas de ejemplo ("Andes & Cacao"). Son ficticias y sirven para recorrer el producto.',
       level: "warn",
       fix: "Cuando estés listo, ve a Empresa → Quitar personas de ejemplo.",
+    });
+  }
+
+  if (facts.subscriptionsOverdue > 0) {
+    checks.push({
+      id: "subscriptions",
+      title: `${facts.subscriptionsOverdue} ${plural(facts.subscriptionsOverdue, "suscripción vencida", "suscripciones vencidas")}`,
+      detail: "Una o más empresas tienen el periodo pagado vencido y siguen facturándose.",
+      level: "danger",
+      fix: "Entra a Empresa → Suscripciones y registra el cobro, o cancela la suscripción.",
+    });
+  } else if (facts.subscriptionsDueSoon > 0) {
+    checks.push({
+      id: "subscriptions",
+      title: `${facts.subscriptionsDueSoon} ${plural(facts.subscriptionsDueSoon, "suscripción por vencer", "suscripciones por vencer")}`,
+      detail: "Alguna empresa cumple su fecha de cobro en los próximos 7 días.",
+      level: "warn",
+      fix: "Revisa Empresa → Suscripciones para preparar la renovación.",
     });
   }
 

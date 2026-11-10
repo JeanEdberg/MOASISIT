@@ -1,5 +1,22 @@
 export type Pension = "onp" | "habitat" | "integra" | "prima" | "profuturo" | "ninguno";
 
+/** Estado de la suscripción mensual de una empresa. */
+export type SubscriptionStatus = "activa" | "cancelada";
+
+/** Suscripción mensual de una empresa (plan, día de cobro y vencimiento). */
+export type Subscription = {
+  /** Precio mensual del plan (S/). El superadmin lo edita. */
+  monthlyPrice: number;
+  /** Día de cobro del mes (1–31). `null` = último día del mes. */
+  billingDay: number | null;
+  /** Fecha de alta de la suscripción (ISO). */
+  startDate: string | null;
+  /** Fecha de vencimiento: el día del próximo cobro (ISO). */
+  paidUntil: string | null;
+  /** Estado de la suscripción. */
+  status: SubscriptionStatus;
+};
+
 export type Regime = "general" | "pequena" | "micro" | "practicante";
 
 export type ContractType = "indefinido" | "plazo_fijo" | "practicas";
@@ -58,6 +75,8 @@ export type Company = {
   epsAporteTrabajador: number;
   /** Aseguradoras vigentes (SCTR, EPS, Vida Ley) con sus tasas editables. */
   insurers: Insurer[];
+  /** Suscripción mensual de la empresa (plan, día de cobro y vencimiento). */
+  subscription: Subscription;
 };
 
 export type Area = {

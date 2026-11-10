@@ -257,3 +257,14 @@ export async function setCredentialCompany(login: string, companyId: string): Pr
   const sql = await getSql();
   await sql`update hr_credential set company_id = ${companyId}, updated_at = now() where login = ${login}`;
 }
+
+/**
+ * Superadmin: borra las credenciales de una empresa eliminada (colaboradores y
+ * usuarios RR.HH. de esa empresa). Sin esto, esas cuentas seguirían existiendo
+ * y podrían intentar iniciar sesión. Devuelve cuántas se eliminaron.
+ */
+export async function deleteCredentialsForCompany(companyId: string): Promise<number> {
+  const sql = await getSql();
+  const rows = await sql<{ login: string }>`delete from hr_credential where company_id = ${companyId} returning login`;
+  return rows.length;
+}

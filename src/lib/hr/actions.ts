@@ -9,6 +9,7 @@ import type {
   Employee,
   HrData,
   RequestStatus,
+  Subscription,
   TimeRequest,
   ViewerMode,
 } from "@/lib/hr/types";
@@ -32,6 +33,8 @@ export type HrAction =
   | { type: "reopenPeriod"; period: string }
   | { type: "updateCompany"; patch: Partial<Company> }
   | { type: "addCompany"; company: Company }
+  | { type: "updateCompanySubscription"; companyId: string; patch: Partial<Subscription> }
+  | { type: "removeCompany"; companyId: string }
   | { type: "addArea"; name: string; companyId: string }
   | { type: "renameArea"; id: string; name: string };
 
@@ -53,8 +56,8 @@ const RRHH_ONLY = new Set<HrAction["type"]>([
 /** Actions a jefatura may run on their own reports. */
 const JEFATURA_OK = new Set<HrAction["type"]>(["decideRequest", "addRequest", "upsertAttendance"]);
 
-/** Actions only the developer (superadmin) may run: alta de empresas. */
-const SUPERADMIN_ONLY = new Set<HrAction["type"]>(["addCompany"]);
+/** Actions only the developer (superadmin) may run: alta y baja de empresas. */
+const SUPERADMIN_ONLY = new Set<HrAction["type"]>(["addCompany", "updateCompanySubscription", "removeCompany"]);
 
 /**
  * Role gate. `selfId` is the caller's own employee id (empty for the admin).
@@ -164,6 +167,37 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         companyId: action.company.id,
       }));
       return { ...data, companies: [...data.companies, action.company], areas: [...data.areas, ...areas] };
+    }
+    case "updateCompanySubscription":
+      return {
+        ...data,
+        companies: data.companies.map((c) =>
+          c.id === action.companyId ? { ...c, subscription: { ...c.subscription, ...action.patch } } : c,
+        ),
+      };
+    case "removeCompany": {
+      // No se puede eliminar la última empresa: la app siempre necesita una activa.
+      if (data.companies.length <= 1) return data;
+      const companies = data.companies.filter((c) => c.id !== action.companyId);
+      const employees = data.employees.filter((e) => e.companyId !== action.companyId);
+      const goneIds = new Set(data.employees.filter((e) => e.companyId === action.companyId).map((e) => e.id));
+      const company = data.company.id === action.companyId ? (companies[0] ?? data.company) : data.company;
+      const snapshots: typeof data.snapshots = {};
+      for (const [period, slips] of Object.entries(data.snapshots)) {
+        const own = slips.filter((s) => !goneIds.has(s.employeeId));
+        if (own.length) snapshots[period] = own;
+      }
+      return {
+        ...data,
+        company,
+        companies,
+        employees,
+        areas: data.areas.filter((a) => a.companyId !== action.companyId),
+        requests: data.requests.filter((r) => r.companyId !== action.companyId),
+        attendance: data.attendance.filter((a) => a.companyId !== action.companyId),
+        documents: data.documents.filter((d) => d.companyId !== action.companyId),
+        snapshots,
+      };
     }
     case "addArea":
       return { ...data, areas: [...data.areas, { id: uid("a"), name: action.name.trim(), companyId: action.companyId || data.company.id }] };

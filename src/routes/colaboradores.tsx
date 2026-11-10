@@ -152,6 +152,15 @@ function PeoplePage() {
 
       {csvMsg ? <p className="mb-4 text-sm text-muted">{csvMsg}</p> : null}
 
+      {admin ? (
+        <p className="mb-4 text-sm text-muted">
+          ¿Cargas muchos colaboradores? Descarga la <strong>Plantilla CSV</strong>, llena una fila por persona y usa{" "}
+          <strong>Importar CSV</strong>. Solo son obligatorias las columnas nombres, paterno, dni, cargo, area, sueldo e
+          ingreso; las demás (teléfono, contrato, régimen, pensión, banco, jefe_dni, etc.) son opcionales y, si las
+          dejas vacías, la app pone valores por defecto.
+        </p>
+      ) : null}
+
       <div className="mb-4 grid gap-2 sm:grid-cols-3">
         <input className={fieldClass} placeholder="Buscar nombre, DNI o cargo" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className={fieldClass} value={area} onChange={(e) => setArea(e.target.value)}>
@@ -232,7 +241,8 @@ function PeoplePage() {
 }
 
 function downloadText(name: string, text: string) {
-  const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+  // BOM inicial: Excel abre el archivo como UTF-8 y muestra bien los acentos.
+  const blob = new Blob(["\uFEFF" + text], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

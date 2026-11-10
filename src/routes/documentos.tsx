@@ -2,18 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { BoletaView } from "@/components/boleta";
+import { ContractView } from "@/components/contract";
 import { Shell } from "@/components/shell";
 import { Badge, Button, Modal, PageHeader } from "@/components/ui";
 import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
 import { payslipFor } from "@/lib/hr/calc";
-import {
-  CONTRACT_LABEL,
-  DOC_LABEL,
-  fullName,
-  pen,
-  PENSION_LABEL,
-  shortDate,
-} from "@/lib/hr/format";
+import { DOC_LABEL, fullName, shortDate } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
 import type { DocItem } from "@/lib/hr/types";
 
@@ -110,6 +104,9 @@ function DocBody({ doc }: { doc: DocItem }) {
     );
   }
   if (!emp) return <p className="text-sm text-muted">Sin colaborador asociado.</p>;
+  if (doc.kind === "contrato") {
+    return <ContractView employee={emp} company={company} />;
+  }
   if (doc.kind === "certificado") {
     return (
       <p className="text-sm">
@@ -121,13 +118,12 @@ function DocBody({ doc }: { doc: DocItem }) {
   return (
     <div className="space-y-3 text-sm">
       <p>
-        {company.name} (RUC {company.ruc}), con domicilio en {company.address}, {company.city}, y {fullName(emp)}, identificado con DNI {emp.dni}, celebran un {CONTRACT_LABEL[emp.contract].toLowerCase()} para el cargo de {emp.position}.
+        Anexo al vínculo laboral entre {company.name} (RUC {company.ruc}) y {fullName(emp)}, identificado con DNI {emp.dni}, para el cargo de {emp.position}.
       </p>
       <p>
-        La remuneración mensual de referencia es {pen(emp.salary)}
-        {emp.familyAllowance ? ", más asignación familiar," : ""} bajo {PENSION_LABEL[emp.pension]}. Fecha de inicio: {shortDate(emp.hireDate)}.
+        Modifica o precisa condiciones del contrato vigente. Fecha de inicio del vínculo: {shortDate(emp.hireDate)}.
       </p>
-      <p className="text-muted">Modelo editable. No sustituye un contrato suscrito ni un convenio de prácticas registrado.</p>
+      <p className="text-muted">Modelo editable. No sustituye un anexo suscrito por ambas partes.</p>
     </div>
   );
 }

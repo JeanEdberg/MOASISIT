@@ -195,6 +195,38 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `src/components/status-panel.tsx`, montado arriba en `/empresa`: un panel con
   semáforo que dice qué está listo, qué falta y cómo resolverlo (BD en memoria =
   danger; RUC sin token / contraseña automática / datos de ejemplo = warn).
+- **Suscripción (plan mensual por empresa)**: `src/lib/hr/subscription.ts` es
+  **puro** (`prorateFirstCharge`, `nextChargeDate`, `subscriptionAlert`,
+  `subscriptionOf`, `withSubscriptions`, `DEFAULT_SUBSCRIPTION`). El campo
+  `company.subscription` = `{monthlyPrice, billingDay (null = último día del
+  mes), startDate, paidUntil, status}`. `withSubscriptions` migra datasets ya
+  guardados y es idempotente (corre en `loadDataset`). `status.ts` expone
+  `subscriptionsOverdue` / `subscriptionsDueSoon` para el aviso del inicio. Solo
+  el **superadmin** ve y edita el panel (`src/components/subscription-panel.tsx`,
+  montado en `/empresa`): cambia precio/día de cobro/fechas, registra el cobro
+  del mes, cancela la suscripción o **elimina la empresa** (acción
+  `removeCompany`, también superadmin-only, que limpia las credenciales de esa
+  empresa). El prorrateo del primer mes se calcula solo y se muestra en S/.
+- **Modelo de contrato**: `src/lib/hr/contract.ts` es **puro**
+  (`buildContract`, `trialPeriodDays`): arma las cláusulas del contrato de
+  trabajo (partes, objeto, duración y periodo de prueba, jornada, remuneración,
+  beneficios, seguridad social, obligaciones, confidencialidad, terminación y
+  ley aplicable) según el régimen y el tipo de contrato del colaborador. La UI
+  es `src/components/contract.tsx`, mostrada en `/documentos` al abrir un
+  documento de tipo `contrato`. Es un **modelo editable**: incluye una
+  advertencia de que debe validarlo la asesoría laboral; no es firma
+  electrónica ni registro ante la AAT.
+- **Importación CSV**: `src/lib/hr/csv.ts` (`parseEmployeeCsv`, `CSV_SAMPLE`,
+  `CSV_COLUMNS`). La **plantilla completa** tiene 24 columnas; solo siete son
+  obligatorias (`nombres`, `paterno`, `dni`, `cargo`, `area`, `sueldo`,
+  `ingreso`). Las demás (contacto, contrato, régimen, pensión, salud,
+  modalidad, banco/cuenta, `jefe_dni`, etc.) son opcionales: si faltan, se usa
+  un valor por defecto. Se lee por **nombre de encabezado** (el orden no
+  importa), valida DNI de 8 dígitos y DNI repetido, crea las áreas que falten y
+  resuelve el jefe por DNI en una **segunda pasada** (puede venir antes o
+  después en el archivo). La descarga agrega BOM UTF-8 para que Excel muestre
+  bien los acentos. Botones en `/colaboradores` (Plantilla CSV / Importar CSV,
+  solo admin).
 - **Datos de ejemplo (`isDemo`)**: las personas del seed llevan la marca
   `isDemo: true` (`person()` en `seed.ts`). "Quitar personas de ejemplo" borra
   **solo** esas personas — de **todas** las empresas — y no por dominio de correo,

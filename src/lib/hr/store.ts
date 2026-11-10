@@ -12,6 +12,7 @@ import type {
   Employee,
   HrData,
   RequestStatus,
+  Subscription,
   TimeRequest,
   ViewerMode,
 } from "@/lib/hr/types";
@@ -48,6 +49,8 @@ type HrState = HrData & {
   setAccessRole: (employeeId: string, role: ViewerMode) => Promise<{ ok: boolean; error?: string }>;
 
   updateCompany: (patch: Partial<Company>) => void;
+  updateCompanySubscription: (companyId: string, patch: Partial<Subscription>) => void;
+  removeCompany: (companyId: string) => void;
   switchCompany: (companyId: string) => Promise<void>;
   createCompany: (
     input: NewCompanyInput,
@@ -175,6 +178,8 @@ export const useHr = create<HrState>()((set, get) => {
     },
 
     updateCompany: (patch) => run({ type: "updateCompany", patch }),
+    updateCompanySubscription: (companyId, patch) => run({ type: "updateCompanySubscription", companyId, patch }),
+    removeCompany: (companyId) => run({ type: "removeCompany", companyId }),
     switchCompany: async (companyId) => {
       const { switchCompany: apiSwitch } = await import("@/lib/hr/api");
       const res = await apiSwitch({ data: { companyId } });

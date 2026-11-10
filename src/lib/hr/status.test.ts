@@ -10,6 +10,8 @@ const base: StatusFacts = {
   employeeCount: 25,
   hasDemoPeople: false,
   isProduction: true,
+  subscriptionsOverdue: 0,
+  subscriptionsDueSoon: 0,
 };
 
 test("todo configurado devuelve solo chequeos en verde", () => {
@@ -57,4 +59,25 @@ test("contraseña de admin automática queda en aviso", () => {
   const admin = checks.find((c) => c.id === "admin");
   assert.ok(admin);
   assert.equal(admin.level, "warn");
+});
+
+test("suscripción vencida es crítico (danger)", () => {
+  const checks = buildStatusChecks({ ...base, subscriptionsOverdue: 1 });
+  const sub = checks.find((c) => c.id === "subscriptions");
+  assert.ok(sub);
+  assert.equal(sub.level, "danger");
+  assert.equal(overallLevel(checks), "danger");
+});
+
+test("suscripción por vencer queda en aviso", () => {
+  const checks = buildStatusChecks({ ...base, subscriptionsDueSoon: 2 });
+  const sub = checks.find((c) => c.id === "subscriptions");
+  assert.ok(sub);
+  assert.equal(sub.level, "warn");
+  assert.match(sub.title, /2 suscripciones/);
+});
+
+test("sin suscripciones en riesgo no agrega chequeo", () => {
+  const checks = buildStatusChecks(base);
+  assert.equal(checks.some((c) => c.id === "subscriptions"), false);
 });

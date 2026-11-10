@@ -1,5 +1,6 @@
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { normalizeRuc } from "@/lib/hr/ruc";
+import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
 import type { Company } from "@/lib/hr/types";
 
 /**
@@ -83,6 +84,7 @@ export function buildCompany(input: NewCompanyInput, id: string): Company {
     accentColor: input.accentColor?.trim() || BRAND_DEFAULTS.accentColor,
     ...LEGAL_DEFAULTS,
     insurers: catalogInsurers(id),
+    subscription: { ...DEFAULT_SUBSCRIPTION, startDate: new Date().toISOString().slice(0, 10) },
   };
 }
 

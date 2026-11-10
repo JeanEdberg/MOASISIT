@@ -134,4 +134,46 @@ describe("applyHrAction", () => {
     const data = base();
     assert.equal(withDemoFlags(data), data);
   });
+
+  it("updateCompanySubscription edits only the target company", () => {
+    const data = base();
+    const next = applyHrAction(data, { type: "updateCompanySubscription", companyId: "7pollitos", patch: { monthlyPrice: 150, status: "cancelada" } });
+    const pollitos = next.companies.find((c) => c.id === "7pollitos");
+    const inmoa = next.companies.find((c) => c.id === "inmoa");
+    assert.equal(pollitos?.subscription.monthlyPrice, 150);
+    assert.equal(pollitos?.subscription.status, "cancelada");
+    assert.notEqual(inmoa?.subscription.status, "cancelada");
+  });
+
+  it("removeCompany deletes the company and everything that belongs to it", () => {
+    const data = base();
+    const next = applyHrAction(data, { type: "removeCompany", companyId: "7pollitos" });
+    assert.equal(next.companies.some((c) => c.id === "7pollitos"), false);
+    assert.equal(next.employees.some((e) => e.companyId === "7pollitos"), false);
+    assert.equal(next.areas.some((a) => a.companyId === "7pollitos"), false);
+    assert.equal(next.attendance.some((a) => a.companyId === "7pollitos"), false);
+    assert.equal(next.documents.some((d) => d.companyId === "7pollitos"), false);
+    // Las otras empresas siguen intactas.
+    assert.equal(next.employees.some((e) => e.companyId === "inmoa"), true);
+  });
+
+  it("removeCompany reassigns the active company when it deletes it", () => {
+    const data = { ...base(), company: base().companies[1]! };
+    const next = applyHrAction(data, { type: "removeCompany", companyId: "7pollitos" });
+    assert.equal(next.company.id, "inmoa");
+  });
+
+  it("removeCompany refuses to delete the last remaining company", () => {
+    const data = base();
+    const single = { ...data, companies: [data.companies[0]!], company: data.companies[0]! };
+    const next = applyHrAction(single, { type: "removeCompany", companyId: "inmoa" });
+    assert.equal(next.companies.length, 1);
+  });
+
+  it("authorizeAction blocks non-superadmin from removing a company", () => {
+    const data = base();
+    assert.ok(authorizeAction({ type: "removeCompany", companyId: "inmoa" }, "rrhh", "", data));
+    assert.ok(authorizeAction({ type: "updateCompanySubscription", companyId: "inmoa", patch: {} }, "rrhh", "", data));
+    assert.equal(authorizeAction({ type: "removeCompany", companyId: "inmoa" }, "superadmin", "", data), null);
+  });
 });

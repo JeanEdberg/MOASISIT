@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { NewCompanyButton } from "@/components/new-company";
 import { StatusPanel } from "@/components/status-panel";
+import { SubscriptionPanel } from "@/components/subscription-panel";
 import { Shell } from "@/components/shell";
 import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
@@ -72,6 +73,10 @@ function CompanyPage() {
       />
 
       <StatusPanel />
+
+      <div className="mt-4">
+        <SubscriptionPanel />
+      </div>
 
       <section className="mt-4 rounded-lg border border-line bg-surface p-4">
         <h2 className="text-2xl">Identidad</h2>

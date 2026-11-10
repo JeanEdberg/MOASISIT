@@ -62,6 +62,15 @@ const LEGAL = {
   epsAporteTrabajador: 0.0225,
 };
 
+/** Suscripción de demostración: S/ 89/mes, cobro el último día del mes. */
+const DEMO_SUBSCRIPTION = {
+  monthlyPrice: 89,
+  billingDay: null,
+  startDate: "2026-01-01",
+  paidUntil: "2026-11-30",
+  status: "activa" as const,
+};
+
 const companies: Company[] = [
   {
     id: "inmoa",
@@ -79,6 +88,7 @@ const companies: Company[] = [
     accentColor: "#0369a1",
     ...LEGAL,
     insurers: catalogInsurers("inmoa"),
+    subscription: { ...DEMO_SUBSCRIPTION },
   },
   {
     id: "7pollitos",
@@ -96,6 +106,7 @@ const companies: Company[] = [
     accentColor: "#0369a1",
     ...LEGAL,
     insurers: catalogInsurers("7pollitos"),
+    subscription: { ...DEMO_SUBSCRIPTION },
   },
   {
     id: "plumifero",
@@ -113,6 +124,7 @@ const companies: Company[] = [
     accentColor: "#0369a1",
     ...LEGAL,
     insurers: catalogInsurers("plumifero"),
+    subscription: { ...DEMO_SUBSCRIPTION },
   },
 ];
 
