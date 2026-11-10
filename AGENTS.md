@@ -195,6 +195,12 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `src/components/status-panel.tsx`, montado arriba en `/empresa`: un panel con
   semáforo que dice qué está listo, qué falta y cómo resolverlo (BD en memoria =
   danger; RUC sin token / contraseña automática / datos de ejemplo = warn).
+- **Datos de ejemplo (`isDemo`)**: las personas del seed llevan la marca
+  `isDemo: true` (`person()` en `seed.ts`). "Quitar personas de ejemplo" borra
+  **solo** esas personas — de **todas** las empresas — y no por dominio de correo,
+  para no confundir personas reales que usen `@inmoa.pe`. `withDemoFlags` migra
+  datasets ya guardados (creados antes de la marca) al cargarlos
+  (`loadDataset`), y es idempotente. `isDemoEmail` queda deprecado.
 - **Seguros (EPS / SCTR / Vida Ley)**: el catálogo vive en
   `src/lib/hr/insurers.ts` (`catalogInsurers(companyId)`); el formulario de
   colaborador es dinámico y lee `company.insurers`, así que para ampliar la

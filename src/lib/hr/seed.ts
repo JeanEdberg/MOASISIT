@@ -12,8 +12,41 @@ import type {
 
 const DEMO_DOMAIN = "@inmoa.pe";
 
+/**
+ * true = la persona la sembró la demo (marca explícita). Se usa para "Quitar
+ * personas de ejemplo" y para el panel de estado. No depende del correo, para
+ * no borrar por error a personas reales que usen el mismo dominio.
+ */
+export function isDemoPerson(employee: { isDemo?: boolean }): boolean {
+  return employee.isDemo === true;
+}
+
+/** @deprecated Usa `isDemoPerson`. Solo se conserva por compatibilidad. */
 export function isDemoEmail(email: string): boolean {
   return email.endsWith(DEMO_DOMAIN);
+}
+
+/**
+ * Ids de las personas que siembra la demo. Sirve para migrar datasets ya
+ * guardados (creados antes de que existiera la marca `isDemo`): se marcan solo
+ * esas personas, sin tocar a las reales.
+ */
+export function demoPersonIds(): Set<string> {
+  return new Set(buildPeople().map((e) => e.id));
+}
+
+/** Marca como demo a las personas sembradas que aún no lo estén. Idempotente. */
+export function withDemoFlags(data: HrData): HrData {
+  const ids = demoPersonIds();
+  let changed = false;
+  const employees = data.employees.map((e) => {
+    if (e.isDemo === undefined && ids.has(e.id)) {
+      changed = true;
+      return { ...e, isDemo: true };
+    }
+    return e;
+  });
+  return changed ? { ...data, employees } : data;
 }
 
 /** Parámetros legales compartidos (varían por norma, no por empresa). */
@@ -84,7 +117,7 @@ const companies: Company[] = [
 ];
 
 function person(partial: Employee): Employee {
-  return partial;
+  return { isDemo: true, ...partial };
 }
 
 const INMOA = companies[0]!;

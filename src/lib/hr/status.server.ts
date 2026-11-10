@@ -1,5 +1,5 @@
 import { dbSource } from "@/lib/db";
-import { isDemoEmail } from "@/lib/hr/seed";
+import { isDemoPerson } from "@/lib/hr/seed";
 import { buildStatusChecks, type StatusCheck, type StatusFacts } from "@/lib/hr/status";
 
 /**
@@ -16,7 +16,7 @@ export async function collectStatus(): Promise<StatusCheck[]> {
     adminPasswordConfigured: Boolean(process.env.MOASIST_ADMIN_PASSWORD?.trim()),
     companyCount: data.companies.length,
     employeeCount: data.employees.length,
-    hasDemoPeople: data.employees.some((e) => isDemoEmail(e.email)),
+    hasDemoPeople: data.employees.some(isDemoPerson),
     isProduction: process.env.NODE_ENV === "production",
   };
 

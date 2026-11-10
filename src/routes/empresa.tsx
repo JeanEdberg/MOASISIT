@@ -299,7 +299,7 @@ function CompanyPage() {
         <p className="text-sm">
           {confirm === "reset"
             ? "Se vuelve a cargar Andes & Cacao, con sus colaboradores, marcas y la planilla de octubre cerrada. Lo que hayas cambiado se pierde en este navegador."
-            : "Se eliminan los colaboradores @andescacao.pe, sus solicitudes y boletas. La razón social y los parámetros se quedan."}
+            : "Se eliminan los colaboradores de ejemplo (de todas tus empresas), junto con sus solicitudes, asistencias y boletas. La razón social, tus empresas y los parámetros se quedan."}
         </p>
         <div className="mt-4 flex justify-end gap-2">
           <Button tone="ghost" onClick={() => setConfirm(null)}>

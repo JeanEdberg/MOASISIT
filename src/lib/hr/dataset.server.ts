@@ -1,6 +1,6 @@
 import { getSql } from "@/lib/db";
 import { withInsurerCatalog } from "@/lib/hr/insurers";
-import { createDemo } from "@/lib/hr/seed";
+import { createDemo, withDemoFlags } from "@/lib/hr/seed";
 import {
   bumpFailedAttempt,
   createSession,
@@ -45,8 +45,9 @@ export async function loadDataset(): Promise<HrData> {
   const rows = await sql<DatasetRow>`select data from hr_dataset where id = ${DATASET_ID}`;
   if (rows[0]?.data) {
     const normalized = withInsurerCatalog(rows[0].data);
-    if (normalized !== rows[0].data) await saveDataset(normalized);
-    return normalized;
+    const flagged = withDemoFlags(normalized);
+    if (flagged !== rows[0].data) await saveDataset(flagged);
+    return flagged;
   }
   return seedDataset();
 }

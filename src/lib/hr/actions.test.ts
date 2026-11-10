@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { applyHrAction, authorizeAction, type HrAction } from "./actions.ts";
-import { createDemo } from "./seed.ts";
+import { createDemo, withDemoFlags } from "./seed.ts";
 import type { HrData } from "./types.ts";
 
 const base = (): HrData => createDemo();
@@ -106,5 +106,32 @@ describe("applyHrAction", () => {
     });
     const mark = next.attendance.find((a) => a.id === "e3-2026-11-09");
     assert.equal(mark?.kind, "tardanza");
+  });
+
+  it("clearDemoPeople removes demo people from every company", () => {
+    const next = applyHrAction(base(), { type: "clearDemoPeople" });
+    assert.equal(next.employees.length, 0);
+    assert.equal(next.requests.length, 0);
+    assert.equal(next.attendance.length, 0);
+  });
+
+  it("clearDemoPeople keeps real people who share the demo email domain", () => {
+    const data = base();
+    const real = { ...data.employees[0]!, id: "real-1", email: "jefa.real@inmoa.pe", isDemo: undefined };
+    const next = applyHrAction({ ...data, employees: [...data.employees, real] }, { type: "clearDemoPeople" });
+    assert.deepEqual(next.employees.map((e) => e.id), ["real-1"]);
+  });
+
+  it("withDemoFlags migrates an old dataset that lacks the isDemo mark", () => {
+    const data = base();
+    const legacy: HrData = { ...data, employees: data.employees.map(({ isDemo: _drop, ...e }) => e) };
+    const migrated = withDemoFlags(legacy);
+    assert.ok(migrated.employees.every((e) => e.isDemo === true));
+    assert.equal(applyHrAction(migrated, { type: "clearDemoPeople" }).employees.length, 0);
+  });
+
+  it("withDemoFlags leaves an already-migrated dataset untouched", () => {
+    const data = base();
+    assert.equal(withDemoFlags(data), data);
   });
 });

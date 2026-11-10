@@ -1,5 +1,6 @@
 import { livePayslips } from "@/lib/hr/calc";
 import { uid } from "@/lib/hr/format";
+import { isDemoPerson } from "@/lib/hr/seed";
 import type {
   Area,
   Attendance,
@@ -113,7 +114,7 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         ],
       };
     case "clearDemoPeople": {
-      const demo = new Set(data.employees.filter((e) => e.email.endsWith("@inmoa.pe")).map((e) => e.id));
+      const demo = new Set(data.employees.filter(isDemoPerson).map((e) => e.id));
       const employees = data.employees.filter((e) => !demo.has(e.id));
       return {
         ...data,

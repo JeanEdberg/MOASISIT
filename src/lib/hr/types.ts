@@ -123,6 +123,14 @@ export type Employee = {
   children: number;
   /** Días de vacaciones gozados antes de entrar a Moasist. */
   vacationHistory: number;
+
+  /**
+   * Marca de persona ficticia sembrada por la demo. Solo la usan las personas
+   * del seed; las creadas por el formulario o la importación nunca la llevan.
+   * Es la única señal que decide qué borra "Quitar personas de ejemplo", para
+   * no confundir personas reales que compartan el dominio de correo.
+   */
+  isDemo?: boolean;
 };
 
 export type RequestKind = "vacaciones" | "licencia" | "permiso" | "descanso_medico";
