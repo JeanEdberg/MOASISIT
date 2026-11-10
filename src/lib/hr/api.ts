@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { HrAction } from "@/lib/hr/actions";
+import type { NewCompanyInput } from "@/lib/hr/company";
+import type { RucLookupResult } from "@/lib/hr/ruc";
 import type { HrData, ViewerMode } from "@/lib/hr/types";
 
 /**
@@ -32,6 +34,10 @@ export type SignInResult =
 
 export type ActionResult =
   | { ok: true; data: HrData }
+  | { ok: false; error: string };
+
+export type CreateCompanyResult =
+  | { ok: true; data: HrData; companyId: string; adminLogin: string | null; adminPassword: string | null }
   | { ok: false; error: string };
 
 async function readSessionToken(): Promise<string | null> {
@@ -247,6 +253,72 @@ export const setAccessRole = createServerFn({ method: "POST" })
     if (cred.kind === "admin") return { ok: false, error: "No puedes cambiar el rol de la cuenta administradora." };
     await setCredentialRole(emp.dni, data.role);
     return { ok: true, data: sanitizeForViewer(full, session) };
+  });
+
+/**
+ * Consulta de RUC contra SUNAT (vía el proveedor configurado). Corre en el
+ * servidor: la llave `RUC_API_TOKEN` nunca llega al navegador. Solo RR.HH. y el
+ * superadmin pueden consultar (es parte del alta de empresas).
+ */
+export const lookupRuc = createServerFn({ method: "POST" })
+  .validator((input: { ruc: string }) => input)
+  .handler(async ({ data }): Promise<RucLookupResult> => {
+    const session = await currentSession();
+    if (!session) return { ok: false, error: "Sesión expirada." };
+    if (session.role !== "rrhh" && session.role !== "superadmin") {
+      return { ok: false, error: "Tu rol no permite consultar RUC." };
+    }
+    const { lookupRuc: run } = await import("@/lib/hr/ruc.server");
+    return run(String(data.ruc ?? ""));
+  });
+
+/**
+ * Superadmin: crear una empresa nueva. Añade la empresa al dataset y, si se
+ * indicó un correo, crea su usuario RR.HH. con una contraseña temporal que se
+ * devuelve UNA sola vez para entregarla en privado.
+ */
+export const createCompany = createServerFn({ method: "POST" })
+  .validator((input: { company: NewCompanyInput }) => input)
+  .handler(async ({ data }): Promise<CreateCompanyResult> => {
+    const session = await currentSession();
+    if (!session) return { ok: false, error: "Sesión expirada." };
+    if (session.role !== "superadmin") return { ok: false, error: "Solo el superadministrador puede crear empresas." };
+
+    const { loadDataset, saveDataset, sanitizeForViewer } = await import("@/lib/hr/dataset.server");
+    const { buildCompany, uniqueCompanyId, validateNewCompany } = await import("@/lib/hr/company");
+    const full = await loadDataset();
+
+    const input = data.company;
+    const invalid = validateNewCompany(input, full.companies.map((c) => c.id));
+    if (invalid) return { ok: false, error: invalid };
+    const ruc = String(input.ruc ?? "").replace(/\D/g, "");
+    if (ruc && full.companies.some((c) => c.ruc === ruc)) {
+      return { ok: false, error: "Ya existe una empresa con ese RUC." };
+    }
+
+    const id = uniqueCompanyId(input.shortName || input.name, full.companies.map((c) => c.id));
+    const company = buildCompany(input, id);
+    const { applyHrAction } = await import("@/lib/hr/actions");
+    const next = applyHrAction(full, { type: "addCompany", company });
+    await saveDataset(next);
+
+    let adminPassword: string | null = null;
+    const adminEmail = input.adminEmail?.trim().toLowerCase();
+    if (adminEmail) {
+      const { setAdminPassword, setCredentialCompany, generatePin } = await import("@/lib/hr/credentials.server");
+      adminPassword = `${generatePin()}-${generatePin()}`;
+      await setAdminPassword({ login: adminEmail, password: adminPassword, email: adminEmail, role: "rrhh", mustChange: true });
+      // El rol RR.HH. queda fijo a su empresa; sin esto, su sesión no vería datos.
+      await setCredentialCompany(adminEmail, company.id);
+    }
+
+    return {
+      ok: true,
+      data: sanitizeForViewer(next, session),
+      companyId: company.id,
+      adminLogin: adminEmail ?? null,
+      adminPassword,
+    };
   });
 
 /**

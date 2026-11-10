@@ -30,6 +30,7 @@ export type HrAction =
   | { type: "closePeriod"; period: string }
   | { type: "reopenPeriod"; period: string }
   | { type: "updateCompany"; patch: Partial<Company> }
+  | { type: "addCompany"; company: Company }
   | { type: "addArea"; name: string; companyId: string }
   | { type: "renameArea"; id: string; name: string };
 
@@ -51,6 +52,9 @@ const RRHH_ONLY = new Set<HrAction["type"]>([
 /** Actions a jefatura may run on their own reports. */
 const JEFATURA_OK = new Set<HrAction["type"]>(["decideRequest", "addRequest", "upsertAttendance"]);
 
+/** Actions only the developer (superadmin) may run: alta de empresas. */
+const SUPERADMIN_ONLY = new Set<HrAction["type"]>(["addCompany"]);
+
 /**
  * Role gate. `selfId` is the caller's own employee id (empty for the admin).
  * Returns null when allowed, or a message when the action is denied.
@@ -61,6 +65,9 @@ export function authorizeAction(
   selfId: string,
   data: HrData,
 ): string | null {
+  if (SUPERADMIN_ONLY.has(action.type) && role !== "superadmin") {
+    return "Solo el superadministrador puede crear empresas.";
+  }
   if (role === "rrhh" || role === "superadmin") return null;
   if (RRHH_ONLY.has(action.type)) return "Tu rol no permite esta acción.";
 
@@ -148,6 +155,15 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
     }
     case "updateCompany":
       return { ...data, company: { ...data.company, ...action.patch } };
+    case "addCompany": {
+      if (data.companies.some((c) => c.id === action.company.id)) return data;
+      const areas = ["Gerencia", "Administración"].map((name) => ({
+        id: uid("a"),
+        name,
+        companyId: action.company.id,
+      }));
+      return { ...data, companies: [...data.companies, action.company], areas: [...data.areas, ...areas] };
+    }
     case "addArea":
       return { ...data, areas: [...data.areas, { id: uid("a"), name: action.name.trim(), companyId: action.companyId || data.company.id }] };
     case "renameArea":

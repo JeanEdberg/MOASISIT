@@ -166,8 +166,23 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   para **100+** hay que normalizar a tablas por entidad con `company_id` e
   índices. Diseño completo y plan por fases en `docs/arquitectura-fase1.md`;
   guía de puesta en producción (Neon + Vercel) en `docs/fase0-neon-vercel.md`.
-  **"Crear empresa" desde la app** (superadmin) es parte de la Fase 1c; hoy las
-  empresas se definen en `src/lib/hr/seed.ts`.
+  **"Crear empresa" desde la app** (superadmin) ya está: botón en Empresa →
+  cabecera, solo visible para `superadmin` (`src/components/new-company.tsx`).
+  Consulta el RUC en SUNAT y autocompleta razón social, dirección y estado; al
+  guardar crea la empresa (con su catálogo de aseguradoras y dos áreas base) y,
+  si se indica un correo, su usuario **RR.HH.** con contraseña temporal
+  (`setAdminPassword` + `setCredentialCompany`, rol `rrhh` fijo a esa empresa).
+  La autorización vive en `authorizeAction` (`addCompany` = solo superadmin). El
+  almacenamiento sigue siendo la fila JSONB de la Fase 1 (la normalización a
+  tablas por entidad sigue pendiente).
+- **Consulta de RUC (SUNAT)**: `src/lib/hr/ruc.ts` es **puro** (normaliza el RUC,
+  traduce la respuesta de apis.net.pe a `RucInfo`, `isRucOperativo`); la llamada
+  de red vive en `ruc.server.ts` (`lookupRuc`) y se expone por el server fn
+  `lookupRuc` en `api.ts`, así que el `RUC_API_TOKEN` **nunca** llega al
+  navegador. Proveedor por defecto `https://api.apis.net.pe/v2/ruc` (funciona
+  sin llave, cuota limitada); se cambia con `RUC_API_ENDPOINT` / `RUC_API_TOKEN`
+  (ver `.env.example`). Si el proveedor falla, la UI muestra un mensaje claro y
+  se puede completar la empresa a mano.
 - **Seguros (EPS / SCTR / Vida Ley)**: el catálogo vive en
   `src/lib/hr/insurers.ts` (`catalogInsurers(companyId)`); el formulario de
   colaborador es dinámico y lee `company.insurers`, así que para ampliar la

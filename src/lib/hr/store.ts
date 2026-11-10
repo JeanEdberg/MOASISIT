@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import type { HrAction } from "@/lib/hr/actions";
+import type { NewCompanyInput } from "@/lib/hr/company";
+import type { RucLookupResult } from "@/lib/hr/ruc";
 import { createDemo } from "@/lib/hr/seed";
 import type {
   Area,
@@ -46,6 +48,10 @@ type HrState = HrData & {
 
   updateCompany: (patch: Partial<Company>) => void;
   switchCompany: (companyId: string) => Promise<void>;
+  createCompany: (
+    input: NewCompanyInput,
+  ) => Promise<{ ok: boolean; error?: string; adminLogin?: string | null; adminPassword?: string | null }>;
+  lookupRuc: (ruc: string) => Promise<RucLookupResult>;
   addArea: (name: string) => void;
   renameArea: (id: string, name: string) => void;
   addEmployee: (emp: Employee) => void;
@@ -172,6 +178,27 @@ export const useHr = create<HrState>()((set, get) => {
       const res = await apiSwitch({ data: { companyId } });
       if (res.ok) set({ ...res.data, loadError: null });
       else set({ loadError: res.error });
+    },
+    createCompany: async (input) => {
+      const { createCompany: apiCreate } = await import("@/lib/hr/api");
+      try {
+        const res = await apiCreate({ data: { company: input } });
+        if (res.ok) {
+          set({ ...res.data, loadError: null });
+          return { ok: true, adminLogin: res.adminLogin, adminPassword: res.adminPassword };
+        }
+        return { ok: false, error: res.error };
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : "No se pudo crear la empresa." };
+      }
+    },
+    lookupRuc: async (ruc) => {
+      const { lookupRuc: apiLookup } = await import("@/lib/hr/api");
+      try {
+        return await apiLookup({ data: { ruc } });
+      } catch {
+        return { ok: false, error: "No se pudo consultar el RUC (sin conexión)." };
+      }
     },
     addArea: (name) => run({ type: "addArea", name, companyId: get().company.id }),
     renameArea: (id, name) => run({ type: "renameArea", id, name }),

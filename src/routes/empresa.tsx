@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { NewCompanyButton } from "@/components/new-company";
 import { Shell } from "@/components/shell";
 import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
@@ -32,6 +33,7 @@ function hexOr(value: string): string {
 
 function CompanyPage() {
   const company = useHr((s) => s.company);
+  const viewerMode = useHr((s) => s.viewer.mode);
   const areas = useHr((s) => s.areas);
   const employees = useHr((s) => s.employees);
   const updateCompany = useHr((s) => s.updateCompany);
@@ -65,6 +67,7 @@ function CompanyPage() {
         kicker="Tu empresa"
         title="Configuración"
         lede="Cambia la razón social, el RUC y los parámetros de planilla. Los valores iniciales siguen la referencia 2026: RMV S/ 1,130, UIT S/ 5,350 y comisiones AFP por flujo."
+        actions={viewerMode === "superadmin" ? <NewCompanyButton /> : undefined}
       />
 
       <section className="rounded-lg border border-line bg-surface p-4">
