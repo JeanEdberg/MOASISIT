@@ -1,7 +1,27 @@
-import React, { useState } from "react";
+import { FileSpreadsheet, FileText, Landmark, Wallet } from "lucide-react";
+import { useState } from "react";
+import { Badge, Button, Card, fieldClass, SectionHeading } from "@/components/ui";
 import { useHr } from "@/lib/hr/store";
 import { calcularConsolidadoMasivo } from "@/lib/hr/calc";
+import { pen } from "@/lib/hr/format";
 import { logoImgHtml } from "@/lib/hr/logo";
+
+type ConsolidadoItem = {
+  dni: string;
+  name?: string;
+  nombre?: string;
+  regimen: string;
+  fechaIngreso: string;
+  ctsBank?: string;
+  ctsAccount?: string;
+  salaryBank?: string;
+  salaryAccount?: string;
+  bank?: string;
+  account?: string;
+  sueldoComputable?: number;
+  detalleCalculo?: string;
+  totalPagar?: number;
+};
 
 export function ConsolidadoMasivoView() {
   const { employees, company, areas } = useHr();
@@ -236,111 +256,108 @@ export function ConsolidadoMasivoView() {
   };
 
   return (
-    <div className="p-6 bg-white rounded-xl shadow-sm border border-slate-200 space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b pb-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">Consolidado Masivo de Beneficios Sociales</h2>
-          <p className="text-sm text-slate-500">{company.name} — RUC: {company.ruc}</p>
-        </div>
+    <Card className="space-y-5 p-5 sm:p-6">
+      <SectionHeading
+        icon={Wallet}
+        title="Consolidado masivo de beneficios sociales"
+        description={`${company.name} — RUC: ${company.ruc}`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={tipoBeneficio}
+              onChange={(e) => setTipoBeneficio(e.target.value as typeof tipoBeneficio)}
+              className={fieldClass}
+              aria-label="Tipo de beneficio"
+            >
+              <option value="cts-nov">CTS Semestre Noviembre</option>
+              <option value="cts-may">CTS Semestre Mayo</option>
+              <option value="grati-julio">Gratificación Fiestas Patrias</option>
+              <option value="grati-navidad">Gratificación Navidad</option>
+            </select>
+            <select
+              value={bancoExportacion}
+              onChange={(e) => setBancoExportacion(e.target.value as typeof bancoExportacion)}
+              className={fieldClass}
+              aria-label="Banco para el archivo TXT"
+            >
+              <option value="interbank">TXT: Interbank</option>
+              <option value="bcp">TXT: BCP (Telecrédito)</option>
+              <option value="bbva">TXT: BBVA</option>
+            </select>
+            <Button tone="line" onClick={exportarAExcel} disabled={consolidado.length === 0}>
+              <FileSpreadsheet className="size-4" /> Excel
+            </Button>
+            <Button tone="primary" onClick={exportarTxtBanco} disabled={consolidado.length === 0}>
+              <Landmark className="size-4" /> TXT banco
+            </Button>
+            <Button tone="moss" onClick={exportarAPDF} disabled={consolidado.length === 0}>
+              <FileText className="size-4" /> PDF
+            </Button>
+          </div>
+        }
+      />
 
-        {/* Barra de Acciones y Exportaciones */}
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={tipoBeneficio}
-            onChange={(e) => setTipoBeneficio(e.target.value as any)}
-            className="px-3 py-2 border rounded-lg text-sm bg-slate-50 font-medium text-slate-700"
-          >
-            <option value="cts-nov">CTS Semestre Noviembre</option>
-            <option value="cts-may">CTS Semestre Mayo</option>
-            <option value="grati-julio">Gratificación Fiestas Patrias</option>
-            <option value="grati-navidad">Gratificación Navidad</option>
-          </select>
-
-          <select
-            value={bancoExportacion}
-            onChange={(e) => setBancoExportacion(e.target.value as any)}
-            className="px-3 py-2 border rounded-lg text-sm bg-sky-50 font-semibold text-sky-800 border-sky-200"
-          >
-            <option value="interbank">Banco TXT: Interbank</option>
-            <option value="bcp">Banco TXT: BCP (Telecrédito)</option>
-            <option value="bbva">Banco TXT: BBVA</option>
-          </select>
-
-          <button onClick={exportarAExcel} disabled={consolidado.length === 0} className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-sm">Excel</button>
-          <button onClick={exportarTxtBanco} disabled={consolidado.length === 0} className="px-3 py-2 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-sm">TXT Banco</button>
-          <button onClick={exportarAPDF} disabled={consolidado.length === 0} className="px-3 py-2 bg-slate-800 hover:bg-slate-900 disabled:opacity-50 text-white text-sm font-semibold rounded-lg shadow-sm">PDF</button>
-        </div>
-      </div>
-
-      {/* Controles de Búsqueda y Filtros */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+      <div className="flex flex-col gap-3 rounded-lg border border-line bg-surface-2 p-3 sm:flex-row sm:items-center">
         <div className="w-full sm:w-72">
           <input
             type="text"
-            placeholder="Buscar por DNI o Colaborador..."
+            placeholder="Buscar por DNI o colaborador…"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500"
+            className={fieldClass}
           />
         </div>
-
         <div className="w-full sm:w-64">
-          <select
-            value={areaFiltro}
-            onChange={(e) => setAreaFiltro(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-sky-500"
-          >
-            <option value="todas">Todas las Áreas</option>
+          <select value={areaFiltro} onChange={(e) => setAreaFiltro(e.target.value)} className={fieldClass} aria-label="Filtrar por área">
+            <option value="todas">Todas las áreas</option>
             {areas.map((area) => (
-              <option key={area.id} value={area.id}>{area.name}</option>
+              <option key={area.id} value={area.id}>
+                {area.name}
+              </option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Tabla */}
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-sm">
-          <thead>
-            <tr className="bg-slate-100 text-slate-700 border-b">
-              <th className="p-3 font-semibold">DNI</th>
-              <th className="p-3 font-semibold">Colaborador</th>
-              <th className="p-3 font-semibold">Régimen</th>
-              <th className="p-3 font-semibold">F. Ingreso</th>
-              <th className="p-3 font-semibold">{etiquetaBanco}</th>
-              <th className="p-3 font-semibold">{etiquetaCuenta}</th>
-              <th className="p-3 font-semibold">Sueldo + AF (S/.)</th>
-              <th className="p-3 font-semibold">Detalle Técnico</th>
-              <th className="p-3 font-semibold text-right">Total a Depositar (S/.)</th>
+        <table className="w-full min-w-[56rem] text-left text-sm">
+          <thead className="text-muted">
+            <tr>
+              <th className="px-3 py-3 font-medium">DNI</th>
+              <th className="px-3 py-3 font-medium">Colaborador</th>
+              <th className="px-3 py-3 font-medium">Régimen</th>
+              <th className="px-3 py-3 font-medium">F. ingreso</th>
+              <th className="px-3 py-3 font-medium">{etiquetaBanco}</th>
+              <th className="px-3 py-3 font-medium">{etiquetaCuenta}</th>
+              <th className="px-3 py-3 font-medium">Sueldo + AF</th>
+              <th className="px-3 py-3 font-medium">Detalle técnico</th>
+              <th className="px-3 py-3 text-right font-medium">Total a depositar</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody>
             {consolidado.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-8 text-slate-400">
+                <td colSpan={9} className="py-8 text-center text-muted">
                   No se encontraron colaboradores que coincidan con la búsqueda.
                 </td>
               </tr>
             ) : (
-              consolidado.map((item: any) => {
-                const bnc = esCts ? (item.ctsBank || "BCP") : (item.salaryBank || item.bank || "BCP");
-                const cta = esCts ? (item.ctsAccount || "Sin registrar") : (item.salaryAccount || item.account || "Sin registrar");
-
+              consolidado.map((item: ConsolidadoItem) => {
+                const bnc = esCts ? item.ctsBank || "BCP" : item.salaryBank || item.bank || "BCP";
+                const cta = esCts ? item.ctsAccount || "Sin registrar" : item.salaryAccount || item.account || "Sin registrar";
                 return (
-                  <tr key={item.dni} className="hover:bg-slate-50 transition-colors">
-                    <td className="p-3 font-mono text-slate-600">{item.dni}</td>
-                    <td className="p-3 font-medium text-slate-900">{item.name || item.nombre || "Sin Nombre"}</td>
-                    <td className="p-3 text-slate-600">{item.regimen}</td>
-                    <td className="p-3 text-slate-600">{item.fechaIngreso}</td>
-                    <td className="p-3 text-slate-700 font-medium">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-xs border border-slate-200">{bnc}</span>
+                  <tr key={item.dni} className="border-t border-line">
+                    <td className="num px-3 py-3 text-muted">{item.dni}</td>
+                    <td className="px-3 py-3 font-medium text-ink">{item.name || item.nombre || "Sin nombre"}</td>
+                    <td className="px-3 py-3 text-muted">{item.regimen}</td>
+                    <td className="px-3 py-3 text-muted">{item.fechaIngreso}</td>
+                    <td className="px-3 py-3">
+                      <Badge tone="line">{bnc}</Badge>
                     </td>
-                    <td className="p-3 font-mono text-xs text-slate-700">{cta}</td>
-                    <td className="p-3 font-mono text-slate-800">S/. {(item.sueldoComputable || 0).toFixed(2)}</td>
-                    <td className="p-3 text-xs text-slate-500">{item.detalleCalculo}</td>
-                    <td className="p-3 font-mono font-bold text-sky-700 text-right">
-                      S/. {(item.totalPagar || 0).toFixed(2)}
-                    </td>
+                    <td className="num px-3 py-3 text-muted">{cta}</td>
+                    <td className="num px-3 py-3 text-ink">S/ {pen(item.sueldoComputable || 0)}</td>
+                    <td className="px-3 py-3 text-xs text-muted">{item.detalleCalculo}</td>
+                    <td className="num px-3 py-3 text-right font-semibold text-clay">S/ {pen(item.totalPagar || 0)}</td>
                   </tr>
                 );
               })
@@ -349,12 +366,10 @@ export function ConsolidadoMasivoView() {
         </table>
       </div>
 
-      <div className="flex justify-between items-center bg-sky-50 p-4 rounded-lg border border-sky-100">
-        <span className="font-semibold text-sky-900">Monto Total Consolidado a Desembolsar (Filtrado):</span>
-        <span className="font-mono text-xl font-bold text-sky-800">
-          S/. {totalGeneral.toFixed(2)}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-surface-2 p-4">
+        <span className="font-medium text-ink">Monto total consolidado a desembolsar (filtrado)</span>
+        <span className="num font-display text-2xl text-clay">S/ {pen(totalGeneral)}</span>
       </div>
-    </div>
+    </Card>
   );
 }

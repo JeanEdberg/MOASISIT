@@ -118,9 +118,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   if (!hydrated) {
     return (
-      <div className="grid min-h-screen place-items-center bg-slate-50 text-sm text-slate-500 dark:bg-slate-950">
-        Cargando…
-      </div>
+      <div className="grid min-h-screen place-items-center bg-bg text-sm text-muted">Cargando…</div>
     );
   }
 
@@ -140,14 +138,14 @@ export function Shell({ children }: { children: ReactNode }) {
       )}
 
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-line bg-surface lg:flex">
-        <Link to="/" className="flex items-center gap-3 px-4 py-5">
+        <Link to="/" className="flex items-center gap-3 border-b border-line px-4 py-4">
           <BrandLogo size={40} />
           <div className="flex min-w-0 flex-col">
-            <span className="block font-display text-2xl leading-none font-bold text-slate-900 dark:text-white">Moasist</span>
-            <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-sky-600">{company.tradeName}</span>
+            <span className="block font-display text-2xl leading-none font-bold text-ink">Moasist</span>
+            <span className="truncate text-[10px] font-semibold uppercase tracking-wider text-clay">{company.tradeName}</span>
           </div>
         </Link>
-        <nav className="flex flex-1 flex-col gap-1 px-3">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
           {items.map((item) => (
             <SideLink key={item.to} item={item} pathname={pathname} />
           ))}
@@ -156,7 +154,7 @@ export function Shell({ children }: { children: ReactNode }) {
               to="/colaboradores/$id"
               params={{ id: viewer.employeeId }}
               className={cn(
-                "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm",
+                "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors",
                 pathname === `/colaboradores/${viewer.employeeId}`
                   ? "bg-surface-2 font-medium text-ink"
                   : "text-muted hover:bg-surface-2 hover:text-ink",
@@ -167,18 +165,18 @@ export function Shell({ children }: { children: ReactNode }) {
             </Link>
           ) : null}
         </nav>
-        <p className="px-4 py-4 text-xs text-muted">Moasist v1.0 · Sistema Integral de Gestión</p>
+        <p className="border-t border-line px-4 py-4 text-xs text-muted">Moasist v1.0 · Sistema Integral de Gestión</p>
       </aside>
 
       <div className="lg:pl-60">
-        <header className="sticky top-0 z-20 border-b border-line bg-surface">
+        <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <BrandLogo size={36} className="lg:hidden" />
               <div className="flex min-w-0 flex-col gap-1">
                 {viewer.mode === "superadmin" ? (
                   <select
-                    className="rounded-md border border-line bg-bg px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="max-w-[14rem] truncate rounded-md border border-line bg-bg px-2 py-1 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-clay"
                     value={company.id}
                     onChange={(e) => void useHr.getState().switchCompany(e.target.value)}
                   >
@@ -189,32 +187,34 @@ export function Shell({ children }: { children: ReactNode }) {
                     ))}
                   </select>
                 ) : (
-                  <p className="text-sm font-medium text-ink">{company.name}</p>
+                  <p className="truncate text-sm font-medium text-ink">{company.name}</p>
                 )}
-                <p className="px-1 text-xs text-muted">
+                <p className="truncate px-1 text-xs text-muted">
                   RUC {company.ruc} · {longDate(HOY)}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2 sm:ml-auto">
-              <div className="text-right">
-                <p className="text-sm font-medium text-ink">{session.displayName}</p>
+              <div className="mr-1 text-right">
+                <p className="truncate text-sm font-medium text-ink">{session.displayName}</p>
                 <p className="text-xs text-muted">{ROLE_LABEL[viewer.mode]}</p>
               </div>
               <button
                 onClick={() => setShowChange(true)}
-                className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                className="grid size-11 place-items-center rounded-md border border-line bg-surface text-ink transition-colors hover:bg-surface-2"
                 title="Cambiar mi PIN / contraseña"
+                aria-label="Cambiar mi PIN o contraseña"
               >
-                <KeyRound className="size-3.5" />
+                <KeyRound className="size-4" />
               </button>
               <button
                 onClick={() => void signOut()}
-                className="flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-ink hover:bg-surface-2"
+                className="grid size-11 place-items-center rounded-md border border-line bg-surface text-ink transition-colors hover:bg-surface-2"
                 title="Cerrar sesión"
+                aria-label="Cerrar sesión"
               >
-                <LogOut className="size-3.5" />
+                <LogOut className="size-4" />
               </button>
             </div>
           </div>
@@ -232,7 +232,7 @@ export function Shell({ children }: { children: ReactNode }) {
             params={{ id: viewer.employeeId }}
             className={cn(
               "flex min-w-16 flex-col items-center gap-1 px-2 py-1 text-xs",
-              pathname === `/colaboradores/${viewer.employeeId}` ? "text-sky-600" : "text-muted",
+              pathname === `/colaboradores/${viewer.employeeId}` ? "text-clay" : "text-muted",
             )}
           >
             <UserRound className="size-5" />
@@ -253,7 +253,7 @@ function SideLink({ item, pathname, compact }: { item: Item; pathname: string; c
     return (
       <Link
         to={item.to}
-        className={cn("flex min-w-16 flex-col items-center gap-1 px-2 py-1 text-xs", on ? "font-medium text-sky-600" : "text-muted")}
+        className={cn("flex min-w-16 flex-col items-center gap-1 px-2 py-1 text-xs", on ? "font-medium text-clay" : "text-muted")}
       >
         <Icon className="size-5" />
         {item.label}
@@ -264,7 +264,7 @@ function SideLink({ item, pathname, compact }: { item: Item; pathname: string; c
     <Link
       to={item.to}
       className={cn(
-        "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm",
+        "flex min-h-11 items-center gap-3 rounded-md px-3 text-sm transition-colors",
         on ? "bg-surface-2 font-medium text-ink" : "text-muted hover:bg-surface-2 hover:text-ink",
       )}
     >

@@ -290,6 +290,20 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   en `loadDataset`) completa datasets antiguos con las aseguradoras faltantes y
   **conserva** las tasas editadas por el usuario; no reescribe la fila si no hay
   cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
+- **Sistema de diseño (UI)**: los tokens viven en `src/styles.css` (`@theme`):
+  superficies (`--color-bg/surface/surface-2/surface-3`), texto (`--color-ink`,
+  `--color-muted`, `--color-line`), marca (`--color-clay` = `--brand`, que el
+  tema por empresa reescribe en runtime) y estados (`--color-ok/warn/danger/info`
+  con sus variantes `-soft`/`-line`), además de sombras (`shadow-card/raised/
+  overlay`) y radios. Los primitivos reutilizables están en
+  `src/components/ui.tsx`: `Card`, `StatCard`, `SectionHeading`, `ProgressBar`,
+  `AlertBanner`, `StatusDot`, `Badge` y `Button`. Regla: **no** usar colores
+  Tailwind ad-hoc (`slate-*`, `sky-*`, `rose-*`, …) ni emojis en la interfaz;
+  usar tokens e iconos de `lucide-react`. Las métricas de negocio del inicio son
+  **puras** en `src/lib/hr/dashboard.ts`; el consolidado global del superadmin
+  (sin datos personales) llega por `loadGlobalSummary` (`api.ts`) →
+  `getGlobalSummary` (`store.ts`). El inicio es **por rol** (`src/routes/index.tsx`:
+  superadmin, RR.HH., jefatura y colaborador).
 - **Push**: the sandbox's `GITHUB_TOKEN` is **read-only** for this repo (API
   says `push: true`, but writes return `403 Resource not accessible by
   integration`; the git credential-helper token is also rejected). There is no

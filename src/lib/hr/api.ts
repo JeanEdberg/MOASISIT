@@ -367,3 +367,82 @@ export const resetEmployeePin = createServerFn({ method: "POST" })
     const { pin } = await regenerateEmployeePin(emp.id, emp.dni, emp.email || null, role, emp.companyId);
     return { ok: true, pin, login: emp.dni };
   });
+
+/**
+ * Consolidado global (solo superadmin): métricas agregadas de TODAS las
+ * empresas —sin datos personales— para el dashboard. Devuelve conteos, masa
+ * salarial del periodo, alertas de suscripción y contratos por vencer.
+ */
+export type GlobalCompanySummary = {
+  companyId: string;
+  name: string;
+  tradeName: string;
+  brandColor: string;
+  active: number;
+  total: number;
+  gross: number;
+  net: number;
+  fifth: number;
+};
+
+export type GlobalSummary = {
+  companies: GlobalCompanySummary[];
+  totals: { active: number; gross: number; net: number; fifth: number };
+  alerts: { companyId: string; name: string; level: "ok" | "warn" | "danger"; title: string; detail: string; daysLeft: number }[];
+  contractsExpiring: number;
+};
+
+export const loadGlobalSummary = createServerFn({ method: "GET" }).handler(async (): Promise<GlobalSummary | null> => {
+  const session = await currentSession();
+  if (!session || session.role !== "superadmin") return null;
+  const { loadDataset } = await import("@/lib/hr/dataset.server");
+  const { currentPeriod } = await import("@/lib/hr/format");
+  const { payslipsFor } = await import("@/lib/hr/calc");
+  const { headcountByCompany, payrollTotals, subscriptionAlerts, contractsExpiring } = await import("@/lib/hr/dashboard");
+  const full = await loadDataset();
+  const period = currentPeriod();
+
+  const heads = headcountByCompany(full.companies, full.employees);
+  const companies: GlobalCompanySummary[] = heads.map(({ company, active, total }) => {
+    const people = full.employees.filter((e) => e.companyId === company.id);
+    const slips = payslipsFor(full, period).filter((p) => people.some((e) => e.id === p.employeeId));
+    const t = payrollTotals(slips);
+    return {
+      companyId: company.id,
+      name: company.name,
+      tradeName: company.tradeName,
+      brandColor: company.brandColor,
+      active,
+      total,
+      gross: t.gross,
+      net: t.net,
+      fifth: t.fifth,
+    };
+  });
+
+  const totals = companies.reduce(
+    (acc, c) => ({
+      active: acc.active + c.active,
+      gross: acc.gross + c.gross,
+      net: acc.net + c.net,
+      fifth: acc.fifth + c.fifth,
+    }),
+    { active: 0, gross: 0, net: 0, fifth: 0 },
+  );
+
+  const alerts = subscriptionAlerts(full.companies).map(({ company, alert }) => ({
+    companyId: company.id,
+    name: company.tradeName || company.name,
+    level: alert.level,
+    title: alert.title,
+    detail: alert.detail,
+    daysLeft: alert.daysLeft,
+  }));
+
+  return {
+    companies,
+    totals,
+    alerts,
+    contractsExpiring: contractsExpiring(full.employees).length,
+  };
+});

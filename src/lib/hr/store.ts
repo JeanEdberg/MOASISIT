@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { HrAction } from "@/lib/hr/actions";
+import type { GlobalSummary } from "@/lib/hr/api";
 import { buildCompany } from "@/lib/hr/company";
 import type { NewCompanyInput } from "@/lib/hr/company";
 import type { RucLookupResult } from "@/lib/hr/ruc";
@@ -71,6 +72,7 @@ type HrState = HrData & {
   importPeople: (employees: Employee[], areas: Area[]) => void;
   clearDemoPeople: () => void;
   resetDemo: () => void;
+  getGlobalSummary: () => Promise<GlobalSummary | null>;
 };
 
 /**
@@ -235,6 +237,14 @@ export const useHr = create<HrState>()((set, get) => {
         return res.ok ? { ok: true, checks: res.checks } : { ok: false, error: res.error };
       } catch {
         return { ok: false, error: "No se pudo leer el estado del sistema." };
+      }
+    },
+    getGlobalSummary: async () => {
+      const { loadGlobalSummary } = await import("@/lib/hr/api");
+      try {
+        return await loadGlobalSummary();
+      } catch {
+        return null;
       }
     },
     addArea: (name) => run({ type: "addArea", name, companyId: get().company.id }),

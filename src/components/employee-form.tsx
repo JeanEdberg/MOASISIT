@@ -67,11 +67,11 @@ export function EmployeeForm({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-2">
-        <h3 className="text-base font-semibold text-gray-800">
+      <div className="flex items-center justify-between border-b border-line pb-2">
+        <h3 className="text-base font-semibold text-ink">
           {isEditing ? `Editando Colaborador: ${value.names} ${value.paternal}` : "Registrar Nuevo Colaborador"}
         </h3>
-        <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-medium">
+        <span className="rounded-full bg-clay/10 px-2.5 py-1 text-xs font-medium text-clay">
           Moasist HR Core
         </span>
       </div>
@@ -336,7 +336,7 @@ export function EmployeeForm({
         <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2 cursor-pointer">
           <input
             type="checkbox"
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="size-4 rounded border-line-strong text-clay focus:ring-2 focus:ring-clay"
             checked={value.familyAllowance}
             onChange={(e) => set("familyAllowance", e.target.checked)}
           />
@@ -345,7 +345,7 @@ export function EmployeeForm({
         <label className="flex min-h-11 items-center gap-2 text-sm sm:col-span-2 cursor-pointer">
           <input
             type="checkbox"
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="size-4 rounded border-line-strong text-clay focus:ring-2 focus:ring-clay"
             checked={value.fifthCategory}
             onChange={(e) => set("fifthCategory", e.target.checked)}
           />

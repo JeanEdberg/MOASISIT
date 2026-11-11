@@ -54,16 +54,14 @@ export function ChangeSecretModal({ forced, onClose }: { forced: boolean; onClos
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 px-4 backdrop-blur-md">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 px-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-xl border border-line bg-surface p-6 shadow-overlay">
         <div className="flex flex-col items-center text-center">
-          <span className="mb-4 grid size-14 place-items-center rounded-2xl bg-amber-500 text-white shadow-lg">
+          <span className="mb-4 grid size-14 place-items-center rounded-xl bg-warn text-white shadow-raised">
             {forced ? <ShieldAlert className="size-7" /> : <KeyRound className="size-7" />}
           </span>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            {forced ? "Cambia tu acceso temporal" : "Cambiar acceso"}
-          </h2>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          <h2 className="text-xl font-bold text-ink">{forced ? "Cambia tu acceso temporal" : "Cambiar acceso"}</h2>
+          <p className="mt-1 text-xs text-muted">
             {isAdmin ? "Define una contraseña robusta para tu cuenta." : "Reemplaza tu PIN temporal por uno propio."}
           </p>
         </div>
@@ -77,7 +75,7 @@ export function ChangeSecretModal({ forced, onClose }: { forced: boolean; onClos
           </Field>
 
           {error ? (
-            <p className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-center text-xs font-semibold text-rose-600">{error}</p>
+            <p className="rounded-lg border border-danger-line bg-danger-soft p-2.5 text-center text-xs font-semibold text-danger">{error}</p>
           ) : null}
 
           <Button type="submit" disabled={busy} className="w-full justify-center">
@@ -85,7 +83,7 @@ export function ChangeSecretModal({ forced, onClose }: { forced: boolean; onClos
           </Button>
 
           {!forced && onClose ? (
-            <button type="button" onClick={onClose} className="w-full rounded-xl bg-slate-100 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300">
+            <button type="button" onClick={onClose} className="min-h-11 w-full rounded-md bg-surface-2 py-2.5 text-sm font-medium text-muted transition-colors hover:bg-surface-3">
               Cancelar
             </button>
           ) : null}

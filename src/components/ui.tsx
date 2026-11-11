@@ -1,5 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import { X } from "lucide-react";
+import { X, type LucideIcon } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 
@@ -79,9 +79,11 @@ export function Button({
 export function Badge({
   tone = "line",
   children,
+  className,
 }: {
-  tone?: "line" | "clay" | "moss" | "ink";
+  tone?: "line" | "clay" | "moss" | "ink" | "ok" | "warn" | "danger" | "info";
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <span
@@ -91,10 +93,214 @@ export function Badge({
         tone === "clay" && "bg-clay text-clay-ink",
         tone === "moss" && "bg-moss text-moss-ink",
         tone === "ink" && "bg-ink text-clay-ink",
+        tone === "ok" && "bg-ok-soft text-ok",
+        tone === "warn" && "bg-warn-soft text-warn",
+        tone === "danger" && "bg-danger-soft text-danger",
+        tone === "info" && "bg-info-soft text-info",
+        className,
       )}
     >
       {children}
     </span>
+  );
+}
+
+/** Tarjeta base: superficie con borde y sombra sutil, coherente en todo el producto. */
+export function Card({
+  className,
+  children,
+  as: As = "section",
+}: {
+  className?: string;
+  children: ReactNode;
+  as?: "section" | "article" | "div";
+}) {
+  return <As className={cn("rounded-lg border border-line bg-surface shadow-card", className)}>{children}</As>;
+}
+
+export type Tone = "neutral" | "ok" | "warn" | "danger" | "info" | "brand";
+
+const TONE_TEXT: Record<Tone, string> = {
+  neutral: "text-muted",
+  ok: "text-ok",
+  warn: "text-warn",
+  danger: "text-danger",
+  info: "text-info",
+  brand: "text-clay",
+};
+
+const TONE_CHIP: Record<Tone, string> = {
+  neutral: "bg-surface-2 text-muted",
+  ok: "bg-ok-soft text-ok",
+  warn: "bg-warn-soft text-warn",
+  danger: "bg-danger-soft text-danger",
+  info: "bg-info-soft text-info",
+  brand: "bg-clay/10 text-clay",
+};
+
+/** Punto de estado, para listas y encabezados. */
+export function StatusDot({ tone = "neutral", className }: { tone?: Tone; className?: string }) {
+  const fill: Record<Tone, string> = {
+    neutral: "bg-muted",
+    ok: "bg-ok",
+    warn: "bg-warn",
+    danger: "bg-danger",
+    info: "bg-info",
+    brand: "bg-clay",
+  };
+  return <span className={cn("size-2.5 shrink-0 rounded-full", fill[tone], className)} aria-hidden />;
+}
+
+/**
+ * Tarjeta de métrica ("stat card") del dashboard: etiqueta, valor grande y una
+ * línea de contexto. El icono y el acento de color son opcionales para marcar
+ * alertas (vencido, por vencer, al día).
+ */
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+  tone = "neutral",
+  className,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon?: LucideIcon;
+  tone?: Tone;
+  className?: string;
+}) {
+  return (
+    <article
+      className={cn(
+        "rounded-lg border border-line bg-surface p-4 shadow-card transition-shadow hover:shadow-raised",
+        className,
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-medium text-muted">{label}</p>
+        {Icon ? (
+          <span className={cn("grid size-8 place-items-center rounded-md", TONE_CHIP[tone])} aria-hidden>
+            <Icon className="size-4" />
+          </span>
+        ) : null}
+      </div>
+      <p className={cn("num mt-3 font-display text-3xl leading-none", tone === "neutral" ? "text-ink" : TONE_TEXT[tone])}>
+        {value}
+      </p>
+      {hint ? <p className="mt-2 text-xs text-muted">{hint}</p> : null}
+    </article>
+  );
+}
+
+/** Encabezado de sección con acciones alineadas a la derecha. */
+export function SectionHeading({
+  title,
+  description,
+  actions,
+  icon: Icon,
+  className,
+}: {
+  title: string;
+  description?: string;
+  actions?: ReactNode;
+  icon?: LucideIcon;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-wrap items-start justify-between gap-3", className)}>
+      <div className="flex items-start gap-3">
+        {Icon ? (
+          <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-md bg-surface-2 text-clay" aria-hidden>
+            <Icon className="size-4.5" />
+          </span>
+        ) : null}
+        <div>
+          <h2 className="font-display text-xl leading-tight text-ink">{title}</h2>
+          {description ? <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p> : null}
+        </div>
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+    </div>
+  );
+}
+
+/** Barra de progreso para avance de metas (vacaciones gozadas, sincronización, etc.). */
+export function ProgressBar({
+  value,
+  max = 100,
+  tone = "brand",
+  label,
+  className,
+}: {
+  value: number;
+  max?: number;
+  tone?: Tone;
+  label?: string;
+  className?: string;
+}) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, Math.round((value / max) * 100))) : 0;
+  const fill: Record<Tone, string> = {
+    neutral: "bg-muted",
+    ok: "bg-ok",
+    warn: "bg-warn",
+    danger: "bg-danger",
+    info: "bg-info",
+    brand: "bg-clay",
+  };
+  return (
+    <div className={className}>
+      {label ? <p className="mb-1 text-xs text-muted">{label}</p> : null}
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-surface-3"
+        role="progressbar"
+        aria-valuenow={pct}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className={cn("h-full rounded-full transition-[width]", fill[tone])} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Aviso destacado (banner) para alertas críticas y estados de sincronización.
+ * El icono y el color cambian con el tono; el contenido es libre.
+ */
+export function AlertBanner({
+  tone = "info",
+  icon: Icon,
+  title,
+  children,
+  actions,
+  className,
+}: {
+  tone?: Exclude<Tone, "brand"> | "brand";
+  icon?: LucideIcon;
+  title?: string;
+  children?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+}) {
+  const surface: Record<string, string> = {
+    neutral: "border-line bg-surface-2",
+    ok: "border-ok-line bg-ok-soft",
+    warn: "border-warn-line bg-warn-soft",
+    danger: "border-danger-line bg-danger-soft",
+    info: "border-info-line bg-info-soft",
+    brand: "border-line bg-surface-2",
+  };
+  return (
+    <div className={cn("flex flex-wrap items-center gap-3 rounded-lg border p-3", surface[tone], className)}>
+      {Icon ? <Icon className={cn("size-5 shrink-0", TONE_TEXT[tone === "brand" ? "brand" : tone])} aria-hidden /> : null}
+      <div className="min-w-0 flex-1 text-sm">
+        {title ? <p className={cn("font-medium", TONE_TEXT[tone === "brand" ? "brand" : tone])}>{title}</p> : null}
+        {children ? <div className={cn(title ? "mt-0.5 text-muted" : "text-muted")}>{children}</div> : null}
+      </div>
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+    </div>
   );
 }
 

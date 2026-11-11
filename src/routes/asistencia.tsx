@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Clock, UserX, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Shell } from "@/components/shell";
-import { Badge, Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
+import { Badge, Button, Card, Field, fieldClass, Modal, PageHeader, StatCard } from "@/components/ui";
 import { visibleEmployees } from "@/lib/hr/access";
 import { ATTENDANCE_LABEL, fullName, shortDate } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
@@ -87,17 +88,17 @@ function AttendancePage() {
       )}
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <Mini label="Faltas" value={String(faltas)} />
-        <Mini label="Tardanzas" value={String(tardanzas)} />
-        <Mini label="Horas extra" value={String(extras)} />
+        <StatCard label="Faltas" value={String(faltas)} hint="en el periodo visible" icon={UserX} tone={faltas ? "danger" : "neutral"} />
+        <StatCard label="Tardanzas" value={String(tardanzas)} hint="en el periodo visible" icon={Clock} tone={tardanzas ? "warn" : "neutral"} />
+        <StatCard label="Horas extra" value={`${extras} h`} hint="acumuladas" icon={Zap} tone="info" />
       </div>
       {marks.length === 0 ? (
         <p className="rounded-lg border border-dashed border-line bg-surface px-4 py-8 text-center text-sm text-muted">
           No hay marcas en esta vista.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-          <table className="w-max min-w-full text-left text-sm">
+        <Card className="overflow-x-auto">
+          <table className="w-full min-w-[42rem] text-left text-sm">
             <thead className="text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Fecha</th>
@@ -115,7 +116,9 @@ function AttendancePage() {
                     <td className="px-4 py-3">{shortDate(m.date)}</td>
                     <td className="px-4 py-3">{who ? fullName(who) : "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge tone={m.kind === "falta" ? "clay" : m.kind === "tardanza" ? "ink" : "line"}>{ATTENDANCE_LABEL[m.kind]}</Badge>
+                      <Badge tone={m.kind === "falta" ? "danger" : m.kind === "tardanza" ? "warn" : "ok"}>
+                        {ATTENDANCE_LABEL[m.kind]}
+                      </Badge>
                     </td>
                     <td className="num px-4 py-3">{m.checkIn ? `${m.checkIn} – ${m.checkOut}` : "—"}</td>
                     <td className="num px-4 py-3">{m.extra25 + m.extra35 || "—"}</td>
@@ -124,7 +127,7 @@ function AttendancePage() {
               })}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       <Modal open={open} title="Registrar marcación" onClose={() => setOpen(false)}>
@@ -168,14 +171,5 @@ function AttendancePage() {
         </div>
       </Modal>
     </Shell>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="rounded-lg border border-line bg-surface p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="num mt-1 font-display text-2xl">{value}</p>
-    </article>
   );
 }

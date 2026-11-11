@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Banknote, CalendarRange, CircleDollarSign, Wallet } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BoletaView } from "@/components/boleta";
 import { Shell } from "@/components/shell";
-import { Button, Empty, Modal, PageHeader } from "@/components/ui";
+import { Button, Card, Empty, Modal, PageHeader, StatCard } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { buildAfpnetRows, exportAfpnetExcel, exportAfpnetTxt } from "@/lib/hr/afpnet";
 import { payslipsFor } from "@/lib/hr/calc";
@@ -161,17 +162,23 @@ function PayrollPage() {
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Mini label="Ingresos" value={pen(bruto)} />
-        <Mini label="Descuentos" value={pen(desc)} />
-        <Mini label="Neto" value={pen(neto)} />
-        <Mini label={showCts ? "CTS del semestre" : "EsSalud empleador"} value={pen(showCts ? cts : ess)} />
+        <StatCard label="Ingresos" value={pen(bruto)} hint={periodLabel(period)} icon={Banknote} />
+        <StatCard label="Descuentos" value={pen(desc)} hint="AFP/ONP, 5ta y otros" icon={CircleDollarSign} tone="warn" />
+        <StatCard label="Neto a pagar" value={pen(neto)} hint={`${slips.length} boleta(s)`} icon={Wallet} tone="brand" />
+        <StatCard
+          label={showCts ? "CTS del semestre" : "EsSalud empleador"}
+          value={pen(showCts ? cts : ess)}
+          hint={showCts ? "semestre may–oct" : "aporte del empleador"}
+          icon={CalendarRange}
+          tone="ok"
+        />
       </div>
 
       {slips.length === 0 ? (
         <Empty title="Sin boletas en este periodo" lede="Nadie de tu vista tiene devengue en el mes elegido." />
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-          <table className="w-max min-w-full text-left text-sm">
+        <Card className="overflow-x-auto">
+          <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Colaborador</th>
@@ -205,21 +212,12 @@ function PayrollPage() {
               })}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       <Modal open={Boolean(selected && selectedEmp)} title="Boleta de pago" onClose={() => setOpenId(null)} wide>
         {selected && selectedEmp ? <BoletaView slip={selected} employee={selectedEmp} company={data.company} /> : null}
       </Modal>
     </Shell>
-  );
-}
-
-function Mini({ label, value }: { label: string; value: string }) {
-  return (
-    <article className="rounded-lg border border-line bg-surface p-4">
-      <p className="text-sm text-muted">{label}</p>
-      <p className="num mt-1 font-display text-2xl">{value}</p>
-    </article>
   );
 }

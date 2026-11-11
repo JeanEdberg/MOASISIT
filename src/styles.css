@@ -11,20 +11,45 @@
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
 
-  --color-bg: #f8fafc;
+  /* Superficies y texto */
+  --color-bg: #f6f8fb;
   --color-surface: #ffffff;
-  --color-surface-2: #f0f9ff;
+  --color-surface-2: #eef4fb;
+  --color-surface-3: #e2eaf3;
   --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
+  --color-muted: #5b6b83;
+  --color-line: #dbe3ec;
+  --color-line-strong: #c3cfdd;
+
+  /* Marca (tokens que el tema por empresa reescribe en runtime) */
   --color-clay: var(--brand);
   --color-clay-ink: var(--brand-ink);
   --color-moss: var(--accent);
   --color-moss-ink: var(--accent-ink);
 
+  /* Estados — un solo tono por significado, reutilizado en todo el producto */
+  --color-ok: #15803d;
+  --color-ok-soft: #e7f6ec;
+  --color-ok-line: #b7e0c4;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf3e3;
+  --color-warn-line: #f2d9a8;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fdecec;
+  --color-danger-line: #f3c2c2;
+  --color-info: #1d4ed8;
+  --color-info-soft: #e9eefc;
+  --color-info-line: #c2cff5;
+
+  /* Elevación */
+  --shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.04), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-raised: 0 4px 12px -2px rgb(15 23 42 / 0.10), 0 2px 6px -2px rgb(15 23 42 / 0.06);
+  --shadow-overlay: 0 24px 48px -12px rgb(15 23 42 / 0.28);
+
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1.125rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
 }
 
 @layer base {

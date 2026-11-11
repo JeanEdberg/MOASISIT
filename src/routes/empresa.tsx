@@ -284,7 +284,7 @@ function CompanyPage() {
               <label className="flex min-h-11 items-center gap-2 text-sm">
                 <input
                   type="checkbox"
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="size-4 rounded border-line-strong text-clay focus:ring-2 focus:ring-clay"
                   checked={ins.active}
                   onChange={(e) => patchInsurer(ins.id, { active: e.target.checked })}
                 />
