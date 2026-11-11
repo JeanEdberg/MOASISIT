@@ -104,5 +104,7 @@ function stripMoney(e: Employee): Employee {
     ctsBank: "",
     bank: undefined,
     account: undefined,
+    // El legajo documental (T-Registros, contrato, liquidación) solo lo ve RR.HH.
+    attachments: undefined,
   };
 }

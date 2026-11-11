@@ -19,6 +19,13 @@ export type Subscription = {
 
 export type Regime = "general" | "pequena" | "micro" | "practicante";
 
+/**
+ * Régimen laboral de la EMPRESA (REMYPE). Los colaboradores lo heredan al
+ * registrarse. "mype" se ofrece por control tributario, pero sus cálculos son
+ * los del régimen general (la micro y pequeña empresa se eligen aparte).
+ */
+export type CompanyRegime = "general" | "mype" | "pequena" | "micro";
+
 export type ContractType = "indefinido" | "plazo_fijo" | "practicas";
 
 export type EmployeeStatus = "activo" | "cesado";
@@ -87,6 +94,16 @@ export type Company = {
   accentColor: string;
   /** Logo de la empresa como data URL (PNG/JPG). Vacío = sin logo. */
   logo?: string;
+  /** Régimen laboral de la empresa (REMYPE). Los colaboradores lo heredan. */
+  regime: CompanyRegime;
+  /**
+   * Resolución de acogimiento al régimen MYPE: número y fecha. Obligatorios
+   * cuando el régimen es "pequena" o "micro" (sustento ante fiscalización).
+   */
+  mypeResolutionNumber: string;
+  mypeResolutionDate: string;
+  /** Resolución de acogimiento escaneada, como data URL (PDF/JPG/PNG). */
+  mypeResolutionFile?: string;
   rmv: number;
   uit: number;
   /** Parámetros de la retención de quinta categoría (deducción y tramos). */
@@ -113,6 +130,31 @@ export type Area = {
 
 /** Cobertura de salud del trabajador: EsSalud regular o EPS. */
 export type HealthInsurance = "essalud" | "eps";
+
+/** Tipo de documento adjunto del colaborador. */
+export type AttachmentKind = "tRegistroAlta" | "tRegistroBaja" | "contrato" | "liquidacion";
+
+export type EmployeeAttachment = {
+  /** Nombre del archivo, para mostrarlo en la ficha. */
+  name: string;
+  /** Contenido como data URL. */
+  dataUrl: string;
+  /** Fecha del documento (ISO), cuando aplica. */
+  date: string;
+};
+
+/** Documentos adjuntos del colaborador, por tipo. Vacío = no se cargó. */
+export type EmployeeAttachments = Partial<Record<AttachmentKind, EmployeeAttachment>>;
+
+/** Un cese cerrado, conservado en el histórico del colaborador. */
+export type CessationRecord = {
+  /** Fecha de cese (ISO). */
+  endDate: string;
+  /** Motivo (renuncia, fin de contrato, despido, etc.). */
+  reason: string;
+  /** Fecha en que se registró el cese en la app (ISO). */
+  registeredAt: string;
+};
 
 /** Nivel de acceso del colaborador dentro de la app. */
 export type AccessRole = ViewerMode;
@@ -188,6 +230,18 @@ export type Employee = {
   children: number;
   /** Días de vacaciones gozados antes de entrar a Moasist. */
   vacationHistory: number;
+
+  /**
+   * Documentos del colaborador (T-Registro de alta/baja, contrato firmado,
+   * liquidación). Se guardan como data URL dentro del dataset.
+   */
+  attachments?: EmployeeAttachments;
+
+  /**
+   * Histórico de ceses y reincorporaciones. Cada cese guarda su fecha y motivo;
+   * al reincorporarse se abre un periodo nuevo sin borrar el anterior.
+   */
+  cessations?: CessationRecord[];
 
   /**
    * Marca de persona ficticia sembrada por la demo. Solo la usan las personas

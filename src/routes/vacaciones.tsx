@@ -42,13 +42,13 @@ function VacationsPage() {
     return people
       .map((e) => ({
         e,
-        earned: vacationEarned(e),
+        earned: vacationEarned(e, HOY, data.company),
         taken: vacationTaken(e, data.requests),
         pending: vacationPending(e, data.requests),
-        balance: vacationBalance(e, data.requests),
+        balance: vacationBalance(e, data.requests, HOY, data.company),
       }))
       .sort((a, b) => b.balance - a.balance);
-  }, [people, data.requests]);
+  }, [people, data.requests, data.company]);
 
   const total = rows.reduce((s, r) => s + r.balance, 0);
   const avg = rows.length ? total / rows.length : 0;
@@ -81,7 +81,7 @@ function VacationsPage() {
     }
     const emp = data.employees.find((e) => e.id === form.employeeId);
     if (form.kind === "vacaciones" && emp) {
-      const bal = vacationBalance(emp, data.requests);
+      const bal = vacationBalance(emp, data.requests, HOY, data.company);
       if (days > bal + 0.05) {
         setError(`El saldo es ${fmtDays(bal)} días. Ajusta el rango o registra el adelanto con RR. HH.`);
         return;

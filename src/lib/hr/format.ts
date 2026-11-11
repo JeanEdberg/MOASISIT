@@ -2,6 +2,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 import { es } from "date-fns/locale";
 import type {
   AttendanceKind,
+  CompanyRegime,
   ContractType,
   DocKind,
   HealthInsurance,
@@ -160,6 +161,13 @@ export const REGIME_LABEL: Record<Regime, string> = {
   pequena: "Pequeña empresa",
   micro: "Microempresa",
   practicante: "Prácticas",
+};
+
+export const COMPANY_REGIME_LABEL: Record<CompanyRegime, string> = {
+  general: "Régimen general",
+  mype: "MYPE (control tributario)",
+  pequena: "Pequeña empresa (REMYPE)",
+  micro: "Microempresa (REMYPE)",
 };
 
 export const CONTRACT_LABEL: Record<ContractType, string> = {

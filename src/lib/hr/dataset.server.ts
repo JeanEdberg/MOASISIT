@@ -1,6 +1,7 @@
 import { getSql } from "@/lib/db";
 import { withFifthCategory } from "@/lib/hr/fifth";
 import { withInsurerCatalog } from "@/lib/hr/insurers";
+import { withCompanyRegime } from "@/lib/hr/regime";
 import { createDemo, withDemoFlags } from "@/lib/hr/seed";
 import { withSubscriptions } from "@/lib/hr/subscription";
 import {
@@ -54,7 +55,8 @@ export async function loadDataset(): Promise<HrData> {
     const normalized = withInsurerCatalog(rows[0].data);
     const flagged = withDemoFlags(normalized);
     const withSubs = withSubscriptions(flagged);
-    const migrated = withFifthCategory(withSubs);
+    const withRegime = withCompanyRegime(withSubs);
+    const migrated = withFifthCategory(withRegime);
     if (migrated !== rows[0].data) await saveDataset(migrated);
     return migrated;
   }
@@ -166,6 +168,18 @@ export async function authenticate(login: string, secret: string): Promise<Login
   }
 
   await resetAttempts(login);
+
+  // Un colaborador cesado no puede ingresar: su credencial queda bloqueada hasta
+  // que RR.HH. lo reincorpore. Se resuelve aquí (no en la UI) para que ningún
+  // camino alternativo de acceso lo salte.
+  if (cred.kind === "employee" && cred.employee_id) {
+    const data = await loadDataset();
+    const emp = data.employees.find((e) => e.id === cred.employee_id);
+    if (emp && emp.status === "cesado") {
+      return { ok: false, error: "Tu cuenta está bloqueada. Comunícate con RR.HH." };
+    }
+  }
+
   return {
     ok: true,
     session: {

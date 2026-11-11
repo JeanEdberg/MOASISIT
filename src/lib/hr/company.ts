@@ -1,8 +1,9 @@
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
+import { DEFAULT_COMPANY_REGIME, normalizeCompanyRegime, requiresMypeResolution } from "@/lib/hr/regime";
 import { normalizeRuc } from "@/lib/hr/ruc";
 import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
-import type { Company } from "@/lib/hr/types";
+import type { Company, CompanyRegime } from "@/lib/hr/types";
 
 /**
  * Parámetros legales por defecto (referencia 2026). Varían por norma, no por
@@ -40,6 +41,13 @@ export type NewCompanyInput = {
   brandMark?: string;
   brandColor?: string;
   accentColor?: string;
+  /** Régimen laboral de la empresa (REMYPE). Por defecto, general. */
+  regime?: CompanyRegime;
+  /** Resolución de acogimiento MYPE: número y fecha. */
+  mypeResolutionNumber?: string;
+  mypeResolutionDate?: string;
+  /** Resolución escaneada como data URL (PDF/JPG/PNG). */
+  mypeResolutionFile?: string;
   /** Correo del usuario RR.HH. que podrá entrar a esta empresa (opcional). */
   adminEmail?: string;
 };
@@ -84,6 +92,10 @@ export function buildCompany(input: NewCompanyInput, id: string): Company {
     brandMark: (input.brandMark?.trim() || shortName.slice(0, 2)).toUpperCase().slice(0, 2),
     brandColor: input.brandColor?.trim() || BRAND_DEFAULTS.brandColor,
     accentColor: input.accentColor?.trim() || BRAND_DEFAULTS.accentColor,
+    regime: normalizeCompanyRegime(input.regime),
+    mypeResolutionNumber: (input.mypeResolutionNumber ?? "").trim(),
+    mypeResolutionDate: (input.mypeResolutionDate ?? "").trim(),
+    ...(input.mypeResolutionFile ? { mypeResolutionFile: input.mypeResolutionFile } : {}),
     ...LEGAL_DEFAULTS,
     insurers: catalogInsurers(id),
     subscription: { ...DEFAULT_SUBSCRIPTION, startDate: new Date().toISOString().slice(0, 10) },
@@ -98,6 +110,11 @@ export function validateNewCompany(input: NewCompanyInput, existingIds: string[]
   if (!input.shortName.trim()) return "El nombre corto es obligatorio.";
   if (existingIds.some((id) => slugifyCompanyId(input.shortName) === id)) {
     return "Ya existe una empresa con ese nombre corto.";
+  }
+  const regime = normalizeCompanyRegime(input.regime ?? DEFAULT_COMPANY_REGIME);
+  if (requiresMypeResolution(regime)) {
+    if (!(input.mypeResolutionNumber ?? "").trim()) return "Indica el número de la resolución de acogimiento REMYPE.";
+    if (!(input.mypeResolutionDate ?? "").trim()) return "Indica la fecha de la resolución de acogimiento REMYPE.";
   }
   return null;
 }

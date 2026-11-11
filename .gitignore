@@ -30,3 +30,7 @@ public/descargas/
 # Excepción: los manuales de uso (no contienen datos personales) sí se publican,
 # porque la app los descarga desde /manuales (solo el superadmin ve el botón).
 !public/manuales/*.pdf
+
+# Hojas de cálculo del usuario (no versionar)
+*.xlsx
+*.xls

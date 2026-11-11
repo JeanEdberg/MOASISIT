@@ -5,12 +5,14 @@ import { NewCompanyButton } from "@/components/new-company";
 import { StatusPanel } from "@/components/status-panel";
 import { SubscriptionPanel } from "@/components/subscription-panel";
 import { Shell } from "@/components/shell";
-import { Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
-import { INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
+import { Badge, Button, Field, fieldClass, Modal, PageHeader } from "@/components/ui";
+import { readAttachmentFile } from "@/lib/hr/attachment";
+import { COMPANY_REGIME_LABEL, INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
 import { fifthCategoryParamsOf } from "@/lib/hr/fifth";
 import { readLogoFile } from "@/lib/hr/logo";
+import { COMPANY_REGIMES, mypeResolutionWarning, regimeBenefits, requiresMypeResolution } from "@/lib/hr/regime";
 import { useHr } from "@/lib/hr/store";
-import type { AfpFund, Company, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
+import type { AfpFund, Company, CompanyRegime, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/empresa")({ component: CompanyPage });
 
@@ -115,6 +117,111 @@ function CompanyPage() {
             <input className={fieldClass} value={company.email} onChange={(e) => updateCompany({ email: e.target.value })} />
           </Field>
         </div>
+      </section>
+
+      <section className="mt-4 rounded-lg border border-line bg-surface p-4">
+        <h2 className="text-2xl">Régimen laboral</h2>
+        <p className="mt-1 text-sm text-muted">
+          Define el régimen de la empresa (REMYPE). Los colaboradores nuevos lo heredan al registrarse, y los cálculos de CTS,
+          gratificación y vacaciones se ajustan a sus reglas.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <Field label="Régimen de la empresa">
+            <select
+              className={fieldClass}
+              value={company.regime ?? "general"}
+              onChange={(e) => updateCompany({ regime: e.target.value as CompanyRegime })}
+            >
+              {COMPANY_REGIMES.map((r) => (
+                <option key={r} value={r}>
+                  {COMPANY_REGIME_LABEL[r]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+
+        {(() => {
+          const benefits = regimeBenefits((company.regime ?? "general") as CompanyRegime);
+          return (
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <Badge tone="line">CTS: {benefits.cts}</Badge>
+              <Badge tone="line">Gratificación: {benefits.gratificacion}</Badge>
+              <Badge tone="line">Vacaciones: {benefits.vacaciones}</Badge>
+              <Badge tone="line">{benefits.essalud}</Badge>
+            </div>
+          );
+        })()}
+
+        {mypeResolutionWarning(company) ? (
+          <p className="mt-3 rounded-md border border-clay/40 bg-clay/5 p-3 text-sm text-clay">
+            {mypeResolutionWarning(company)}
+          </p>
+        ) : null}
+
+        {requiresMypeResolution((company.regime ?? "general") as CompanyRegime) ? (
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <Field label="N.° de resolución REMYPE">
+              <input
+                className={fieldClass}
+                value={company.mypeResolutionNumber ?? ""}
+                placeholder="Ej. 0001-2026"
+                onChange={(e) => updateCompany({ mypeResolutionNumber: e.target.value })}
+              />
+            </Field>
+            <Field label="Fecha de resolución">
+              <input
+                className={fieldClass}
+                type="date"
+                value={company.mypeResolutionDate ?? ""}
+                onChange={(e) => updateCompany({ mypeResolutionDate: e.target.value })}
+              />
+            </Field>
+            <div className="sm:col-span-2">
+              <p className="text-sm font-medium">Resolución escaneada</p>
+              <p className="mt-1 text-xs text-muted">PDF o foto de la resolución de acogimiento (sustento ante fiscalización).</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                {company.mypeResolutionFile ? (
+                  <a
+                    className="min-h-11 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+                    href={company.mypeResolutionFile}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Ver resolución
+                  </a>
+                ) : (
+                  <span className="text-xs text-muted">Sin archivo</span>
+                )}
+                <label className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-line bg-surface px-3 text-sm font-medium">
+                  {company.mypeResolutionFile ? "Reemplazar" : "Subir resolución"}
+                  <input
+                    type="file"
+                    accept="application/pdf,image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      const res = await readAttachmentFile(file);
+                      if (!res.ok) {
+                        toast.error(res.error);
+                        return;
+                      }
+                      updateCompany({ mypeResolutionFile: res.dataUrl });
+                      toast.success("Resolución actualizada");
+                    }}
+                  />
+                </label>
+                {company.mypeResolutionFile ? (
+                  <Button tone="ghost" onClick={() => updateCompany({ mypeResolutionFile: undefined })}>
+                    Quitar
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section className="mt-4 rounded-lg border border-line bg-surface p-4">

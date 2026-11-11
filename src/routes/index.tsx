@@ -95,7 +95,7 @@ function AdminDashboard({ superadmin }: { superadmin: boolean }) {
   );
   const totals = useMemo(() => payrollTotals(slips), [slips]);
   const attendance = useMemo(() => attendanceSummary(data.attendance, period), [data.attendance, period]);
-  const vac = useMemo(() => vacationSummary(active, data.requests), [active, data.requests]);
+  const vac = useMemo(() => vacationSummary(active, data.requests, data.company), [active, data.requests, data.company]);
   const ending = useMemo(() => contractsExpiring(active, 120), [active]);
   const pending = data.requests.filter((r) => r.status === "pendiente" && people.some((e) => e.id === r.employeeId));
   const birthdays = useMemo(() => birthdaysInMonth(active, 11), [active]);
@@ -478,7 +478,7 @@ function ColaboradorDashboard() {
   const month = Number(HOY.slice(5, 7));
   const year = Number(HOY.slice(0, 4));
   const benefits = me ? benefitsProjection(me, data.company, year, month) : null;
-  const balance = me ? vacationBalance(me, data.requests) : 0;
+  const balance = me ? vacationBalance(me, data.requests, HOY, data.company) : 0;
   const pendingVac = me ? vacationPending(me, data.requests) : 0;
 
   if (!me) {

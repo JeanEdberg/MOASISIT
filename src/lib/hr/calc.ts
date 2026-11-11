@@ -1,16 +1,31 @@
-import { differenceInCalendarDays, differenceInMonths } from "date-fns";
+import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fns";
 import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
 import { HOY, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
+import { benefitShare, employeeRegimeFor, gratificationsPerYear, gratuityBonusRate, normalizeCompanyRegime } from "@/lib/hr/regime";
 import type {
   Attendance,
   Company,
   Employee,
   PayLine,
   Payslip,
+  Regime,
   TimeRequest,
 } from "@/lib/hr/types";
 
 /** Cálculo referencial de planilla peruana bajo D. Leg. 650 y Ley 27735. */
+
+/**
+ * Régimen efectivo del colaborador para el cálculo. La empresa manda: la MYPE de
+ * control tributario se calcula como régimen general, y si el colaborador quedó
+ * con un régimen distinto al de su empresa (por ejemplo, migrado), se usa el de
+ * la empresa para no aplicar un beneficio que no corresponde.
+ */
+export function effectiveRegime(company: Company, emp: Employee): Regime {
+  const companyRegime = normalizeCompanyRegime(company.regime);
+  // Prácticas es una condición del colaborador, no de la empresa.
+  if (emp.regime === "practicante") return "practicante";
+  return employeeRegimeFor(companyRegime);
+}
 
 /** Resuelve una aseguradora vigente de la empresa por su id (null si no aplica). */
 export function activeInsurer(company: Company, insurerId: string | null | undefined) {
@@ -76,7 +91,8 @@ export function ctsSemester(
   year: number,
   which: "may" | "nov",
 ): number {
-  if (emp.regime === "practicante" || emp.regime === "micro") return 0;
+  const regime = effectiveRegime(company, emp);
+  if (regime === "practicante" || regime === "micro") return 0;
   const start = which === "nov" ? parseDay(`${year}-05-01`) : parseDay(`${year - 1}-11-01`);
   const end = which === "nov" ? parseDay(`${year}-10-31`) : parseDay(`${year}-04-30`);
   const hire = parseDay(emp.hireDate);
@@ -107,7 +123,7 @@ export function ctsSemester(
   }
 
   const computable = ordinary + sextoGratificacion;
-  const share = emp.regime === "pequena" ? 0.5 : 1;
+  const share = benefitShare(normalizeCompanyRegime(company.regime));
 
   const montoMeses = computable * (months / 12);
   const montoDias = computable * (days / 360);
@@ -122,7 +138,8 @@ export function gratuityAmount(
   year: number,
   which: "julio" | "navidad",
 ): { grat: number; bonif: number } {
-  if (emp.regime === "practicante" || emp.regime === "micro") return { grat: 0, bonif: 0 };
+  const regime = effectiveRegime(company, emp);
+  if (regime === "practicante" || regime === "micro") return { grat: 0, bonif: 0 };
 
   const start = which === "julio" ? parseDay(`${year}-01-01`) : parseDay(`${year}-07-01`);
   const end = which === "julio" ? parseDay(`${year}-06-30`) : parseDay(`${year}-12-31`);
@@ -139,11 +156,12 @@ export function gratuityAmount(
 
   const af = emp.familyAllowance ? company.rmv * 0.1 : 0;
   const baseMonthly = emp.salary + af;
-  const share = emp.regime === "pequena" ? 0.5 : 1;
+  const share = benefitShare(normalizeCompanyRegime(company.regime));
 
   const rawGrat = (baseMonthly * (monthsWorked / 6)) * share;
   const grat = round2(rawGrat);
-  const bonif = round2(grat * 0.09); // 9% EsSalud (Ley 30334 / Ley 29351)
+  // Bonificación extraordinaria (Ley 29351 / 30334): 9% con EsSalud, 6.75% con EPS.
+  const bonif = round2(grat * gratuityBonusRate(emp.healthInsurance));
 
   return { grat, bonif };
 }
@@ -203,7 +221,7 @@ export function calcularConsolidadoMasivo(
       dni: emp.dni,
       nombre: nombreCompleto,
       name: nombreCompleto,
-      regimen: emp.regime,
+      regimen: effectiveRegime(company, emp),
       fechaIngreso: emp.hireDate,
       sueldoComputable: round2(ordinary),
       detalleCalculo: detalle,
@@ -216,17 +234,29 @@ export function calcularConsolidadoMasivo(
   }).filter((item) => item.totalPagar > 0);
 }
 
-function vacationRate(emp: Employee): number {
-  if (emp.regime === "general") return 2.5;
+export function vacationRate(regime: Regime): number {
+  if (regime === "general") return 2.5;
   return 1.25;
 }
 
-export function vacationEarned(emp: Employee, asOf = HOY): number {
-  const start = parseDay(emp.hireDate);
+/**
+ * Días de vacaciones ganados por meses completos y días sueltos de servicio
+ * (D. Leg. 713): cada mes calendario completo vale su tasa, y los días que
+ * sobran al último aniversario se pagan proporcionalmente (días / 30).
+ */
+export function vacationDaysEarned(hireDate: string, asOf: string, regime: Regime): number {
+  const start = parseDay(hireDate);
   const end = parseDay(asOf);
   if (end < start) return 0;
   const months = Math.max(0, differenceInMonths(end, start));
-  return round2(months * vacationRate(emp));
+  const anniversary = addMonths(start, months);
+  const days = Math.max(0, differenceInCalendarDays(end, anniversary));
+  return round2((months + days / 30) * vacationRate(regime));
+}
+
+export function vacationEarned(emp: Employee, asOf = HOY, company?: Company): number {
+  const regime = company ? effectiveRegime(company, emp) : emp.regime;
+  return vacationDaysEarned(emp.hireDate, asOf, regime);
 }
 
 export function vacationTaken(emp: Employee, requests: TimeRequest[]): number {
@@ -244,8 +274,8 @@ export function vacationPending(emp: Employee, requests: TimeRequest[]): number 
   );
 }
 
-export function vacationBalance(emp: Employee, requests: TimeRequest[], asOf = HOY): number {
-  return round2(vacationEarned(emp, asOf) - vacationTaken(emp, requests));
+export function vacationBalance(emp: Employee, requests: TimeRequest[], asOf = HOY, company?: Company): number {
+  return round2(vacationEarned(emp, asOf, company) - vacationTaken(emp, requests));
 }
 
 export type PayrollInput = {
@@ -283,6 +313,7 @@ export function calcPayslip(
   };
   if (factor <= 0) return empty;
 
+  const regime = effectiveRegime(company, emp);
   const month = monthIndex(period);
   const year = Number(period.slice(0, 4));
   
@@ -347,7 +378,7 @@ export function calcPayslip(
   const afecto = round2(paidBasic + af + extraPay);
   let pensionBase = 0;
   let cappedPension = false;
-  if (emp.pension !== "ninguno" && emp.regime !== "practicante") {
+  if (emp.pension !== "ninguno" && regime !== "practicante") {
     pensionBase = afecto;
     if (emp.pension !== "onp" && afecto > company.topeAfp) {
       pensionBase = round2(company.topeAfp);
@@ -364,7 +395,7 @@ export function calcPayslip(
   }
 
   const ordinary = round2(paidBasic + af);
-  const gratTimes = emp.regime === "general" ? 2 : emp.regime === "pequena" ? 1 : 0;
+  const gratTimes = gratificationsPerYear(normalizeCompanyRegime(company.regime));
   // La retención de quinta categoría solo aplica si el colaborador está marcado
   // como afecto. Se proyecta su renta anual y se descuenta la doceava parte.
   const fifthParams = fifthCategoryParamsOf(company);
@@ -386,7 +417,7 @@ export function calcPayslip(
 
   // Salud: EsSalud (9%) o EPS. La EPS se financia dentro del 9% de EsSalud, con
   // una porción (2.25% referencial) que se muestra aparte como aporte informativo.
-  const esPracticante = emp.regime === "practicante";
+  const esPracticante = regime === "practicante";
   const epsInsurer = activeInsurer(company, emp.epsInsurerId);
   const usingEps = emp.healthInsurance === "eps" && Boolean(epsInsurer);
   const essalud = esPracticante ? 0 : round2(essaludBase * company.essalud);

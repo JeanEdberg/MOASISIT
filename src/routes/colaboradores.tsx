@@ -7,12 +7,14 @@ import { Badge, Button, Empty, fieldClass, Modal, PageHeader } from "@/component
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { parseEmployeeCsv, CSV_SAMPLE } from "@/lib/hr/csv";
 import { fullName, HOY, pen, REGIME_LABEL, uid } from "@/lib/hr/format";
+import { employeeRegimeFor, normalizeCompanyRegime } from "@/lib/hr/regime";
 import { useHr } from "@/lib/hr/store";
-import type { Employee } from "@/lib/hr/types";
+import type { CompanyRegime, Employee } from "@/lib/hr/types";
 
 export const Route = createFileRoute("/colaboradores")({ component: PeoplePage });
 
-function emptyDraft(companyId: string, areaId: string): EmployeeDraft {
+function emptyDraft(companyId: string, areaId: string, companyRegime: CompanyRegime = "general"): EmployeeDraft {
+  const regime = employeeRegimeFor(normalizeCompanyRegime(companyRegime));
   return {
     companyId,
     names: "",
@@ -30,10 +32,10 @@ function emptyDraft(companyId: string, areaId: string): EmployeeDraft {
     position: "",
     managerId: null,
     contract: "indefinido",
-    regime: "general",
+    regime,
     salary: 1130,
     familyAllowance: false,
-    fifthCategory: true,
+    fifthCategory: regime === "general",
     pension: "onp",
     cuspp: "",
     healthInsurance: "essalud",
@@ -64,7 +66,7 @@ function PeoplePage() {
   const [area, setArea] = useState("todas");
   const [status, setStatus] = useState<"todos" | "activo" | "cesado">("activo");
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<EmployeeDraft>(() => emptyDraft(company.id, areas[0]?.id ?? ""));
+  const [draft, setDraft] = useState<EmployeeDraft>(() => emptyDraft(company.id, areas[0]?.id ?? "", company.regime));
   const [error, setError] = useState<string | null>(null);
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
 
@@ -140,7 +142,7 @@ function PeoplePage() {
               </label>
               <Button
                 onClick={() => {
-                  setDraft(emptyDraft(company.id, companyAreas[0]?.id ?? ""));
+                  setDraft(emptyDraft(company.id, companyAreas[0]?.id ?? "", company.regime));
                   setError(null);
                   setOpen(true);
                 }}

@@ -103,11 +103,11 @@ export type VacationSummary = {
 };
 
 /** Resumen de vacaciones de un conjunto de colaboradores. */
-export function vacationSummary(people: Employee[], requests: TimeRequest[]): VacationSummary {
+export function vacationSummary(people: Employee[], requests: TimeRequest[], company?: Company): VacationSummary {
   const ids = new Set(people.map((e) => e.id));
   const mine = requests.filter((r) => ids.has(r.employeeId));
   return {
-    balanceDays: people.reduce((s, e) => s + vacationBalance(e, requests), 0),
+    balanceDays: people.reduce((s, e) => s + vacationBalance(e, requests, HOY, company), 0),
     takenDays: people.reduce((s, e) => s + vacationTaken(e, requests), 0),
     pendingDays: people.reduce((s, e) => s + vacationPending(e, requests), 0),
     pendingRequests: mine.filter((r) => r.status === "pendiente").length,

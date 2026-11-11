@@ -290,6 +290,53 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   en `loadDataset`) completa datasets antiguos con las aseguradoras faltantes y
   **conserva** las tasas editadas por el usuario; no reescribe la fila si no hay
   cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
+- **Régimen laboral REMYPE (Fases 1–2)**: `src/lib/hr/regime.ts` es **puro**
+  (`CompanyRegime` = `general|mype|pequena|micro`, `normalizeCompanyRegime`,
+  `employeeRegimeFor`, `effectiveRegime`, `benefitsFor`, `requiresMypeResolution`,
+  `mypeResolutionWarning`). El régimen vive en `Company.regime`; `mype` (control
+  tributario) se trata como `general` en los cálculos, y `pequena`/`micro`
+  (REMYPE) reducen CTS/gratificación a 50 % y vacaciones a 15 días. **La empresa
+  manda**: `effectiveRegime(company, emp)` en `calc.ts` decide el régimen del
+  cálculo (el campo `Employee.regime` es solo informativo/heredado). `pequena` y
+  `micro` exigen número + fecha de resolución de acogimiento (y archivo) o la UI
+  avisa con `mypeResolutionWarning`. `withCompanyRegime` (idempotente, corre en
+  `loadDataset`) migra datasets antiguos. El colaborador nuevo **hereda** el
+  régimen de su empresa (`emptyDraft(companyId, areaId, companyRegime)`).
+  Selector en `src/components/new-company.tsx` (alta) y en `/empresa` (edición).
+- **Adjuntos del colaborador (Fase 3)**: `src/lib/hr/attachment.ts` es **puro**
+  (`readAttachmentFile` → data URL con tope de tamaño, `attachmentsOf`,
+  `missingAttachments`, `ATTACHMENT_LABELS`). `Employee.attachments` guarda
+  `{ [kind]: {name, dataUrl, date} }` con `AttachmentKind` =
+  `tRegistroAlta|tRegistroBaja|contrato|liquidacion`. La UI es
+  `src/components/employee-documents.tsx`, montada en la pestaña **Documentos**
+  de `/colaboradores/$id`. Los adjuntos son PII sensible: `stripMoney` en
+  `viewer-scope.ts` los borra (`attachments: undefined`) para no
+  RR.HH./superadmin.
+- **Cese con bloqueo e histórico (Fase 4)**: `src/lib/hr/cessation.ts` es **puro**
+  (`ceaseEmployee`, `rehireEmployee`, `cessationsOf`, `isRehire`,
+  `CESSATION_REASONS`). Al cesar: `status: "cesado"`, `endDate` y un registro en
+  `Employee.cessations` (histórico; conserva ceses previos). Al reincorporar:
+  `status: "activo"`, nueva `hireDate`, `endDate: null` y el histórico **no** se
+  borra. `authenticate` en `dataset.server.ts` **bloquea el login** de un
+  colaborador cesado. Botón "Registrar cese" en la cabecera de la ficha y
+  sección "Cese y reincorporación" en la pestaña Documentos.
+- **Liquidación al cese (beneficios sociales)**: `src/lib/hr/liquidacion.ts` es
+  **puro** (`ctsPeriodFor`, `gratuityPeriodFor`, `previousCtsPeriod`,
+  `previousGratuityPeriod`, `vacationLiquidation`, `liquidationOf`). Calcula, de
+  forma **referencial** (la asesoría laboral valida el monto), CTS trunca,
+  gratificación trunca + bonificación extraordinaria (9 % EsSalud / 6.75 % EPS,
+  `gratuityBonusRate`), y vacaciones truncas y no gozadas. Reglas clave:
+  la bonificación extraordinaria se calcula sobre la gratificación trunca;
+  **las vacaciones se pagan en soles** = días × (remuneración computable / 30);
+  las truncas son solo el **récord en curso** (meses completos desde el último
+  aniversario + días sueltos proporcionales, `vacationRate` 2.5 general / 1.25
+  REMYPE), y las no gozadas son el resto del saldo (`vacationBalance`). El
+  resultado incluye `items` (lo que se suma) y `reference` (depósitos/pagos
+  previos, informativo, **no** se suma). `vacationEarned`/`vacationDaysEarned`
+  en `calc.ts` usan la misma proporcionalidad por días. La UI vive en
+  `employee-documents.tsx` (sección "Liquidación de beneficios", visible solo
+  para una ficha cesada); `colaboradores_.$id.tsx` le pasa `company` y
+  `requests`. Tests en `src/lib/hr/liquidacion.test.ts`.
 - **Sistema de diseño (UI)**: los tokens viven en `src/styles.css` (`@theme`):
   superficies (`--color-bg/surface/surface-2/surface-3`), texto (`--color-ink`,
   `--color-muted`, `--color-line`), marca (`--color-clay` = `--brand`, que el

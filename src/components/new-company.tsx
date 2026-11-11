@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Field, fieldClass, Modal } from "@/components/ui";
+import { readAttachmentFile } from "@/lib/hr/attachment";
 import type { NewCompanyInput } from "@/lib/hr/company";
+import { COMPANY_REGIME_LABEL } from "@/lib/hr/format";
+import { COMPANY_REGIMES, requiresMypeResolution } from "@/lib/hr/regime";
 import { isValidRuc, normalizeRuc, rucStatusLabel, isRucOperativo, type RucInfo } from "@/lib/hr/ruc";
 import { useHr } from "@/lib/hr/store";
+import type { CompanyRegime } from "@/lib/hr/types";
 
 const EMPTY: NewCompanyInput = {
   ruc: "",
@@ -14,6 +18,9 @@ const EMPTY: NewCompanyInput = {
   address: "",
   email: "",
   phone: "",
+  regime: "general",
+  mypeResolutionNumber: "",
+  mypeResolutionDate: "",
   adminEmail: "",
 };
 
@@ -183,6 +190,70 @@ export function NewCompanyButton() {
                   onChange={(e) => set({ adminEmail: e.target.value })}
                 />
               </Field>
+            </div>
+
+            <div className="rounded-md border border-line bg-bg p-3">
+              <h4 className="text-sm font-semibold text-ink">Régimen laboral</h4>
+              <p className="mt-0.5 text-xs text-muted">
+                SUNAT no informa el régimen laboral; se elige aquí. Los colaboradores lo heredan al registrarse.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <Field label="Régimen de la empresa">
+                  <select
+                    className={fieldClass}
+                    value={form.regime ?? "general"}
+                    onChange={(e) => set({ regime: e.target.value as CompanyRegime })}
+                  >
+                    {COMPANY_REGIMES.map((r) => (
+                      <option key={r} value={r}>
+                        {COMPANY_REGIME_LABEL[r]}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </div>
+              {requiresMypeResolution((form.regime ?? "general") as CompanyRegime) ? (
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <Field label="N.° de resolución REMYPE">
+                    <input
+                      className={fieldClass}
+                      value={form.mypeResolutionNumber ?? ""}
+                      placeholder="Ej. 0001-2026"
+                      onChange={(e) => set({ mypeResolutionNumber: e.target.value })}
+                    />
+                  </Field>
+                  <Field label="Fecha de resolución">
+                    <input
+                      className={fieldClass}
+                      type="date"
+                      value={form.mypeResolutionDate ?? ""}
+                      onChange={(e) => set({ mypeResolutionDate: e.target.value })}
+                    />
+                  </Field>
+                  <Field
+                    label="Resolución escaneada"
+                    hint="PDF o foto de la resolución de acogimiento. También puedes cargarla luego en Empresa."
+                  >
+                    <input
+                      className={fieldClass}
+                      type="file"
+                      accept="application/pdf,image/png,image/jpeg,image/webp"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = "";
+                        if (!file) return;
+                        const res = await readAttachmentFile(file);
+                        if (!res.ok) {
+                          toast.error(res.error);
+                          return;
+                        }
+                        set({ mypeResolutionFile: res.dataUrl });
+                        toast.success("Resolución adjuntada");
+                      }}
+                    />
+                  </Field>
+                </div>
+              ) : null}
             </div>
 
             <div className="flex justify-end gap-2">

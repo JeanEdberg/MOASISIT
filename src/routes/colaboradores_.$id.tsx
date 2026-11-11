@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { BoletaView } from "@/components/boleta";
 import { draftFromEmployee, EmployeeForm, validateDraft, type EmployeeDraft } from "@/components/employee-form";
+import { EmployeeDocuments } from "@/components/employee-documents";
 import { Shell } from "@/components/shell";
 import { Badge, Button, Modal } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
@@ -48,7 +49,7 @@ function FichaPage() {
   const companies = useHr((s) => s.companies);
   const emp = data.employees.find((e) => e.id === id);
   const allowed = emp && visibleEmployees(data.employees, data.viewer).some((e) => e.id === emp.id);
-  const [tab, setTab] = useState<"resumen" | "personal" | "laboral" | "seguros" | "pagos" | "tiempo">("resumen");
+  const [tab, setTab] = useState<"resumen" | "personal" | "laboral" | "seguros" | "pagos" | "tiempo" | "documentos">("resumen");
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<EmployeeDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +71,7 @@ function FichaPage() {
     );
   }
 
-  const balance = vacationBalance(emp, data.requests);
+  const balance = vacationBalance(emp, data.requests, HOY, data.company);
   const marks = data.attendance.filter((a) => a.employeeId === emp.id).sort((a, b) => b.date.localeCompare(a.date));
   const reqs = data.requests.filter((r) => r.employeeId === emp.id);
 
@@ -156,6 +157,7 @@ function FichaPage() {
             ["seguros", "Seguros"],
             ["pagos", "Pagos"],
             ["tiempo", "Tiempo"],
+            ["documentos", "Documentos"],
           ] as const
         )
           .filter(([key]) => key !== "pagos" || money)
@@ -275,7 +277,7 @@ function FichaPage() {
             <section className="rounded-lg border border-line bg-surface p-4">
               <h2 className="text-2xl">Vacaciones</h2>
               <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <Info label="Ganados" value={fmtDays(vacationEarned(emp))} />
+                <Info label="Ganados" value={fmtDays(vacationEarned(emp, HOY, data.company))} />
                 <Info label="Gozados y reservados" value={fmtDays(vacationTaken(emp, data.requests))} />
                 <Info label="En trámite" value={fmtDays(vacationPending(emp, data.requests))} />
                 <Info label="Saldo" value={fmtDays(balance)} />
@@ -310,6 +312,17 @@ function FichaPage() {
               <p className="mt-3 text-xs text-muted">Periodo de referencia {periodLabel(currentPeriod())}.</p>
             </section>
           </div>
+        ) : null}
+        {tab === "documentos" ? (
+          <EmployeeDocuments
+            emp={emp}
+            company={data.company}
+            requests={data.requests}
+            editable={isCompanyAdmin(data.viewer.mode)}
+            onPatch={(patch) => {
+              updateEmployee(emp.id, patch);
+            }}
+          />
         ) : null}
       </div>
 
