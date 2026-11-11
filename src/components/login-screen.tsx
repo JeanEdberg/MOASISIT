@@ -26,22 +26,24 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="grid min-h-screen place-items-center bg-bg px-4">
-      <div className="w-full max-w-md rounded-xl border border-line bg-surface p-6 shadow-overlay">
+    <div className="grid min-h-screen place-items-center bg-slate-50 px-4 dark:bg-slate-950">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col items-center text-center">
           <BrandLogo size={72} className="mb-3" />
-          <h2 className="font-display text-3xl font-bold tracking-tight text-ink">Moasist</h2>
-          <p className="mt-1 text-xs text-muted">Control de Asistencia y Planillas</p>
+          <h2 className="font-display text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Moasist</h2>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Control de Asistencia y Planillas
+          </p>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-surface-2 p-1">
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
           <button
             type="button"
             onClick={() => {
               setMode("employee");
               setError("");
             }}
-            className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${mode === "employee" ? "bg-surface text-clay shadow-card" : "text-muted"}`}
+            className={`rounded-md px-3 py-2 text-xs font-semibold ${mode === "employee" ? "bg-white text-sky-700 shadow dark:bg-slate-900" : "text-slate-500"}`}
           >
             Colaborador
           </button>
@@ -51,7 +53,7 @@ export function LoginScreen() {
               setMode("admin");
               setError("");
             }}
-            className={`min-h-11 rounded-md px-3 py-2 text-sm font-semibold transition-colors ${mode === "admin" ? "bg-surface text-clay shadow-card" : "text-muted"}`}
+            className={`rounded-md px-3 py-2 text-xs font-semibold ${mode === "admin" ? "bg-white text-sky-700 shadow dark:bg-slate-900" : "text-slate-500"}`}
           >
             Administración
           </button>
@@ -82,7 +84,7 @@ export function LoginScreen() {
           </Field>
 
           {error ? (
-            <p className="rounded-lg border border-danger-line bg-danger-soft p-2.5 text-center text-xs font-semibold text-danger">{error}</p>
+            <p className="rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-center text-xs font-semibold text-rose-600">{error}</p>
           ) : null}
 
           <Button type="submit" disabled={busy} className="w-full justify-center">
@@ -91,7 +93,7 @@ export function LoginScreen() {
           </Button>
         </form>
 
-        <p className="mt-6 border-t border-line pt-4 text-center text-xs text-muted">
+        <p className="mt-6 border-t border-slate-100 pt-4 text-center text-xs text-slate-400 dark:border-slate-800">
           Ingresa con tu DNI y PIN. Acceso restringido.
         </p>
       </div>
