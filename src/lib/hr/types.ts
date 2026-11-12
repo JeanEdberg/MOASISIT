@@ -97,13 +97,12 @@ export type Company = {
   /** Régimen laboral de la empresa (REMYPE). Los colaboradores lo heredan. */
   regime: CompanyRegime;
   /**
-   * Resolución de acogimiento al régimen MYPE: número y fecha. Obligatorios
-   * cuando el régimen es "pequena" o "micro" (sustento ante fiscalización).
+   * Constancia de acreditación al régimen REMYPE: solo la fecha. La constancia
+   * escaneada se adjunta aparte (sustento ante fiscalización).
    */
-  mypeResolutionNumber: string;
-  mypeResolutionDate: string;
-  /** Resolución de acogimiento escaneada, como data URL (PDF/JPG/PNG). */
-  mypeResolutionFile?: string;
+  mypeAccreditationDate: string;
+  /** Constancia de acreditación REMYPE escaneada, como data URL (PDF/JPG/PNG). */
+  mypeAccreditationFile?: string;
   rmv: number;
   uit: number;
   /** Parámetros de la retención de quinta categoría (deducción y tramos). */

@@ -61,6 +61,64 @@ describe("authorizeAction", () => {
   });
 });
 
+describe("authorizeAction — Punto 2: el superadmin no tiene restricciones", () => {
+  /** Una acción válida por cada tipo, para recorrer todo el catálogo. */
+  const oneOfEach = (data: HrData): HrAction[] => [
+    { type: "updateEmployee", id: data.employees[0]!.id, patch: { salary: 9999 } },
+    { type: "addEmployee", employee: { ...data.employees[0]!, id: "e90" } },
+    { type: "importPeople", employees: [{ ...data.employees[0]!, id: "e91" }], areas: [] },
+    { type: "clearDemoPeople" },
+    { type: "addRequest", request: { id: "r90", employeeId: data.employees[0]!.id, companyId: "inmoa", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" } },
+    { type: "decideRequest", id: data.requests[0]?.id ?? "r1", status: "aprobada" },
+    { type: "upsertAttendance", row: { id: "", employeeId: data.employees[0]!.id, companyId: "inmoa", date: "2026-11-09", kind: "presente", checkIn: "08:00", checkOut: "17:00", extra25: 0, extra35: 0 } },
+    { type: "addDocument", doc: { id: "d90", employeeId: data.employees[0]!.id, companyId: "inmoa", title: "Doc", kind: "anexo", date: "2026-11-09", status: "pendiente" } },
+    { type: "signDocument", id: data.documents[0]?.id ?? "d1" },
+    { type: "closePeriod", period: "2026-10" },
+    { type: "reopenPeriod", period: "2026-10" },
+    { type: "updateCompany", patch: { name: "X" }, companyId: "inmoa" },
+    { type: "addCompany", company: data.companies[0]! },
+    { type: "updateCompanySubscription", companyId: "inmoa", patch: { monthlyPrice: 1 } },
+    { type: "removeCompany", companyId: "7pollitos" },
+    { type: "addArea", name: "Nueva", companyId: "inmoa" },
+    { type: "renameArea", id: data.areas[0]?.id ?? "a1", name: "Otra" },
+  ];
+
+  it("puede ejecutar todos los tipos de acción (ninguno devuelve denegación)", () => {
+    const data = base();
+    for (const action of oneOfEach(data)) {
+      assert.equal(authorizeAction(action, "superadmin", "", data), null, `debe permitir ${action.type}`);
+    }
+  });
+
+  it("es el único rol que administra empresas (alta, suscripción y baja)", () => {
+    const data = base();
+    for (const action of oneOfEach(data).filter((a) =>
+      a.type === "addCompany" || a.type === "updateCompanySubscription" || a.type === "removeCompany",
+    )) {
+      assert.equal(authorizeAction(action, "superadmin", "", data), null);
+      assert.ok(authorizeAction(action, "rrhh", "", data), `RR.HH. no puede ${action.type}`);
+    }
+  });
+
+  it("RR.HH. sí puede las acciones de gestión de su empresa, pero no el alta/baja de empresas", () => {
+    const data = base();
+    for (const action of oneOfEach(data).filter((a) =>
+      a.type === "updateEmployee" || a.type === "addEmployee" || a.type === "closePeriod" || a.type === "addArea",
+    )) {
+      assert.equal(authorizeAction(action, "rrhh", "", data), null, `RR.HH. debe poder ${action.type}`);
+    }
+  });
+
+  it("el colaborador solo puede registrar sus propias solicitudes y asistencia", () => {
+    const data = base();
+    const me = data.employees[0]!.id;
+    const other = data.employees[1]!.id;
+    assert.equal(authorizeAction({ type: "addRequest", request: { id: "r91", employeeId: me, companyId: "inmoa", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" } }, "colaborador", me, data), null);
+    assert.ok(authorizeAction({ type: "addRequest", request: { id: "r92", employeeId: other, companyId: "inmoa", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" } }, "colaborador", me, data));
+    assert.ok(authorizeAction({ type: "updateEmployee", id: me, patch: { salary: 1 } }, "colaborador", me, data));
+  });
+});
+
 describe("applyHrAction", () => {
   it("applies a salary raise and keeps the id", () => {
     const data = base();

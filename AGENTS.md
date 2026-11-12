@@ -292,14 +292,16 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   cambios. Las tasas son referenciales y se editan en "Empresa → Aseguradoras".
 - **Régimen laboral REMYPE (Fases 1–2)**: `src/lib/hr/regime.ts` es **puro**
   (`CompanyRegime` = `general|mype|pequena|micro`, `normalizeCompanyRegime`,
-  `employeeRegimeFor`, `effectiveRegime`, `benefitsFor`, `requiresMypeResolution`,
-  `mypeResolutionWarning`). El régimen vive en `Company.regime`; `mype` (control
+  `employeeRegimeFor`, `effectiveRegime`, `benefitsFor`, `requiresMypeAccreditation`,
+  `mypeAccreditationWarning`). El régimen vive en `Company.regime`; `mype` (control
   tributario) se trata como `general` en los cálculos, y `pequena`/`micro`
   (REMYPE) reducen CTS/gratificación a 50 % y vacaciones a 15 días. **La empresa
   manda**: `effectiveRegime(company, emp)` en `calc.ts` decide el régimen del
   cálculo (el campo `Employee.regime` es solo informativo/heredado). `pequena` y
-  `micro` exigen número + fecha de resolución de acogimiento (y archivo) o la UI
-  avisa con `mypeResolutionWarning`. `withCompanyRegime` (idempotente, corre en
+  `micro` exigen la **fecha de la constancia de acreditación REMYPE** + el
+  archivo escaneado (`Company.mypeAccreditationDate` / `mypeAccreditationFile`),
+  o la UI avisa con `mypeAccreditationWarning`. Ya **no** se pide número de
+  resolución de acogimiento. `withCompanyRegime` (idempotente, corre en
   `loadDataset`) migra datasets antiguos. El colaborador nuevo **hereda** el
   régimen de su empresa (`emptyDraft(companyId, areaId, companyRegime)`).
   Selector en `src/components/new-company.tsx` (alta) y en `/empresa` (edición).

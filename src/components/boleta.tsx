@@ -1,14 +1,19 @@
+import { Button } from "@/components/ui";
 import { pen, periodLabel, fullName, PENSION_LABEL } from "@/lib/hr/format";
+import { exportPayslipPdf } from "@/lib/hr/payroll-export";
 import type { Company, Employee, Payslip } from "@/lib/hr/types";
 
 export function BoletaView({
   slip,
   employee,
   company,
+  printable = false,
 }: {
   slip: Payslip;
   employee: Employee;
   company: Company;
+  /** Muestra el botón para imprimir/guardar la boleta en PDF. */
+  printable?: boolean;
 }) {
   const ingresos = slip.lines.filter((l) => l.kind === "ingreso");
   const descuentos = slip.lines.filter((l) => l.kind === "descuento");
@@ -34,6 +39,11 @@ export function BoletaView({
           <p className="text-xs text-muted">Boleta de pago</p>
           <p className="font-display text-xl">{periodLabel(slip.period)}</p>
           <p className="text-xs text-muted">{employee.code}</p>
+          {printable ? (
+            <Button tone="line" className="mt-2" onClick={() => exportPayslipPdf(slip, employee, company)}>
+              Descargar PDF
+            </Button>
+          ) : null}
         </div>
       </header>
       <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">

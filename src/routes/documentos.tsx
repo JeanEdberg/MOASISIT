@@ -55,7 +55,7 @@ function DocsPage() {
       </ul>
 
       <Modal open={Boolean(open)} title={open?.title ?? "Documento"} onClose={() => setOpen(null)} wide>
-        {open?.kind === "boleta" && slip && emp ? <BoletaView slip={slip} employee={emp} company={data.company} /> : null}
+        {open?.kind === "boleta" && slip && emp ? <BoletaView slip={slip} employee={emp} company={data.company} printable /> : null}
         {open?.kind === "boleta" && !slip ? <p className="text-sm text-muted">No hay cálculo para ese periodo.</p> : null}
         {open && open.kind !== "boleta" ? <DocBody doc={open} /> : null}
         {open?.status === "pendiente" ? (

@@ -3,7 +3,7 @@
  *
  * Módulo PURO (sin React ni base de datos). La SUNAT no expone el régimen
  * laboral (REMYPE) en la consulta de RUC, así que RR.HH. lo elige a mano y
- * adjunta la resolución de acogimiento como sustento. Aquí se centralizan las
+ * adjunta la constancia de acreditación como sustento. Aquí se centralizan las
  * reglas para que los cálculos y los avisos de la UI salgan del mismo lugar.
  *
  * Referencia (Perú, 2026):
@@ -16,7 +16,7 @@
  *   - MYPE por control tributario: se calcula como el régimen general.
  */
 
-import type { CompanyRegime, HrData, Regime } from "@/lib/hr/types";
+import type { Company, CompanyRegime, HrData, Regime } from "@/lib/hr/types";
 
 export const COMPANY_REGIMES: CompanyRegime[] = ["general", "mype", "pequena", "micro"];
 
@@ -66,8 +66,8 @@ export function gratuityBonusRate(healthInsurance: "essalud" | "eps" | undefined
   return healthInsurance === "eps" ? 0.0675 : 0.09;
 }
 
-/** ¿El régimen obliga a registrar la resolución de acogimiento REMYPE? */
-export function requiresMypeResolution(companyRegime: CompanyRegime): boolean {
+/** ¿El régimen obliga a registrar la constancia de acreditación REMYPE? */
+export function requiresMypeAccreditation(companyRegime: CompanyRegime): boolean {
   return companyRegime === "pequena" || companyRegime === "micro";
 }
 
@@ -91,18 +91,17 @@ export function regimeBenefits(companyRegime: CompanyRegime): RegimeBenefits {
 }
 
 /**
- * Falta la resolución de acogimiento cuando la empresa es MYPE y no registró el
- * número ni la fecha. Devuelve un aviso, o `null` si no hay problema.
+ * Falta la constancia de acreditación cuando la empresa es MYPE y no registró
+ * la fecha. Devuelve un aviso, o `null` si no hay problema.
  */
-export function mypeResolutionWarning(company: {
+export function mypeAccreditationWarning(company: {
   regime?: CompanyRegime;
-  mypeResolutionNumber?: string;
-  mypeResolutionDate?: string;
+  mypeAccreditationDate?: string;
 }): string | null {
   const regime = normalizeCompanyRegime(company.regime);
-  if (!requiresMypeResolution(regime)) return null;
-  if (!(company.mypeResolutionNumber ?? "").trim() || !(company.mypeResolutionDate ?? "").trim()) {
-    return "Falta la resolución de acogimiento REMYPE (número y fecha). Sin ella no se puede sustentar el régimen ante una fiscalización.";
+  if (!requiresMypeAccreditation(regime)) return null;
+  if (!(company.mypeAccreditationDate ?? "").trim()) {
+    return "Falta la fecha de la constancia de acreditación REMYPE. Sin ella no se puede sustentar el régimen ante una fiscalización.";
   }
   return null;
 }
@@ -114,15 +113,16 @@ export function mypeResolutionWarning(company: {
 export function withCompanyRegime(data: HrData): HrData {
   let changed = false;
   const companies = data.companies.map((c) => {
-    if (c.regime && typeof c.mypeResolutionNumber === "string" && typeof c.mypeResolutionDate === "string") {
+    if (c.regime && typeof c.mypeAccreditationDate === "string") {
       return c;
     }
     changed = true;
+    // Datasets antiguos guardaban la fecha en `mypeResolutionDate`.
+    const legacy = c as Company & { mypeResolutionDate?: string };
     return {
       ...c,
       regime: normalizeCompanyRegime(c.regime),
-      mypeResolutionNumber: c.mypeResolutionNumber ?? "",
-      mypeResolutionDate: c.mypeResolutionDate ?? "",
+      mypeAccreditationDate: c.mypeAccreditationDate ?? legacy.mypeResolutionDate ?? "",
     };
   });
   if (!changed) return data;

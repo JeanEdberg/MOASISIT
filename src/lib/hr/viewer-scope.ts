@@ -1,4 +1,4 @@
-import { canSeeMoney, directReports } from "@/lib/hr/access";
+import { canSeeMoney, directReports, restrictAttachments } from "@/lib/hr/access";
 import type { Company, Employee, HrData, Payslip, ViewerMode } from "@/lib/hr/types";
 
 /** The viewer context a filter needs: role, identity and active company. */
@@ -74,7 +74,8 @@ export function sanitizeForViewer(data: HrData, session: ViewerScope): HrData {
 
   const employees = companyEmployees
     .filter((e) => visibleIds.has(e.id))
-    .map((e) => (canSeeMoney({ mode: role, employeeId, companyId }, e.id) ? e : stripMoney(e)));
+    .map((e) => (canSeeMoney({ mode: role, employeeId, companyId }, e.id) ? e : stripMoney(e)))
+    .map((e) => restrictAttachments(e, { mode: role, employeeId, companyId }));
 
   const inView = (id: string) => visibleIds.has(id);
 

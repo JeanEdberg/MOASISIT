@@ -33,6 +33,7 @@ type PlainTo =
   | "/vacaciones"
   | "/asistencia"
   | "/planilla"
+  | "/liquidacion"
   | "/consolidado"
   | "/documentos"
   | "/empresa"
@@ -47,6 +48,7 @@ const RRHH: Item[] = [
   { to: "/vacaciones", label: "Vacaciones", icon: CalendarDays },
   { to: "/asistencia", label: "Asistencia", icon: Clock },
   { to: "/planilla", label: "Planilla", icon: Landmark },
+  { to: "/liquidacion", label: "Liquidación", icon: Calculator },
   { to: "/consolidado", label: "Consolidado Masivo", icon: Calculator },
   { to: "/documentos", label: "Documentos", icon: Files },
   { to: "/empresa", label: "Empresa", icon: SlidersHorizontal },

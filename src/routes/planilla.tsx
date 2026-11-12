@@ -216,7 +216,9 @@ function PayrollPage() {
       )}
 
       <Modal open={Boolean(selected && selectedEmp)} title="Boleta de pago" onClose={() => setOpenId(null)} wide>
-        {selected && selectedEmp ? <BoletaView slip={selected} employee={selectedEmp} company={data.company} /> : null}
+        {selected && selectedEmp ? (
+          <BoletaView slip={selected} employee={selectedEmp} company={data.company} printable />
+        ) : null}
       </Modal>
     </Shell>
   );

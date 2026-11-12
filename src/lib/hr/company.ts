@@ -1,6 +1,6 @@
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
-import { DEFAULT_COMPANY_REGIME, normalizeCompanyRegime, requiresMypeResolution } from "@/lib/hr/regime";
+import { DEFAULT_COMPANY_REGIME, normalizeCompanyRegime, requiresMypeAccreditation } from "@/lib/hr/regime";
 import { normalizeRuc } from "@/lib/hr/ruc";
 import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
 import type { Company, CompanyRegime } from "@/lib/hr/types";
@@ -43,11 +43,10 @@ export type NewCompanyInput = {
   accentColor?: string;
   /** Régimen laboral de la empresa (REMYPE). Por defecto, general. */
   regime?: CompanyRegime;
-  /** Resolución de acogimiento MYPE: número y fecha. */
-  mypeResolutionNumber?: string;
-  mypeResolutionDate?: string;
-  /** Resolución escaneada como data URL (PDF/JPG/PNG). */
-  mypeResolutionFile?: string;
+  /** Constancia de acreditación REMYPE: fecha. */
+  mypeAccreditationDate?: string;
+  /** Constancia escaneada como data URL (PDF/JPG/PNG). */
+  mypeAccreditationFile?: string;
   /** Correo del usuario RR.HH. que podrá entrar a esta empresa (opcional). */
   adminEmail?: string;
 };
@@ -93,9 +92,8 @@ export function buildCompany(input: NewCompanyInput, id: string): Company {
     brandColor: input.brandColor?.trim() || BRAND_DEFAULTS.brandColor,
     accentColor: input.accentColor?.trim() || BRAND_DEFAULTS.accentColor,
     regime: normalizeCompanyRegime(input.regime),
-    mypeResolutionNumber: (input.mypeResolutionNumber ?? "").trim(),
-    mypeResolutionDate: (input.mypeResolutionDate ?? "").trim(),
-    ...(input.mypeResolutionFile ? { mypeResolutionFile: input.mypeResolutionFile } : {}),
+    mypeAccreditationDate: (input.mypeAccreditationDate ?? "").trim(),
+    ...(input.mypeAccreditationFile ? { mypeAccreditationFile: input.mypeAccreditationFile } : {}),
     ...LEGAL_DEFAULTS,
     insurers: catalogInsurers(id),
     subscription: { ...DEFAULT_SUBSCRIPTION, startDate: new Date().toISOString().slice(0, 10) },
@@ -112,9 +110,8 @@ export function validateNewCompany(input: NewCompanyInput, existingIds: string[]
     return "Ya existe una empresa con ese nombre corto.";
   }
   const regime = normalizeCompanyRegime(input.regime ?? DEFAULT_COMPANY_REGIME);
-  if (requiresMypeResolution(regime)) {
-    if (!(input.mypeResolutionNumber ?? "").trim()) return "Indica el número de la resolución de acogimiento REMYPE.";
-    if (!(input.mypeResolutionDate ?? "").trim()) return "Indica la fecha de la resolución de acogimiento REMYPE.";
+  if (requiresMypeAccreditation(regime)) {
+    if (!(input.mypeAccreditationDate ?? "").trim()) return "Indica la fecha de la constancia de acreditación REMYPE.";
   }
   return null;
 }

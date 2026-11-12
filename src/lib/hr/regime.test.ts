@@ -4,10 +4,10 @@ import {
   benefitShare,
   employeeRegimeFor,
   gratificationsPerYear,
-  mypeResolutionWarning,
+  mypeAccreditationWarning,
   normalizeCompanyRegime,
   regimeBenefits,
-  requiresMypeResolution,
+  requiresMypeAccreditation,
   vacationDaysPerYear,
   withCompanyRegime,
 } from "@/lib/hr/regime";
@@ -48,24 +48,21 @@ test("beneficios por régimen: la MYPE se calcula como general", () => {
   assert.equal(regimeBenefits("pequena").cts, "50%");
 });
 
-test("requiresMypeResolution solo para pequeña y micro", () => {
-  assert.equal(requiresMypeResolution("pequena"), true);
-  assert.equal(requiresMypeResolution("micro"), true);
-  assert.equal(requiresMypeResolution("general"), false);
-  assert.equal(requiresMypeResolution("mype"), false);
+test("requiresMypeAccreditation solo para pequeña y micro", () => {
+  assert.equal(requiresMypeAccreditation("pequena"), true);
+  assert.equal(requiresMypeAccreditation("micro"), true);
+  assert.equal(requiresMypeAccreditation("general"), false);
+  assert.equal(requiresMypeAccreditation("mype"), false);
 });
 
-test("mypeResolutionWarning avisa cuando falta la resolución", () => {
-  assert.equal(mypeResolutionWarning({ regime: "general" }), null);
-  assert.ok(mypeResolutionWarning({ regime: "pequena" }));
-  assert.ok(mypeResolutionWarning({ regime: "micro", mypeResolutionNumber: "0001" }));
-  assert.equal(
-    mypeResolutionWarning({ regime: "pequena", mypeResolutionNumber: "0001-2026", mypeResolutionDate: "2026-01-15" }),
-    null,
-  );
+test("mypeAccreditationWarning avisa cuando falta la fecha de la constancia", () => {
+  assert.equal(mypeAccreditationWarning({ regime: "general" }), null);
+  assert.ok(mypeAccreditationWarning({ regime: "pequena" }));
+  assert.ok(mypeAccreditationWarning({ regime: "micro" }));
+  assert.equal(mypeAccreditationWarning({ regime: "pequena", mypeAccreditationDate: "2026-01-15" }), null);
 });
 
-test("buildCompany guarda el régimen y la resolución", () => {
+test("buildCompany guarda el régimen y la constancia de acreditación", () => {
   const c = buildCompany(
     {
       ruc: "20614684799",
@@ -76,14 +73,12 @@ test("buildCompany guarda el régimen y la resolución", () => {
       address: "Av. Los Andes 100",
       email: "contacto@agrosur.pe",
       regime: "pequena",
-      mypeResolutionNumber: "0001-2026",
-      mypeResolutionDate: "2026-01-15",
+      mypeAccreditationDate: "2026-01-15",
     },
     "agrosur",
   );
   assert.equal(c.regime, "pequena");
-  assert.equal(c.mypeResolutionNumber, "0001-2026");
-  assert.equal(c.mypeResolutionDate, "2026-01-15");
+  assert.equal(c.mypeAccreditationDate, "2026-01-15");
 });
 
 test("withCompanyRegime completa empresas antiguas y es idempotente", () => {
@@ -91,13 +86,13 @@ test("withCompanyRegime completa empresas antiguas y es idempotente", () => {
   const legacy = {
     ...data,
     companies: data.companies.map((c) => {
-      const { regime: _r, mypeResolutionNumber: _n, mypeResolutionDate: _d, ...rest } = c;
+      const { regime: _r, mypeAccreditationDate: _d, ...rest } = c;
       return rest as typeof c;
     }),
   };
   const migrated = withCompanyRegime(legacy);
   assert.ok(migrated.companies.every((c) => c.regime === "general"));
-  assert.ok(migrated.companies.every((c) => typeof c.mypeResolutionNumber === "string"));
+  assert.ok(migrated.companies.every((c) => typeof c.mypeAccreditationDate === "string"));
 
   const again = withCompanyRegime(migrated);
   assert.equal(again, migrated, "no cambia si ya está migrado");

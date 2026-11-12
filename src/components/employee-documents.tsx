@@ -1,27 +1,31 @@
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui";
+import { isCompanyAdmin, visibleAttachmentKinds } from "@/lib/hr/access";
 import { ATTACHMENT_LABEL, isPdfDataUrl, missingAttachments, readAttachmentFile } from "@/lib/hr/attachment";
 import { CESSATION_REASONS, ceaseEmployee, cessationsOf, rehireEmployee } from "@/lib/hr/cessation";
 import { HOY, pen, shortDate } from "@/lib/hr/format";
 import { liquidationOf } from "@/lib/hr/liquidacion";
-import type { AttachmentKind, Company, Employee, TimeRequest } from "@/lib/hr/types";
+import type { AttachmentKind, Company, Employee, TimeRequest, Viewer } from "@/lib/hr/types";
 
 /**
  * Documentos del colaborador: T-Registro de alta/baja, contrato firmado y
- * liquidación. El cese guarda su histórico y bloquea el acceso; la
- * reincorporación abre un periodo nuevo conservando el histórico.
+ * liquidación. RR.HH. ve y edita el legajo completo; cada persona ve, de sí
+ * misma, su T-Registro de alta y su contrato (solo lectura, con descarga). El
+ * cese y la liquidación quedan reservados a RR.HH.
  */
 
-const ATTACHMENT_ORDER: AttachmentKind[] = ["tRegistroAlta", "contrato", "tRegistroBaja", "liquidacion"];
+const ADMIN_ORDER: AttachmentKind[] = ["tRegistroAlta", "contrato", "tRegistroBaja", "liquidacion"];
 
 function FileRow({
   kind,
   emp,
+  editable,
   onChange,
 }: {
   kind: AttachmentKind;
   emp: Employee;
+  editable: boolean;
   onChange: (kind: AttachmentKind, value: { name: string; dataUrl: string; date: string } | undefined) => void;
 }) {
   const current = emp.attachments?.[kind];
@@ -51,34 +55,47 @@ function FileRow({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {current ? (
-          <a
-            className="min-h-9 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
-            href={current.dataUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {isPdfDataUrl(current.dataUrl) ? "Ver PDF" : "Ver"}
-          </a>
+          <>
+            <a
+              className="min-h-9 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+              href={current.dataUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              {isPdfDataUrl(current.dataUrl) ? "Ver PDF" : "Ver"}
+            </a>
+            <a
+              className="min-h-9 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+              href={current.dataUrl}
+              download={current.name}
+            >
+              Descargar
+            </a>
+          </>
         ) : null}
-        <Button tone="line" disabled={busy} onClick={() => inputRef.current?.click()}>
-          {current ? "Reemplazar" : "Subir"}
-        </Button>
-        {current ? (
-          <Button tone="ghost" onClick={() => onChange(kind, undefined)}>
-            Quitar
-          </Button>
+        {editable ? (
+          <>
+            <Button tone="line" disabled={busy} onClick={() => inputRef.current?.click()}>
+              {current ? "Reemplazar" : "Subir"}
+            </Button>
+            {current ? (
+              <Button tone="ghost" onClick={() => onChange(kind, undefined)}>
+                Quitar
+              </Button>
+            ) : null}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf,image/png,image/jpeg,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                void pick(file);
+              }}
+            />
+          </>
         ) : null}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="application/pdf,image/png,image/jpeg,image/webp"
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            void pick(file);
-          }}
-        />
       </div>
     </div>
   );
@@ -88,20 +105,26 @@ export function EmployeeDocuments({
   emp,
   company,
   requests,
+  viewer,
   editable,
   onPatch,
 }: {
   emp: Employee;
   company: Company;
   requests: TimeRequest[];
+  viewer: Viewer;
   editable: boolean;
   onPatch: (patch: Partial<Employee>) => void;
 }) {
   const [reason, setReason] = useState<string>(CESSATION_REASONS[0]);
   const [rehireDate, setRehireDate] = useState<string>(HOY);
-  const missing = missingAttachments(emp);
+  const admin = isCompanyAdmin(viewer.mode);
+  const isSelf = viewer.employeeId === emp.id;
+  const allowed = visibleAttachmentKinds(viewer, emp);
+  const order = admin ? ADMIN_ORDER : ADMIN_ORDER.filter((k) => allowed.includes(k));
+  const missing = admin ? missingAttachments(emp) : [];
   const cessations = cessationsOf(emp);
-  const showLiquidation = emp.status === "cesado";
+  const showLiquidation = admin && emp.status === "cesado";
   const liquidation = showLiquidation ? liquidationOf(emp, company, requests) : null;
 
   const setAttachment = (kind: AttachmentKind, value: { name: string; dataUrl: string; date: string } | undefined) => {
@@ -114,104 +137,109 @@ export function EmployeeDocuments({
   return (
     <div className="space-y-4">
       <section className="rounded-lg border border-line bg-surface p-4">
-        <h2 className="text-2xl">Documentos</h2>
+        <h2 className="text-2xl">{isSelf && !admin ? "Mis documentos" : "Documentos"}</h2>
         <p className="mt-1 text-sm text-muted">
-          Adjunta el T-Registro de alta (SUNAT), el contrato firmado y, al cese, el T-Registro de baja y la liquidación.
+          {admin
+            ? "Adjunta el T-Registro de alta (SUNAT), el contrato firmado y, al cese, el T-Registro de baja y la liquidación."
+            : "Tu T-Registro de alta y tu contrato. Puedes verlos o descargarlos cuando los necesites. Tus boletas están en “Mi boleta”."}
         </p>
-        {missing.length > 0 ? (
+        {admin && missing.length > 0 ? (
           <p className="mt-3 rounded-md border border-clay/40 bg-clay/5 p-3 text-sm text-clay">
             Documentación pendiente: {missing.map((k) => ATTACHMENT_LABEL[k]).join(", ")}.
           </p>
-        ) : (
+        ) : null}
+        {admin && missing.length === 0 ? (
           <p className="mt-3 rounded-md border border-moss/40 bg-moss/5 p-3 text-sm text-moss">
             Documentación completa.
           </p>
-        )}
+        ) : null}
         <div className="mt-3 space-y-2">
-          {ATTACHMENT_ORDER.map((kind) => (
-            <FileRow key={kind} kind={kind} emp={emp} onChange={editable ? setAttachment : () => undefined} />
+          {order.map((kind) => (
+            <FileRow key={kind} kind={kind} emp={emp} editable={editable} onChange={setAttachment} />
           ))}
         </div>
       </section>
 
-      <section className="rounded-lg border border-line bg-surface p-4">
-        <h2 className="text-2xl">Cese y reincorporación</h2>
-        <p className="mt-1 text-sm text-muted">
-          Al cesar, se bloquea su acceso y el cese queda en el histórico. Al reincorporar, se abre un periodo nuevo sin
-          borrar el anterior.
-        </p>
+      {admin ? (
+        <section className="rounded-lg border border-line bg-surface p-4">
+          <h2 className="text-2xl">Cese y reincorporación</h2>
+          <p className="mt-1 text-sm text-muted">
+            Al cesar, se bloquea su acceso y el cese queda en el histórico. Al reincorporar, se abre un periodo nuevo sin
+            borrar el anterior.
+          </p>
 
-        {cessations.length > 0 ? (
-          <ul className="mt-3 space-y-2 text-sm">
-            {cessations.map((c, i) => (
-              <li key={`${c.endDate}-${i}`} className="flex flex-wrap justify-between gap-2 rounded-md border border-line bg-bg p-2">
-                <span>
-                  Cese {shortDate(c.endDate)} · {c.reason}
-                </span>
-                <span className="text-muted">Registrado {shortDate(c.registeredAt)}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-3 text-sm text-muted">Sin ceses registrados.</p>
-        )}
-
-        {editable ? (
-          emp.status === "activo" ? (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="block text-xs text-muted">
-                Motivo del cese
-                <select
-                  className="mt-1 min-h-11 w-full rounded-md border border-line bg-bg px-3 text-sm"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                >
-                  {CESSATION_REASONS.map((r) => (
-                    <option key={r} value={r}>
-                      {r}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <div className="flex items-end">
-                <Button
-                  tone="danger"
-                  onClick={() => {
-                    if (!confirm(`¿Registrar el cese de ${emp.names} ${emp.paternal}? Se bloqueará su acceso.`)) return;
-                    onPatch(ceaseEmployee(emp, { reason }));
-                    toast.success("Cese registrado. El acceso quedó bloqueado.");
-                  }}
-                >
-                  Registrar cese
-                </Button>
-              </div>
-            </div>
+          {cessations.length > 0 ? (
+            <ul className="mt-3 space-y-2 text-sm">
+              {cessations.map((c, i) => (
+                <li key={`${c.endDate}-${i}`} className="flex flex-wrap justify-between gap-2 rounded-md border border-line bg-bg p-2">
+                  <span>
+                    Cese {shortDate(c.endDate)} · {c.reason}
+                  </span>
+                  <span className="text-muted">Registrado {shortDate(c.registeredAt)}</span>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="block text-xs text-muted">
-                Nueva fecha de ingreso
-                <input
-                  className="mt-1 min-h-11 w-full rounded-md border border-line bg-bg px-3 text-sm"
-                  type="date"
-                  value={rehireDate}
-                  onChange={(e) => setRehireDate(e.target.value)}
-                />
-              </label>
-              <div className="flex items-end">
-                <Button
-                  tone="primary"
-                  onClick={() => {
-                    onPatch(rehireEmployee(emp, { hireDate: rehireDate }));
-                    toast.success("Colaborador reincorporado. Se abrió un periodo nuevo.");
-                  }}
-                >
-                  Reincorporar
-                </Button>
+            <p className="mt-3 text-sm text-muted">Sin ceses registrados.</p>
+          )}
+
+          {editable ? (
+            emp.status === "activo" ? (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs text-muted">
+                  Motivo del cese
+                  <select
+                    className="mt-1 min-h-11 w-full rounded-md border border-line bg-bg px-3 text-sm"
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  >
+                    {CESSATION_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="flex items-end">
+                  <Button
+                    tone="danger"
+                    onClick={() => {
+                      if (!confirm(`¿Registrar el cese de ${emp.names} ${emp.paternal}? Se bloqueará su acceso.`)) return;
+                      onPatch(ceaseEmployee(emp, { reason }));
+                      toast.success("Cese registrado. El acceso quedó bloqueado.");
+                    }}
+                  >
+                    Registrar cese
+                  </Button>
+                </div>
               </div>
-            </div>
-          )
-        ) : null}
-      </section>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="block text-xs text-muted">
+                  Nueva fecha de ingreso
+                  <input
+                    className="mt-1 min-h-11 w-full rounded-md border border-line bg-bg px-3 text-sm"
+                    type="date"
+                    value={rehireDate}
+                    onChange={(e) => setRehireDate(e.target.value)}
+                  />
+                </label>
+                <div className="flex items-end">
+                  <Button
+                    tone="primary"
+                    onClick={() => {
+                      onPatch(rehireEmployee(emp, { hireDate: rehireDate }));
+                      toast.success("Colaborador reincorporado. Se abrió un periodo nuevo.");
+                    }}
+                  >
+                    Reincorporar
+                  </Button>
+                </div>
+              </div>
+            )
+          ) : null}
+        </section>
+      ) : null}
 
       {liquidation ? (
         <section className="rounded-lg border border-line bg-surface p-4">

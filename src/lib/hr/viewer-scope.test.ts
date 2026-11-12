@@ -51,4 +51,63 @@ describe("sanitizeForViewer — alcance por empresa", () => {
     const full = createDemo();
     assert.equal(activeCompanyId(full, { role: "superadmin", companyId: "no-existe" }), full.companies[0]!.id);
   });
+
+  it("el superadmin ve todos los colaboradores de su empresa (sin restricción)", () => {
+    const full = createDemo();
+    const view = sanitizeForViewer(full, scope({ companyId: "inmoa" }));
+    const inCompany = full.employees.filter((e) => e.companyId === "inmoa");
+    assert.equal(view.employees.length, inCompany.length);
+  });
+});
+
+describe("sanitizeForViewer — visibilidad de adjuntos", () => {
+  const withAttachments = () => {
+    const full = createDemo();
+    return {
+      ...full,
+      employees: full.employees.map((e) =>
+        e.companyId === "inmoa"
+          ? {
+              ...e,
+              attachments: {
+                tRegistroAlta: { name: "alta.pdf", dataUrl: "data:application/pdf;base64,AA", date: "2026-01-01" },
+                contrato: { name: "contrato.pdf", dataUrl: "data:application/pdf;base64,BB", date: "2026-01-01" },
+                tRegistroBaja: { name: "baja.pdf", dataUrl: "data:application/pdf;base64,CC", date: "2026-01-01" },
+                liquidacion: { name: "liq.pdf", dataUrl: "data:application/pdf;base64,DD", date: "2026-01-01" },
+              },
+            }
+          : e,
+      ),
+    };
+  };
+
+  it("RR.HH. ve el legajo completo", () => {
+    const view = sanitizeForViewer(withAttachments(), scope({ role: "rrhh", companyId: "inmoa" }));
+    const e = view.employees[0]!;
+    assert.ok(e.attachments?.tRegistroAlta);
+    assert.ok(e.attachments?.contrato);
+    assert.ok(e.attachments?.tRegistroBaja);
+    assert.ok(e.attachments?.liquidacion);
+  });
+
+  it("el colaborador ve su T-Registro de alta y su contrato, pero no la baja ni la liquidación", () => {
+    const full = withAttachments();
+    const me = full.employees.find((e) => e.companyId === "inmoa")!;
+    const view = sanitizeForViewer(full, scope({ role: "colaborador", employeeId: me.id, companyId: "inmoa" }));
+    const mine = view.employees.find((e) => e.id === me.id)!;
+    assert.ok(mine.attachments?.tRegistroAlta);
+    assert.ok(mine.attachments?.contrato);
+    assert.equal(mine.attachments?.tRegistroBaja, undefined);
+    assert.equal(mine.attachments?.liquidacion, undefined);
+  });
+
+  it("la jefatura no ve los adjuntos de su equipo", () => {
+    const full = withAttachments();
+    const boss = full.employees.find((e) => e.companyId === "inmoa")!;
+    const report = { ...full.employees[1]!, managerId: boss.id, companyId: "inmoa" };
+    const data = { ...full, employees: [boss, report, ...full.employees.slice(2)] };
+    const view = sanitizeForViewer(data, scope({ role: "jefatura", employeeId: boss.id, companyId: "inmoa" }));
+    const seen = view.employees.find((e) => e.id === report.id);
+    assert.equal(seen?.attachments, undefined);
+  });
 });

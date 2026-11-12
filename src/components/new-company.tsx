@@ -4,7 +4,7 @@ import { Badge, Button, Field, fieldClass, Modal } from "@/components/ui";
 import { readAttachmentFile } from "@/lib/hr/attachment";
 import type { NewCompanyInput } from "@/lib/hr/company";
 import { COMPANY_REGIME_LABEL } from "@/lib/hr/format";
-import { COMPANY_REGIMES, requiresMypeResolution } from "@/lib/hr/regime";
+import { COMPANY_REGIMES, requiresMypeAccreditation } from "@/lib/hr/regime";
 import { isValidRuc, normalizeRuc, rucStatusLabel, isRucOperativo, type RucInfo } from "@/lib/hr/ruc";
 import { useHr } from "@/lib/hr/store";
 import type { CompanyRegime } from "@/lib/hr/types";
@@ -19,8 +19,7 @@ const EMPTY: NewCompanyInput = {
   email: "",
   phone: "",
   regime: "general",
-  mypeResolutionNumber: "",
-  mypeResolutionDate: "",
+  mypeAccreditationDate: "",
   adminEmail: "",
 };
 
@@ -212,27 +211,19 @@ export function NewCompanyButton() {
                   </select>
                 </Field>
               </div>
-              {requiresMypeResolution((form.regime ?? "general") as CompanyRegime) ? (
+              {requiresMypeAccreditation((form.regime ?? "general") as CompanyRegime) ? (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <Field label="N.° de resolución REMYPE">
-                    <input
-                      className={fieldClass}
-                      value={form.mypeResolutionNumber ?? ""}
-                      placeholder="Ej. 0001-2026"
-                      onChange={(e) => set({ mypeResolutionNumber: e.target.value })}
-                    />
-                  </Field>
-                  <Field label="Fecha de resolución">
+                  <Field label="Fecha de la constancia de acreditación REMYPE">
                     <input
                       className={fieldClass}
                       type="date"
-                      value={form.mypeResolutionDate ?? ""}
-                      onChange={(e) => set({ mypeResolutionDate: e.target.value })}
+                      value={form.mypeAccreditationDate ?? ""}
+                      onChange={(e) => set({ mypeAccreditationDate: e.target.value })}
                     />
                   </Field>
                   <Field
-                    label="Resolución escaneada"
-                    hint="PDF o foto de la resolución de acogimiento. También puedes cargarla luego en Empresa."
+                    label="Constancia de acreditación REMYPE"
+                    hint="PDF o foto de la constancia. También puedes cargarla luego en Empresa."
                   >
                     <input
                       className={fieldClass}
@@ -247,8 +238,8 @@ export function NewCompanyButton() {
                           toast.error(res.error);
                           return;
                         }
-                        set({ mypeResolutionFile: res.dataUrl });
-                        toast.success("Resolución adjuntada");
+                        set({ mypeAccreditationFile: res.dataUrl });
+                        toast.success("Constancia adjuntada");
                       }}
                     />
                   </Field>

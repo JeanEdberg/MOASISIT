@@ -318,6 +318,7 @@ function FichaPage() {
             emp={emp}
             company={data.company}
             requests={data.requests}
+            viewer={data.viewer}
             editable={isCompanyAdmin(data.viewer.mode)}
             onPatch={(patch) => {
               updateEmployee(emp.id, patch);

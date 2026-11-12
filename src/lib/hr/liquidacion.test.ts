@@ -103,8 +103,7 @@ test("microempresa: sin CTS ni gratificación en la liquidación", () => {
       address: "",
       email: "",
       regime: "micro",
-      mypeResolutionNumber: "0001-2026",
-      mypeResolutionDate: "2026-01-10",
+      mypeAccreditationDate: "2026-01-10",
     },
     "micro",
   );
@@ -128,8 +127,7 @@ test("pequeña empresa: CTS y gratificación al 50%", () => {
       address: "",
       email: "",
       regime: "pequena",
-      mypeResolutionNumber: "0002-2026",
-      mypeResolutionDate: "2026-01-10",
+      mypeAccreditationDate: "2026-01-10",
     },
     "pequena",
   );

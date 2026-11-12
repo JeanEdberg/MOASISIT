@@ -10,7 +10,7 @@ import { readAttachmentFile } from "@/lib/hr/attachment";
 import { COMPANY_REGIME_LABEL, INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
 import { fifthCategoryParamsOf } from "@/lib/hr/fifth";
 import { readLogoFile } from "@/lib/hr/logo";
-import { COMPANY_REGIMES, mypeResolutionWarning, regimeBenefits, requiresMypeResolution } from "@/lib/hr/regime";
+import { COMPANY_REGIMES, mypeAccreditationWarning, regimeBenefits, requiresMypeAccreditation } from "@/lib/hr/regime";
 import { useHr } from "@/lib/hr/store";
 import type { AfpFund, Company, CompanyRegime, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
 
@@ -153,48 +153,50 @@ function CompanyPage() {
           );
         })()}
 
-        {mypeResolutionWarning(company) ? (
+        {mypeAccreditationWarning(company) ? (
           <p className="mt-3 rounded-md border border-clay/40 bg-clay/5 p-3 text-sm text-clay">
-            {mypeResolutionWarning(company)}
+            {mypeAccreditationWarning(company)}
           </p>
         ) : null}
 
-        {requiresMypeResolution((company.regime ?? "general") as CompanyRegime) ? (
+        {requiresMypeAccreditation((company.regime ?? "general") as CompanyRegime) ? (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <Field label="N.° de resolución REMYPE">
-              <input
-                className={fieldClass}
-                value={company.mypeResolutionNumber ?? ""}
-                placeholder="Ej. 0001-2026"
-                onChange={(e) => updateCompany({ mypeResolutionNumber: e.target.value })}
-              />
-            </Field>
-            <Field label="Fecha de resolución">
+            <Field label="Fecha de la constancia de acreditación REMYPE">
               <input
                 className={fieldClass}
                 type="date"
-                value={company.mypeResolutionDate ?? ""}
-                onChange={(e) => updateCompany({ mypeResolutionDate: e.target.value })}
+                value={company.mypeAccreditationDate ?? ""}
+                onChange={(e) => updateCompany({ mypeAccreditationDate: e.target.value })}
               />
             </Field>
             <div className="sm:col-span-2">
-              <p className="text-sm font-medium">Resolución escaneada</p>
-              <p className="mt-1 text-xs text-muted">PDF o foto de la resolución de acogimiento (sustento ante fiscalización).</p>
+              <p className="text-sm font-medium">Constancia de acreditación REMYPE</p>
+              <p className="mt-1 text-xs text-muted">
+                PDF o foto de la constancia de acreditación (sustento ante fiscalización). Puedes verla o descargarla
+                cuando la necesites.
+              </p>
               <div className="mt-2 flex flex-wrap items-center gap-3">
-                {company.mypeResolutionFile ? (
-                  <a
-                    className="min-h-11 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
-                    href={company.mypeResolutionFile}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Ver resolución
-                  </a>
+                {company.mypeAccreditationFile ? (
+                  <>
+                    <Button
+                      tone="line"
+                      onClick={() => window.open(company.mypeAccreditationFile, "_blank", "noopener")}
+                    >
+                      Ver constancia
+                    </Button>
+                    <a
+                      className="min-h-11 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+                      href={company.mypeAccreditationFile}
+                      download={`constancia-remype-${company.ruc}.pdf`}
+                    >
+                      Descargar
+                    </a>
+                  </>
                 ) : (
                   <span className="text-xs text-muted">Sin archivo</span>
                 )}
                 <label className="inline-flex min-h-11 cursor-pointer items-center rounded-md border border-line bg-surface px-3 text-sm font-medium">
-                  {company.mypeResolutionFile ? "Reemplazar" : "Subir resolución"}
+                  {company.mypeAccreditationFile ? "Reemplazar" : "Subir constancia"}
                   <input
                     type="file"
                     accept="application/pdf,image/png,image/jpeg,image/webp"
@@ -208,13 +210,13 @@ function CompanyPage() {
                         toast.error(res.error);
                         return;
                       }
-                      updateCompany({ mypeResolutionFile: res.dataUrl });
-                      toast.success("Resolución actualizada");
+                      updateCompany({ mypeAccreditationFile: res.dataUrl });
+                      toast.success("Constancia actualizada");
                     }}
                   />
                 </label>
-                {company.mypeResolutionFile ? (
-                  <Button tone="ghost" onClick={() => updateCompany({ mypeResolutionFile: undefined })}>
+                {company.mypeAccreditationFile ? (
+                  <Button tone="ghost" onClick={() => updateCompany({ mypeAccreditationFile: undefined })}>
                     Quitar
                   </Button>
                 ) : null}
