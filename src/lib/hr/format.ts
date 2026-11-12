@@ -15,7 +15,15 @@ import type {
   WorkMode,
 } from "@/lib/hr/types";
 
-export const HOY = "2026-11-08";
+/**
+ * Fecha de hoy (ISO, `YYYY-MM-DD`) en la zona horaria del Perú, que es donde
+ * opera la app. Se resuelve en tiempo real —antes había una constante fija que
+ * dejaba la fecha congelada— y se usa como valor por defecto en los cálculos
+ * que dependen del "día de hoy" (vacaciones, alertas, ceses, periodos).
+ */
+export function todayIso(): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
+}
 
 export const MONTHS = [
   "enero",
@@ -83,7 +91,7 @@ export function inclusiveDays(start: string, end: string): number {
   return differenceInCalendarDays(parseDay(end), parseDay(start)) + 1;
 }
 
-export function recentPeriods(n = 6, from = HOY): string[] {
+export function recentPeriods(n = 6, from: string = todayIso()): string[] {
   const d = parseDay(from);
   const out: string[] = [];
   for (let i = 0; i < n; i++) {
@@ -93,7 +101,7 @@ export function recentPeriods(n = 6, from = HOY): string[] {
   return out;
 }
 
-export function currentPeriod(from = HOY): string {
+export function currentPeriod(from: string = todayIso()): string {
   return from.slice(0, 7);
 }
 

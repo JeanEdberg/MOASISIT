@@ -1,5 +1,5 @@
 import { livePayslips } from "@/lib/hr/calc";
-import { uid } from "@/lib/hr/format";
+import { todayIso, uid } from "@/lib/hr/format";
 import { isDemoPerson } from "@/lib/hr/seed";
 import type {
   Area,
@@ -165,7 +165,7 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
     case "decideRequest":
       return {
         ...data,
-        requests: data.requests.map((r) => (r.id === action.id ? { ...r, status: action.status, decidedAt: "2026-11-08" } : r)),
+        requests: data.requests.map((r) => (r.id === action.id ? { ...r, status: action.status, decidedAt: todayIso() } : r)),
       };
     case "upsertAttendance": {
       const row = normalizeAttendance(action.row);

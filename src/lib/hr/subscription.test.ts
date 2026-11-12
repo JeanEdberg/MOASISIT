@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
   chargeDateInMonth,
+  companyPeriods,
   DEFAULT_SUBSCRIPTION,
   daysInMonth,
   followingChargeDate,
@@ -136,5 +137,27 @@ describe("subscriptionOf", () => {
 
   it("devuelve los por defecto si la empresa no tiene suscripción", () => {
     assert.deepEqual(subscriptionOf({}), DEFAULT_SUBSCRIPTION);
+  });
+});
+
+describe("companyPeriods — la planilla arranca en el mes de alta de la empresa", () => {
+  it("sin fecha de alta, devuelve los últimos meses", () => {
+    const periods = companyPeriods({ subscription: sub({ startDate: null }) }, 3, "2026-11-15");
+    assert.deepEqual(periods, ["2026-11", "2026-10", "2026-09"]);
+  });
+
+  it("no muestra meses anteriores al alta (ej. empresa de noviembre)", () => {
+    const periods = companyPeriods({ subscription: sub({ startDate: "2026-11-05" }) }, 6, "2026-11-15");
+    assert.deepEqual(periods, ["2026-11"]);
+  });
+
+  it("recorta la lista al mes de alta y conserva los posteriores", () => {
+    const periods = companyPeriods({ subscription: sub({ startDate: "2026-09-01" }) }, 6, "2026-11-15");
+    assert.deepEqual(periods, ["2026-11", "2026-10", "2026-09"]);
+  });
+
+  it("si el alta es más reciente que la ventana, no rompe", () => {
+    const periods = companyPeriods({ subscription: sub({ startDate: "2027-01-01" }) }, 6, "2026-11-15");
+    assert.deepEqual(periods, []);
   });
 });

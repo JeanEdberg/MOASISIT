@@ -1,7 +1,6 @@
 import { vacationBalance, vacationEarned, livePayslips } from "@/lib/hr/calc";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { catalogInsurers } from "@/lib/hr/insurers";
-import { HOY } from "@/lib/hr/format";
 import type {
   Attendance,
   Company,
@@ -10,6 +9,14 @@ import type {
   HrData,
   TimeRequest,
 } from "@/lib/hr/types";
+
+/**
+ * Fecha de referencia de la DEMO. Los datos de ejemplo (asistencia de la
+ * primera semana de noviembre, planilla de octubre) son fijos, así que el seed
+ * se ancla a este día para ser determinista y no depender del calendario real.
+ * Las personas de ejemplo se quitan con "Quitar personas de ejemplo".
+ */
+const DEMO_TODAY = "2026-11-08";
 
 const DEMO_DOMAIN = "@inmoa.pe";
 
@@ -619,7 +626,7 @@ const TARGET_BALANCE: Record<string, number> = {
 
 function withHistory(employees: Employee[]): Employee[] {
   return employees.map((e) => {
-    const earned = vacationEarned(e, HOY);
+    const earned = vacationEarned(e, DEMO_TODAY);
     const approved = requests
       .filter((r) => r.employeeId === e.id && r.kind === "vacaciones" && r.status === "aprobada")
       .reduce((sum, r) => {
@@ -710,11 +717,11 @@ export function createDemo(): HrData {
     let history = 0;
     for (let i = 0; i < 4; i++) {
       const draft = { ...e, vacationHistory: history };
-      const bal = vacationBalance(draft, requests, HOY);
+      const bal = vacationBalance(draft, requests, DEMO_TODAY);
       history = Math.max(0, Math.round((history + (bal - target)) * 10) / 10);
     }
     const draft = { ...e, vacationHistory: history };
-    const bal = vacationBalance(draft, requests, HOY);
+    const bal = vacationBalance(draft, requests, DEMO_TODAY);
     history = Math.max(0, Math.round((history + (bal - target)) * 10) / 10);
     return { ...e, vacationHistory: history };
   });

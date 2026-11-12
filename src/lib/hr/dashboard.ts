@@ -1,6 +1,6 @@
 import { differenceInCalendarDays } from "date-fns";
 import { ctsSemester, gratuityAmount, vacationBalance, vacationPending, vacationTaken } from "@/lib/hr/calc";
-import { HOY, parseDay, periodLabel } from "@/lib/hr/format";
+import { todayIso, parseDay, periodLabel } from "@/lib/hr/format";
 import { subscriptionAlert, subscriptionOf, type SubscriptionAlert } from "@/lib/hr/subscription";
 import type { Attendance, Company, Employee, Payslip, TimeRequest } from "@/lib/hr/types";
 
@@ -77,7 +77,7 @@ export function headcountByCompany(companies: Company[], employees: Employee[]):
 export type ExpiringContract = { employee: Employee; days: number };
 
 /** Contratos que vencen dentro de `windowDays` (inclusive hoy). */
-export function contractsExpiring(employees: Employee[], windowDays = 120, today = HOY): ExpiringContract[] {
+export function contractsExpiring(employees: Employee[], windowDays = 120, today = todayIso()): ExpiringContract[] {
   return employees
     .filter((e) => e.status === "activo" && e.endDate)
     .map((e) => ({ employee: e, days: differenceInCalendarDays(parseDay(e.endDate as string), parseDay(today)) }))
@@ -88,7 +88,7 @@ export function contractsExpiring(employees: Employee[], windowDays = 120, today
 export type CompanyAlert = { company: Company; alert: SubscriptionAlert };
 
 /** Alertas de suscripción de todas las empresas (vencidas o por vencer). */
-export function subscriptionAlerts(companies: Company[], today = HOY): CompanyAlert[] {
+export function subscriptionAlerts(companies: Company[], today = todayIso()): CompanyAlert[] {
   return companies
     .map((company) => ({ company, alert: subscriptionAlert(subscriptionOf(company), today) }))
     .filter((x) => x.alert.level !== "ok")
@@ -107,7 +107,7 @@ export function vacationSummary(people: Employee[], requests: TimeRequest[], com
   const ids = new Set(people.map((e) => e.id));
   const mine = requests.filter((r) => ids.has(r.employeeId));
   return {
-    balanceDays: people.reduce((s, e) => s + vacationBalance(e, requests, HOY, company), 0),
+    balanceDays: people.reduce((s, e) => s + vacationBalance(e, requests, todayIso(), company), 0),
     takenDays: people.reduce((s, e) => s + vacationTaken(e, requests), 0),
     pendingDays: people.reduce((s, e) => s + vacationPending(e, requests), 0),
     pendingRequests: mine.filter((r) => r.status === "pendiente").length,

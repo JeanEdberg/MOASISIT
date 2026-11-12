@@ -19,7 +19,7 @@
 
 import { ctsSemester, effectiveRegime, gratuityAmount, vacationBalance, vacationRate } from "@/lib/hr/calc";
 import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fns";
-import { HOY, parseDay, round2 } from "@/lib/hr/format";
+import { todayIso, parseDay, round2 } from "@/lib/hr/format";
 import { gratuityBonusRate } from "@/lib/hr/regime";
 import type { Company, Employee, Regime, TimeRequest } from "@/lib/hr/types";
 
@@ -113,7 +113,7 @@ export function liquidationOf(
   emp: Employee,
   company: Company,
   requests: TimeRequest[] = [],
-  asOf: string = (emp.endDate ?? HOY).slice(0, 10),
+  asOf: string = (emp.endDate ?? todayIso()).slice(0, 10),
 ): Liquidation {
   const regime = effectiveRegime(company, emp);
   const empAt = { ...emp, endDate: asOf, status: "cesado" as const };

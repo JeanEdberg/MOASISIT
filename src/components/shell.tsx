@@ -21,7 +21,7 @@ import { cn } from "@/components/ui";
 import { BrandLogo } from "@/components/brand-logo";
 import { ChangeSecretModal } from "@/components/change-secret-modal";
 import { LoginScreen } from "@/components/login-screen";
-import { fullName, inkFor, longDate, HOY } from "@/lib/hr/format";
+import { fullName, inkFor, longDate, todayIso } from "@/lib/hr/format";
 import { isCompanyAdmin } from "@/lib/hr/access";
 import { hydrateHr, useHr } from "@/lib/hr/store";
 import type { ViewerMode } from "@/lib/hr/types";
@@ -192,7 +192,7 @@ export function Shell({ children }: { children: ReactNode }) {
                   <p className="truncate text-sm font-medium text-ink">{company.name}</p>
                 )}
                 <p className="truncate px-1 text-xs text-muted">
-                  RUC {company.ruc} · {longDate(HOY)}
+                  RUC {company.ruc} · {longDate(todayIso())}
                 </p>
               </div>
             </div>

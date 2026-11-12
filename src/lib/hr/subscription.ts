@@ -13,8 +13,8 @@
  */
 
 import { differenceInCalendarDays } from "date-fns";
-import { inclusiveDays, isoDay, parseDay } from "@/lib/hr/format";
-import type { HrData, Subscription, SubscriptionStatus } from "@/lib/hr/types";
+import { inclusiveDays, isoDay, parseDay, recentPeriods, todayIso } from "@/lib/hr/format";
+import type { Company, HrData, Subscription, SubscriptionStatus } from "@/lib/hr/types";
 
 export type { Subscription, SubscriptionStatus };
 
@@ -57,6 +57,19 @@ export function withSubscriptions(data: HrData): HrData {
 export function daysInMonth(iso: string): number {
   const d = parseDay(iso);
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+}
+
+/**
+ * Periodos de planilla que corresponde mostrar en una empresa: los últimos `n`
+ * meses, pero sin bajar del mes de alta de su suscripción. Así una empresa que
+ * se dio de alta en noviembre no muestra planillas de meses anteriores (que
+ * serían de la etapa de demostración), salvo que RR.HH. las suba a mano.
+ */
+export function companyPeriods(company: Pick<Company, "subscription">, n = 6, from: string = todayIso()): string[] {
+  const periods = recentPeriods(n, from);
+  const startMonth = (subscriptionOf(company).startDate ?? "").slice(0, 7);
+  if (!startMonth) return periods;
+  return periods.filter((p) => p >= startMonth);
 }
 
 /** Último día del mes de una fecha ISO. */

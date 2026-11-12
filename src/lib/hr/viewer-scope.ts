@@ -107,5 +107,7 @@ function stripMoney(e: Employee): Employee {
     account: undefined,
     // El legajo documental (T-Registros, contrato, liquidación) solo lo ve RR.HH.
     attachments: undefined,
+    // Las boletas anteriores subidas tampoco salen hacia la jefatura.
+    payslipFiles: undefined,
   };
 }

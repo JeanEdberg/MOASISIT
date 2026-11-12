@@ -51,6 +51,14 @@ export function canSeeMoney(viewer: Viewer, employeeId: string): boolean {
   return viewer.mode === "colaborador" && viewer.employeeId === employeeId;
 }
 
+/**
+ * ¿El viewer puede ver las boletas anteriores subidas de un colaborador?
+ * RR.HH. y el superadmin ven las de todos; cada persona ve las suyas.
+ */
+export function canSeePayslipFiles(viewer: Viewer, employeeId: string): boolean {
+  return isCompanyAdmin(viewer.mode) || viewer.employeeId === employeeId;
+}
+
 export function canApprove(viewer: Viewer, employees: Employee[], employeeId: string): boolean {
   if (viewer.mode === "colaborador") return false;
   if (viewer.employeeId === employeeId) return isCompanyAdmin(viewer.mode);

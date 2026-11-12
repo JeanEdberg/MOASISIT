@@ -7,7 +7,7 @@ import type {
   Regime,
   WorkMode,
 } from "@/lib/hr/types";
-import { HOY } from "@/lib/hr/format";
+import { todayIso } from "@/lib/hr/format";
 
 const PENSIONS = new Set<Pension>(["onp", "habitat", "integra", "prima", "profuturo", "ninguno"]);
 const CONTRACTS = new Set<ContractType>(["indefinido", "plazo_fijo", "practicas"]);
@@ -233,7 +233,7 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
 
   if (!employees.length && !errors.length) errors.push("No se importó ninguna fila.");
   return {
-    employees: employees.map((e) => ({ ...e, hireDate: e.hireDate || HOY })),
+    employees: employees.map((e) => ({ ...e, hireDate: e.hireDate || todayIso() })),
     areas: areas.filter((a) => !existingAreas.some((x) => x.id === a.id)),
     errors,
   };

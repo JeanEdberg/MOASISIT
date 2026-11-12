@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { companyShortName, greeting, uid } from "@/lib/hr/format";
+import { companyShortName, greeting, todayIso, uid } from "@/lib/hr/format";
 
 const INMOA = { shortName: "INMOA", tradeName: "INMOA Soluciones", name: "INMOA Logística y Soluciones E.I.R.L." };
 const PLUMIFERO = { shortName: "Plumífero", tradeName: "Plumífero", name: "Inversiones y Negociaciones Plumífero E.I.R.L." };
@@ -39,4 +39,12 @@ test("uid genera identificadores únicos con su prefijo", () => {
   assert.notEqual(a, b);
   const muchos = new Set(Array.from({ length: 1000 }, () => uid("x")));
   assert.equal(muchos.size, 1000);
+});
+
+test("todayIso devuelve la fecha real en formato AAAA-MM-DD", () => {
+  const hoy = todayIso();
+  assert.match(hoy, /^\d{4}-\d{2}-\d{2}$/);
+  // Debe ser la fecha de hoy en Perú, no una constante fija.
+  const esperado = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
+  assert.equal(hoy, esperado);
 });

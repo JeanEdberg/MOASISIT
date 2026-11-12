@@ -1,5 +1,5 @@
 import { dbSource } from "@/lib/db";
-import { HOY } from "@/lib/hr/format";
+import { todayIso } from "@/lib/hr/format";
 import { isDemoPerson } from "@/lib/hr/seed";
 import { buildStatusChecks, type StatusCheck, type StatusFacts } from "@/lib/hr/status";
 import { subscriptionAlert, subscriptionOf } from "@/lib/hr/subscription";
@@ -12,7 +12,7 @@ export async function collectStatus(): Promise<StatusCheck[]> {
   const { loadDataset } = await import("@/lib/hr/dataset.server");
   const data = await loadDataset();
 
-  const alerts = data.companies.map((c) => subscriptionAlert(subscriptionOf(c), HOY));
+  const alerts = data.companies.map((c) => subscriptionAlert(subscriptionOf(c), todayIso()));
 
   const facts: StatusFacts = {
     databasePersistent: dbSource === "neon",

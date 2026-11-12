@@ -145,6 +145,19 @@ export type EmployeeAttachment = {
 /** Documentos adjuntos del colaborador, por tipo. Vacío = no se cargó. */
 export type EmployeeAttachments = Partial<Record<AttachmentKind, EmployeeAttachment>>;
 
+/** Boleta de pago anterior cargada por RR.HH. (PDF o imagen), una por periodo. */
+export type EmployeePayslipFile = {
+  id: string;
+  /** Periodo de la boleta, `YYYY-MM`. */
+  period: string;
+  /** Nombre del archivo, para mostrarlo. */
+  name: string;
+  /** Contenido como data URL. */
+  dataUrl: string;
+  /** Fecha de carga (ISO). */
+  uploadedAt: string;
+};
+
 /** Un cese cerrado, conservado en el histórico del colaborador. */
 export type CessationRecord = {
   /** Fecha de cese (ISO). */
@@ -235,6 +248,13 @@ export type Employee = {
    * liquidación). Se guardan como data URL dentro del dataset.
    */
   attachments?: EmployeeAttachments;
+
+  /**
+   * Boletas de pago anteriores que RR.HH. sube a mano (PDF o imagen), una por
+   * periodo. Sirven para conservar el histórico de meses trabajados antes de
+   * usar la app, o para adjuntar el documento firmado.
+   */
+  payslipFiles?: EmployeePayslipFile[];
 
   /**
    * Histórico de ceses y reincorporaciones. Cada cese guarda su fecha y motivo;

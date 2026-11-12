@@ -11,7 +11,7 @@
  */
 
 import { effectiveRegime } from "@/lib/hr/calc";
-import { fullName, HOY, REGIME_LABEL, round2 } from "@/lib/hr/format";
+import { fullName, todayIso, REGIME_LABEL, round2 } from "@/lib/hr/format";
 import { liquidationOf } from "@/lib/hr/liquidacion";
 import { numeroALetras } from "@/lib/hr/numbers";
 import type { Company, Employee, Regime, TimeRequest } from "@/lib/hr/types";
@@ -70,7 +70,7 @@ export function liquidationSheet(
   emp: Employee,
   company: Company,
   requests: TimeRequest[] = [],
-  asOf: string = (emp.endDate ?? "").slice(0, 10) || HOY,
+  asOf: string = (emp.endDate ?? "").slice(0, 10) || todayIso(),
   mode: "cese" | "simulacion" = emp.status === "cesado" ? "cese" : "simulacion",
 ): LiquidationSheet {
   const liq = liquidationOf(emp, company, requests, asOf);

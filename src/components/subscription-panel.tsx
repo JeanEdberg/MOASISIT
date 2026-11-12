@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Badge, Button, Field, fieldClass, Modal } from "@/components/ui";
-import { HOY, pen, shortDate } from "@/lib/hr/format";
+import { todayIso, pen, shortDate } from "@/lib/hr/format";
 import { useHr } from "@/lib/hr/store";
 import {
   followingChargeDate,
@@ -26,7 +26,7 @@ export function SubscriptionPanel() {
 
   if (viewerMode !== "superadmin") return null;
 
-  const alerts = companies.map((c) => subscriptionAlert(subscriptionOf(c), HOY));
+  const alerts = companies.map((c) => subscriptionAlert(subscriptionOf(c), todayIso()));
   const overdue = alerts.filter((a) => a.level === "danger").length;
   const soon = alerts.filter((a) => a.level === "warn" && a.daysLeft >= 0).length;
 
@@ -67,7 +67,7 @@ function CompanySubscription({ company, canRemove }: { company: Company; canRemo
   const updateCompanySubscription = useHr((s) => s.updateCompanySubscription);
   const removeCompany = useHr((s) => s.removeCompany);
   const sub = subscriptionOf(company);
-  const alert = subscriptionAlert(sub, HOY);
+  const alert = subscriptionAlert(sub, todayIso());
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   const setNum = (key: "monthlyPrice", raw: string) => {
@@ -168,7 +168,7 @@ function CompanySubscription({ company, canRemove }: { company: Company; canRemo
           tone="moss"
           disabled={sub.status === "cancelada"}
           onClick={() => {
-            const base = sub.paidUntil ?? sub.startDate ?? HOY;
+            const base = sub.paidUntil ?? sub.startDate ?? todayIso();
             const next = followingChargeDate(base, sub.billingDay);
             updateCompanySubscription(company.id, { paidUntil: next });
             toast.success(`Cobro registrado. Vence el ${shortDate(next)}.`);

@@ -8,7 +8,8 @@ import { Button, Card, Empty, Modal, PageHeader, StatCard } from "@/components/u
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { buildAfpnetRows, exportAfpnetExcel, exportAfpnetTxt } from "@/lib/hr/afpnet";
 import { payslipsFor } from "@/lib/hr/calc";
-import { currentPeriod, fullName, HOY, pen, periodLabel, recentPeriods, uid } from "@/lib/hr/format";
+import { currentPeriod, fullName, todayIso, pen, periodLabel, uid } from "@/lib/hr/format";
+import { companyPeriods } from "@/lib/hr/subscription";
 import { buildPayrollRows, exportPayrollExcel, exportPayrollPdf } from "@/lib/hr/payroll-export";
 import { useHr } from "@/lib/hr/store";
 
@@ -22,6 +23,7 @@ function PayrollPage() {
   const [period, setPeriod] = useState(currentPeriod());
   const [openId, setOpenId] = useState<string | null>(null);
   const people = visibleEmployees(data.employees, data.viewer);
+  const periods = companyPeriods(data.company, 6);
   const slips = useMemo(() => {
     return payslipsFor(data, period).filter(
       (p) => people.some((e) => e.id === p.employeeId) && canSeeMoney(data.viewer, p.employeeId),
@@ -97,7 +99,7 @@ function PayrollPage() {
         companyId: data.company.id,
         title: `Boleta ${periodLabel(period)}`,
         kind: "boleta",
-        date: HOY,
+        date: todayIso(),
         status: "pendiente",
         period,
       });
@@ -148,7 +150,7 @@ function PayrollPage() {
       />
 
       <div className="mb-4 flex gap-2 overflow-x-auto">
-        {recentPeriods(6).map((p) => (
+        {periods.map((p) => (
           <button
             key={p}
             type="button"

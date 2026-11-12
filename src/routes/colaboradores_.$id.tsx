@@ -16,12 +16,12 @@ import {
   fmtDays,
   fullName,
   HEALTH_INSURANCE_LABEL,
-  HOY,
+  todayIso,
   initials,
   PENSION_LABEL,
   pen,
   periodLabel,
-  recentPeriods,
+
   REGIME_LABEL,
   REQUEST_LABEL,
   ROLE_LABEL,
@@ -29,6 +29,7 @@ import {
   STATUS_LABEL,
   WORK_MODE_LABEL,
 } from "@/lib/hr/format";
+import { companyPeriods } from "@/lib/hr/subscription";
 import { useHr } from "@/lib/hr/store";
 import type { ViewerMode } from "@/lib/hr/types";
 
@@ -71,7 +72,7 @@ function FichaPage() {
     );
   }
 
-  const balance = vacationBalance(emp, data.requests, HOY, data.company);
+  const balance = vacationBalance(emp, data.requests, todayIso(), data.company);
   const marks = data.attendance.filter((a) => a.employeeId === emp.id).sort((a, b) => b.date.localeCompare(a.date));
   const reqs = data.requests.filter((r) => r.employeeId === emp.id);
 
@@ -137,7 +138,7 @@ function FichaPage() {
               <Button
                 tone="danger"
                 onClick={() => {
-                  updateEmployee(emp.id, { status: "cesado", endDate: HOY });
+                  updateEmployee(emp.id, { status: "cesado", endDate: todayIso() });
                   toast.success("Marcado como cesado");
                 }}
               >
@@ -260,7 +261,7 @@ function FichaPage() {
         ) : null}
         {tab === "pagos" && money ? (
           <div className="space-y-4">
-            {recentPeriods(4).map((period) => {
+            {companyPeriods(data.company, 4).map((period) => {
               const slip = payslipFor(data, emp.id, period);
               if (!slip) return null;
               return (
@@ -277,7 +278,7 @@ function FichaPage() {
             <section className="rounded-lg border border-line bg-surface p-4">
               <h2 className="text-2xl">Vacaciones</h2>
               <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <Info label="Ganados" value={fmtDays(vacationEarned(emp, HOY, data.company))} />
+                <Info label="Ganados" value={fmtDays(vacationEarned(emp, todayIso(), data.company))} />
                 <Info label="Gozados y reservados" value={fmtDays(vacationTaken(emp, data.requests))} />
                 <Info label="En trámite" value={fmtDays(vacationPending(emp, data.requests))} />
                 <Info label="Saldo" value={fmtDays(balance)} />

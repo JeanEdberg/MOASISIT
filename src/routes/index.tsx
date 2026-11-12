@@ -37,7 +37,7 @@ import {
   fmtDays,
   fullName,
   greeting,
-  HOY,
+  todayIso,
   MONTHS,
   pen,
   periodLabel,
@@ -475,10 +475,10 @@ function ColaboradorDashboard() {
     [data, period, me],
   );
   const hello = greeting(data.viewer.mode, data.company, me ? me.names : null);
-  const month = Number(HOY.slice(5, 7));
-  const year = Number(HOY.slice(0, 4));
+  const month = Number(todayIso().slice(5, 7));
+  const year = Number(todayIso().slice(0, 4));
   const benefits = me ? benefitsProjection(me, data.company, year, month) : null;
-  const balance = me ? vacationBalance(me, data.requests, HOY, data.company) : 0;
+  const balance = me ? vacationBalance(me, data.requests, todayIso(), data.company) : 0;
   const pendingVac = me ? vacationPending(me, data.requests) : 0;
 
   if (!me) {

@@ -4,8 +4,9 @@ import { Button } from "@/components/ui";
 import { isCompanyAdmin, visibleAttachmentKinds } from "@/lib/hr/access";
 import { ATTACHMENT_LABEL, isPdfDataUrl, missingAttachments, readAttachmentFile } from "@/lib/hr/attachment";
 import { CESSATION_REASONS, ceaseEmployee, cessationsOf, rehireEmployee } from "@/lib/hr/cessation";
-import { HOY, pen, shortDate } from "@/lib/hr/format";
+import { todayIso, pen, periodLabel, currentPeriod, shortDate } from "@/lib/hr/format";
 import { liquidationOf } from "@/lib/hr/liquidacion";
+import { addPayslipFile, isValidPeriod, payslipFilesOf, removePayslipFile } from "@/lib/hr/payslip-files";
 import type { AttachmentKind, Company, Employee, TimeRequest, Viewer } from "@/lib/hr/types";
 
 /**
@@ -41,7 +42,7 @@ function FileRow({
       toast.error(res.error);
       return;
     }
-    onChange(kind, { name: file.name, dataUrl: res.dataUrl, date: HOY });
+    onChange(kind, { name: file.name, dataUrl: res.dataUrl, date: todayIso() });
     toast.success(`${ATTACHMENT_LABEL[kind]} adjuntado`);
   };
 
@@ -117,7 +118,7 @@ export function EmployeeDocuments({
   onPatch: (patch: Partial<Employee>) => void;
 }) {
   const [reason, setReason] = useState<string>(CESSATION_REASONS[0]);
-  const [rehireDate, setRehireDate] = useState<string>(HOY);
+  const [rehireDate, setRehireDate] = useState<string>(todayIso());
   const admin = isCompanyAdmin(viewer.mode);
   const isSelf = viewer.employeeId === emp.id;
   const allowed = visibleAttachmentKinds(viewer, emp);
@@ -159,6 +160,8 @@ export function EmployeeDocuments({
           ))}
         </div>
       </section>
+
+      {admin || isSelf ? <PayslipFilesSection emp={emp} editable={editable} onPatch={onPatch} /> : null}
 
       {admin ? (
         <section className="rounded-lg border border-line bg-surface p-4">
@@ -286,3 +289,124 @@ export function EmployeeDocuments({
     </div>
   );
 }
+
+/**
+ * Boletas anteriores cargadas por RR.HH. Permite subir el PDF o la imagen de
+ * cada mes (uno por periodo), verlas, descargarlas y quitarlas. Sirve para
+ * conservar el histórico de meses trabajados antes de usar la app.
+ */
+function PayslipFilesSection({
+  emp,
+  editable,
+  onPatch,
+}: {
+  emp: Employee;
+  editable: boolean;
+  onPatch: (patch: Partial<Employee>) => void;
+}) {
+  const files = payslipFilesOf(emp);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [period, setPeriod] = useState(currentPeriod());
+  const [busy, setBusy] = useState(false);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    if (!isValidPeriod(period)) {
+      toast.error("Elige un mes válido (formato AAAA-MM).");
+      return;
+    }
+    setBusy(true);
+    const res = await readAttachmentFile(file);
+    setBusy(false);
+    if (!res.ok) {
+      toast.error(res.error);
+      return;
+    }
+    onPatch({ payslipFiles: addPayslipFile(emp.payslipFiles, { period, name: file.name, dataUrl: res.dataUrl }) });
+    toast.success(`Boleta de ${periodLabel(period)} guardada`);
+  };
+
+  return (
+    <section className="rounded-lg border border-line bg-surface p-4">
+      <h2 className="text-2xl">Boletas anteriores</h2>
+      <p className="mt-1 text-sm text-muted">
+        Sube el PDF o la foto de la boleta de un mes anterior (por ejemplo, de antes de usar la app). Se guarda una por
+        mes: si subes otra del mismo mes, reemplaza a la anterior.
+      </p>
+
+      {editable ? (
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="block text-xs text-muted">
+            Mes de la boleta
+            <input
+              className="mt-1 min-h-11 rounded-md border border-line bg-bg px-3 text-sm"
+              type="month"
+              value={period}
+              onChange={(e) => setPeriod(e.target.value)}
+            />
+          </label>
+          <Button tone="line" disabled={busy} onClick={() => inputRef.current?.click()}>
+            {busy ? "Leyendo…" : "Subir boleta"}
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              void pick(file);
+            }}
+          />
+        </div>
+      ) : null}
+
+      <ul className="mt-3 space-y-2">
+        {files.length === 0 ? <li className="text-sm text-muted">Sin boletas subidas.</li> : null}
+        {files.map((f) => (
+          <li
+            key={f.id}
+            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-bg p-3"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink">{periodLabel(f.period)}</p>
+              <p className="truncate text-xs text-muted">
+                {f.name} · subida {shortDate(f.uploadedAt)}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                className="min-h-9 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+                href={f.dataUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {isPdfDataUrl(f.dataUrl) ? "Ver PDF" : "Ver"}
+              </a>
+              <a
+                className="min-h-9 inline-flex items-center rounded-md border border-line bg-surface px-3 text-sm font-medium"
+                href={f.dataUrl}
+                download={f.name}
+              >
+                Descargar
+              </a>
+              {editable ? (
+                <Button
+                  tone="ghost"
+                  onClick={() => {
+                    onPatch({ payslipFiles: removePayslipFile(emp.payslipFiles, { id: f.id }) });
+                    toast.success("Boleta quitada");
+                  }}
+                >
+                  Quitar
+                </Button>
+              ) : null}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+

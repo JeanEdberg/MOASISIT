@@ -2,7 +2,7 @@ import { Calculator, Download, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button, Card, Empty, PageHeader, StatCard } from "@/components/ui";
 import { isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
-import { fullName, HOY, pen, shortDate } from "@/lib/hr/format";
+import { fullName, todayIso, pen, shortDate } from "@/lib/hr/format";
 import { liquidationSheet, pensionRateOf } from "@/lib/hr/liquidacion-sheet";
 import { exportLiquidationPdf } from "@/lib/hr/liquidacion-pdf";
 import { useHr } from "@/lib/hr/store";
@@ -19,7 +19,7 @@ export function LiquidationCalculator() {
   const people = visibleEmployees(data.employees, data.viewer);
   const [query, setQuery] = useState("");
   const [empId, setEmpId] = useState("");
-  const [asOf, setAsOf] = useState(HOY);
+  const [asOf, setAsOf] = useState(todayIso());
   const [simulate, setSimulate] = useState(true);
 
   const filtered = useMemo(() => {

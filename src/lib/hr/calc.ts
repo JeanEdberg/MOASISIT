@@ -1,6 +1,6 @@
 import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fns";
 import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
-import { HOY, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
+import { todayIso, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
 import { benefitShare, employeeRegimeFor, gratificationsPerYear, gratuityBonusRate, normalizeCompanyRegime } from "@/lib/hr/regime";
 import type {
   Attendance,
@@ -254,7 +254,7 @@ export function vacationDaysEarned(hireDate: string, asOf: string, regime: Regim
   return round2((months + days / 30) * vacationRate(regime));
 }
 
-export function vacationEarned(emp: Employee, asOf = HOY, company?: Company): number {
+export function vacationEarned(emp: Employee, asOf = todayIso(), company?: Company): number {
   const regime = company ? effectiveRegime(company, emp) : emp.regime;
   return vacationDaysEarned(emp.hireDate, asOf, regime);
 }
@@ -274,7 +274,7 @@ export function vacationPending(emp: Employee, requests: TimeRequest[]): number 
   );
 }
 
-export function vacationBalance(emp: Employee, requests: TimeRequest[], asOf = HOY, company?: Company): number {
+export function vacationBalance(emp: Employee, requests: TimeRequest[], asOf = todayIso(), company?: Company): number {
   return round2(vacationEarned(emp, asOf, company) - vacationTaken(emp, requests));
 }
 

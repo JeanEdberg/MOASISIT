@@ -8,7 +8,7 @@ import { vacationBalance, vacationEarned, vacationPending, vacationTaken } from 
 import {
   fmtDays,
   fullName,
-  HOY,
+  todayIso,
   inclusiveDays,
   parseDay,
   REQUEST_LABEL,
@@ -42,10 +42,10 @@ function VacationsPage() {
     return people
       .map((e) => ({
         e,
-        earned: vacationEarned(e, HOY, data.company),
+        earned: vacationEarned(e, todayIso(), data.company),
         taken: vacationTaken(e, data.requests),
         pending: vacationPending(e, data.requests),
-        balance: vacationBalance(e, data.requests, HOY, data.company),
+        balance: vacationBalance(e, data.requests, todayIso(), data.company),
       }))
       .sort((a, b) => b.balance - a.balance);
   }, [people, data.requests, data.company]);
@@ -81,7 +81,7 @@ function VacationsPage() {
     }
     const emp = data.employees.find((e) => e.id === form.employeeId);
     if (form.kind === "vacaciones" && emp) {
-      const bal = vacationBalance(emp, data.requests, HOY, data.company);
+      const bal = vacationBalance(emp, data.requests, todayIso(), data.company);
       if (days > bal + 0.05) {
         setError(`El saldo es ${fmtDays(bal)} días. Ajusta el rango o registra el adelanto con RR. HH.`);
         return;
@@ -96,7 +96,7 @@ function VacationsPage() {
       end: form.end,
       status: "pendiente",
       note: form.note.trim(),
-      createdAt: HOY,
+      createdAt: todayIso(),
     };
     addRequest(req);
     setOpen(false);

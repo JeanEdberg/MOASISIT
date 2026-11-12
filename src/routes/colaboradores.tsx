@@ -6,7 +6,7 @@ import { Shell } from "@/components/shell";
 import { Badge, Button, Empty, fieldClass, Modal, PageHeader } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { parseEmployeeCsv, CSV_SAMPLE } from "@/lib/hr/csv";
-import { fullName, HOY, pen, REGIME_LABEL, uid } from "@/lib/hr/format";
+import { fullName, todayIso, pen, REGIME_LABEL, uid } from "@/lib/hr/format";
 import { employeeRegimeFor, normalizeCompanyRegime } from "@/lib/hr/regime";
 import { useHr } from "@/lib/hr/store";
 import type { CompanyRegime, Employee } from "@/lib/hr/types";
@@ -25,7 +25,7 @@ function emptyDraft(companyId: string, areaId: string, companyRegime: CompanyReg
     phone: "",
     birthDate: "1995-01-01",
     address: "",
-    hireDate: HOY,
+    hireDate: todayIso(),
     endDate: null,
     status: "activo",
     areaId,

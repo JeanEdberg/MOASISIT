@@ -8,7 +8,7 @@
  * inicio.
  */
 
-import { HOY } from "@/lib/hr/format";
+import { todayIso } from "@/lib/hr/format";
 import type { CessationRecord, Employee } from "@/lib/hr/types";
 
 /** Motivos de cese frecuentes, para el selector del formulario. */
@@ -43,11 +43,11 @@ export function cessationsOf(emp: Pick<Employee, "cessations">): CessationRecord
  * inicio del periodo vigente.
  */
 export function ceaseEmployee(emp: Employee, input: CessationInput = {}): Partial<Employee> {
-  const endDate = (input.endDate ?? emp.endDate ?? HOY).slice(0, 10);
+  const endDate = (input.endDate ?? emp.endDate ?? todayIso()).slice(0, 10);
   const record: CessationRecord = {
     endDate,
     reason: (input.reason ?? "Fin de contrato").trim(),
-    registeredAt: (input.registeredAt ?? HOY).slice(0, 10),
+    registeredAt: (input.registeredAt ?? todayIso()).slice(0, 10),
   };
   return {
     status: "cesado",
@@ -67,7 +67,7 @@ export type RehireInput = {
  * ceses se conserva íntegro.
  */
 export function rehireEmployee(emp: Employee, input: RehireInput = {}): Partial<Employee> {
-  const hireDate = (input.hireDate ?? HOY).slice(0, 10);
+  const hireDate = (input.hireDate ?? todayIso()).slice(0, 10);
   return {
     status: "activo",
     hireDate,
