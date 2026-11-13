@@ -157,6 +157,22 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `importPeople` y el normalizador del dataset) crea el histórico con el sueldo
   de ingreso si falta, lo ordena y sincroniza `salary`. La ficha del colaborador
   permite agregar cada aumento con su fecha.
+- **Histórico de cobertura de salud (EsSalud ↔ EPS)**: la cobertura define la
+  bonificación extraordinaria de la gratificación (**9 % con EsSalud, 6.75 % con
+  EPS**). Como un colaborador puede pasar de EsSalud a EPS a mitad de año, la
+  bonificación debe usar la cobertura **vigente al cierre del semestre** de cada
+  gratificación, no la actual. `Employee.healthHistory` guarda los cambios con su
+  fecha (`{ from, healthInsurance, epsInsurerId?, note? }`) y
+  `Employee.healthInsurance` sigue siendo la **cobertura vigente** (último
+  cambio). Los cálculos NO usan `emp.healthInsurance` directamente: usan
+  `healthForDate` / `healthForPeriod` (`src/lib/hr/health.ts`). Regla: la
+  bonificación de la gratificación y el 1/6 de la CTS usan la cobertura **al
+  cierre del semestre** (la gratificación que alimenta el sexto); la boleta
+  (aporte EsSalud/EPS) usa la cobertura del **mes**. `reconcileHealth` (aplicado
+  en `updateEmployee`, `addEmployee`, `importPeople` y el normalizador del
+  dataset) crea el histórico con la cobertura de ingreso si falta, lo ordena y
+  sincroniza `healthInsurance`/`epsInsurerId`. La ficha del colaborador permite
+  agregar cada cambio de cobertura con su fecha.
 - **`updateCompany` edita `companies`** (la fuente de verdad), no solo el
   snapshot `data.company` de la vista. La acción acepta `companyId?` y el
   servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para

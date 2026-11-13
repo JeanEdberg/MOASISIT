@@ -1,5 +1,6 @@
 import { livePayslips } from "@/lib/hr/calc";
 import { todayIso, uid } from "@/lib/hr/format";
+import { reconcileHealth } from "@/lib/hr/health";
 import { reconcileSalary } from "@/lib/hr/salary";
 import { isDemoPerson } from "@/lib/hr/seed";
 import type {
@@ -105,11 +106,13 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       return {
         ...data,
         employees: data.employees.map((e) =>
-          e.id === action.id ? reconcileSalary({ ...e, ...action.patch, id: e.id }) : e,
+          e.id === action.id ? reconcileHealth(reconcileSalary({ ...e, ...action.patch, id: e.id })) : e,
         ),
       };
     case "addEmployee": {
-      const employee = reconcileSalary({ ...action.employee, companyId: action.employee.companyId || data.company.id });
+      const employee = reconcileHealth(
+        reconcileSalary({ ...action.employee, companyId: action.employee.companyId || data.company.id }),
+      );
       // Al dar de alta a la persona se genera su contrato como documento del
       // legajo, pendiente de firma (el texto se arma solo en el visor).
       const contractDoc: DocItem = {
@@ -134,7 +137,9 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         areas: [...data.areas, ...action.areas.filter((a) => !data.areas.some((x) => x.id === a.id))],
         employees: [
           ...data.employees.filter((e) => !action.employees.some((n) => n.dni === e.dni)),
-          ...action.employees.map((e) => reconcileSalary({ ...e, companyId: e.companyId || data.company.id })),
+          ...action.employees.map((e) =>
+            reconcileHealth(reconcileSalary({ ...e, companyId: e.companyId || data.company.id })),
+          ),
         ],
         documents: [
           ...action.employees

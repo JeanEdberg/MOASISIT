@@ -178,6 +178,23 @@ export type SalaryChange = {
   note?: string;
 };
 
+/**
+ * Un cambio de cobertura de salud: cobertura (y EPS, si aplica) desde una fecha.
+ * La cobertura define la bonificación extraordinaria de la gratificación (9% con
+ * EsSalud, 6.75% con EPS), así que un cambio a mitad de año debe usar la
+ * cobertura vigente al cierre del semestre de cada gratificación.
+ */
+export type HealthChange = {
+  /** Fecha desde la que rige la cobertura (inclusive), ISO `YYYY-MM-DD`. */
+  from: string;
+  /** Cobertura de salud vigente desde esa fecha. */
+  healthInsurance: HealthInsurance;
+  /** Aseguradora EPS (id de company.insurers) cuando la cobertura es EPS. */
+  epsInsurerId?: string | null;
+  /** Motivo o sustento del cambio (opcional). */
+  note?: string;
+};
+
 /** Nivel de acceso del colaborador dentro de la app. */
 export type AccessRole = ViewerMode;
 
@@ -236,6 +253,15 @@ export type Employee = {
   // Seguridad social y seguros (base del cálculo de beneficios y aportes)
   /** Cobertura de salud: EsSalud regular o EPS. */
   healthInsurance: HealthInsurance;
+  /**
+   * Histórico de cambios de cobertura de salud, ordenado por fecha. El primer
+   * registro suele ser la cobertura de ingreso. `healthInsurance` sigue siendo la
+   * cobertura vigente (el último cambio). Las gratificaciones usan la cobertura
+   * que regía al cierre de su semestre (9% EsSalud / 6.75% EPS), así que un
+   * cambio a mitad de año no debe reescribir las gratificaciones anteriores
+   * (ver `healthForDate`/`healthForPeriod` en `health.ts`).
+   */
+  healthHistory?: HealthChange[];
   /** Aseguradora EPS (id de company.insurers) cuando healthInsurance === "eps". */
   epsInsurerId: string | null;
   /** SCTR: aseguradora contratada (id de company.insurers) o null. */

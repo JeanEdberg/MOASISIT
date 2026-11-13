@@ -1,5 +1,6 @@
 import { getSql } from "@/lib/db";
 import { withFifthCategory } from "@/lib/hr/fifth";
+import { withHealthHistory } from "@/lib/hr/health";
 import { withInsurerCatalog } from "@/lib/hr/insurers";
 import { withCompanyRegime } from "@/lib/hr/regime";
 import { withSalaryHistory } from "@/lib/hr/salary";
@@ -58,7 +59,8 @@ export async function loadDataset(): Promise<HrData> {
     const withSubs = withSubscriptions(flagged);
     const withRegime = withCompanyRegime(withSubs);
     const migrated = withFifthCategory(withRegime);
-    const normalized2 = withSalaryHistory(migrated);
+    const withSalary = withSalaryHistory(migrated);
+    const normalized2 = withHealthHistory(withSalary);
     if (normalized2 !== rows[0].data) await saveDataset(normalized2);
     return normalized2;
   }

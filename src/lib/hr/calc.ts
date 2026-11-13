@@ -2,6 +2,7 @@ import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fn
 import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
 import { todayIso, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
 import { benefitShare, employeeRegimeFor, gratificationsPerYear, gratuityBonusRate, normalizeCompanyRegime } from "@/lib/hr/regime";
+import { healthForDate, healthForPeriod } from "@/lib/hr/health";
 import { rmvForDate, rmvForPeriod } from "@/lib/hr/rmv";
 import { salaryForDate, salaryForPeriod } from "@/lib/hr/salary";
 import { uitForPeriod } from "@/lib/hr/uit";
@@ -93,11 +94,13 @@ export function getCommercialMonthsAndDays(from: Date, to: Date): { months: numb
  * CTS. Se toma el valor que RR.HH. registró (el que se pagó realmente) o, si
  * falta, se estima como la sexta parte de sueldo + asignación familiar con la
  * bonificación extraordinaria (9% EsSalud / 6.75% EPS) que acompaña a la
- * gratificación (Ley 29351 / 30334).
+ * gratificación (Ley 29351 / 30334). La cobertura de salud es la vigente a la
+ * fecha del cierre del semestre cuya gratificación alimenta el sexto.
  */
-export function sixthOfGratuity(emp: Employee, ordinary: number): number {
+export function sixthOfGratuity(emp: Employee, ordinary: number, asOf: string = todayIso()): number {
   if (emp.sextoGratificacion != null) return round2(emp.sextoGratificacion);
-  return round2((ordinary * (1 + gratuityBonusRate(emp.healthInsurance))) / 6);
+  const rate = gratuityBonusRate(healthForDate(emp, asOf).healthInsurance);
+  return round2((ordinary * (1 + rate)) / 6);
 }
 
 /** Asignación familiar: 10% de la RMV vigente (Ley 25129). */
@@ -155,9 +158,11 @@ export function ctsSemester(
   }
 
   // 1/6 de la gratificación percibida, calculada con la remuneración vigente al
-  // cierre del semestre anterior (no la de hoy, que pudo subir).
+  // cierre del semestre anterior (no la de hoy, que pudo subir). La bonificación
+  // usa la cobertura de salud vigente a ese cierre.
+  const sextoClose = gratuityCloseIso(year, which);
   const sextoGratificacion = percibeSextoGratifi
-    ? sixthOfGratuity(emp, computableAt(emp, gratuityCloseIso(year, which)))
+    ? sixthOfGratuity(emp, computableAt(emp, sextoClose), sextoClose)
     : 0;
 
   const computable = ordinary + sextoGratificacion;
@@ -199,8 +204,10 @@ export function gratuityAmount(
 
   const rawGrat = (baseMonthly * (monthsWorked / 6)) * share;
   const grat = round2(rawGrat);
-  // Bonificación extraordinaria (Ley 29351 / 30334): 9% con EsSalud, 6.75% con EPS.
-  const bonif = round2(grat * gratuityBonusRate(emp.healthInsurance));
+  // Bonificación extraordinaria (Ley 29351 / 30334): 9% con EsSalud, 6.75% con
+  // EPS. La cobertura es la vigente al cierre del semestre de esta gratificación.
+  const rate = gratuityBonusRate(healthForDate(emp, closeIso).healthInsurance);
+  const bonif = round2(grat * rate);
 
   return { grat, bonif };
 }
@@ -248,7 +255,8 @@ export function calcularConsolidadoMasivo(
       
       let sextoVal = 0;
       if (incluyeSexto) {
-        sextoVal = sixthOfGratuity(emp, computableAt(emp, gratuityCloseIso(year, which)));
+        const sextoClose = gratuityCloseIso(year, which);
+        sextoVal = sixthOfGratuity(emp, computableAt(emp, sextoClose), sextoClose);
       }
       
       detalle = `Sueldo + AF: S/. ${ordinary.toFixed(2)} | 1/6 Grati: ${incluyeSexto ? `S/. ${sextoVal.toFixed(2)}` : "No"}`;
@@ -256,7 +264,7 @@ export function calcularConsolidadoMasivo(
       const which = tipo === "grati-julio" ? "julio" : "navidad";
       const res = gratuityAmount(emp, company, year, which);
       monto = res.grat + res.bonif;
-      const bonifPct = (gratuityBonusRate(emp.healthInsurance) * 100).toFixed(2).replace(/\.?0+$/, "");
+      const bonifPct = (gratuityBonusRate(healthForDate(emp, closeIso).healthInsurance) * 100).toFixed(2).replace(/\.?0+$/, "");
       detalle = `Grati: S/. ${res.grat.toFixed(2)} + Bono ${bonifPct}%: S/. ${res.bonif.toFixed(2)}`;
     }
 
@@ -466,9 +474,11 @@ export function calcPayslip(
 
   // Salud: EsSalud (9%) o EPS. La EPS se financia dentro del 9% de EsSalud, con
   // una porción (2.25% referencial) que se muestra aparte como aporte informativo.
+  // La cobertura es la vigente en el mes de la boleta (histórico de seguros).
   const esPracticante = regime === "practicante";
-  const epsInsurer = activeInsurer(company, emp.epsInsurerId);
-  const usingEps = emp.healthInsurance === "eps" && Boolean(epsInsurer);
+  const health = healthForPeriod(emp, period);
+  const epsInsurer = activeInsurer(company, health.epsInsurerId);
+  const usingEps = health.healthInsurance === "eps" && Boolean(epsInsurer);
   const essalud = esPracticante ? 0 : round2(essaludBase * company.essalud);
   push(
     "ESS",

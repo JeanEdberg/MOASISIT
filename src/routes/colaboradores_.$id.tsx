@@ -8,6 +8,7 @@ import { Shell } from "@/components/shell";
 import { Badge, Button, Modal } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { payslipFor, vacationBalance, vacationEarned, vacationPending, vacationTaken } from "@/lib/hr/calc";
+import { sortedHealthHistory } from "@/lib/hr/health";
 import { sortedSalaryHistory } from "@/lib/hr/salary";
 import {
   ageTone,
@@ -253,6 +254,33 @@ function FichaPage() {
                 <Info label="Seguro de Vida Ley" value={insurerName(emp.vidaLeyInsurerId)} />
               </div>
             </section>
+            {money && (emp.healthHistory?.length ?? 0) > 1 ? (
+              <section className="rounded-lg border border-line bg-surface p-4">
+                <h2 className="text-2xl">Histórico de cobertura de salud</h2>
+                <p className="mt-1 text-sm text-muted">
+                  Cobertura vigente en cada período. La bonificación de la gratificación usa la cobertura de su fecha
+                  (9% EsSalud / 6.75% EPS).
+                </p>
+                <ul className="mt-3 space-y-1 text-sm">
+                  {sortedHealthHistory(emp).map((c, i, arr) => {
+                    const until = arr[i + 1] ? `hasta ${shortDate(arr[i + 1].from)}` : "hasta hoy";
+                    const eps = c.healthInsurance === "eps" ? ` · ${insurerName(c.epsInsurerId)}` : "";
+                    return (
+                      <li key={c.from} className="flex justify-between gap-2">
+                        <span>
+                          {shortDate(c.from)} → {until}
+                          {c.note ? ` · ${c.note}` : ""}
+                        </span>
+                        <span>
+                          {HEALTH_INSURANCE_LABEL[c.healthInsurance]}
+                          {eps}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
             {isCompanyAdmin(data.viewer.mode) ? (
               <section className="rounded-lg border border-line bg-surface p-4">
                 <h2 className="text-2xl">Acceso a Moasist</h2>

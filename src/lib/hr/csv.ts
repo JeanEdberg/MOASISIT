@@ -200,6 +200,7 @@ export function parseEmployeeCsv(text: string, existingAreas: Area[], startCode:
       pension,
       cuspp,
       healthInsurance,
+      healthHistory: [{ from: hireDate, healthInsurance, epsInsurerId: null }],
       epsInsurerId: null,
       sctrInsurerId: null,
       vidaLeyInsurerId: null,

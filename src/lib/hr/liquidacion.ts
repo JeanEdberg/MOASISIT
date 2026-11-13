@@ -21,6 +21,7 @@ import { ctsSemester, effectiveRegime, gratuityAmount, vacationBalance, vacation
 import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fns";
 import { todayIso, parseDay, round2 } from "@/lib/hr/format";
 import { gratuityBonusRate } from "@/lib/hr/regime";
+import { healthForDate } from "@/lib/hr/health";
 import { rmvForDate } from "@/lib/hr/rmv";
 import { salaryForDate } from "@/lib/hr/salary";
 import type { Company, Employee, Regime, TimeRequest } from "@/lib/hr/types";
@@ -144,7 +145,9 @@ export function liquidationOf(
 
   push("CTS", "CTS trunca", `Remuneración computable S/ ${computable.toFixed(2)}`, cts);
   push("GRA", `Gratificación trunca (${gratiLabel})`, `S/ ${computable.toFixed(2)} × meses completos / 6`, grat);
-  push("BON", "Bonificación extraordinaria", `Aporte de salud sobre la gratificación (${(gratuityBonusRate(emp.healthInsurance) * 100).toFixed(2)}%)`, bonif);
+  const gratClose = gratPeriod.which === "julio" ? `${gratPeriod.year}-06-30` : `${gratPeriod.year}-12-31`;
+  const bonifRate = gratuityBonusRate(healthForDate(emp, gratClose).healthInsurance);
+  push("BON", "Bonificación extraordinaria", `Aporte de salud sobre la gratificación (${(bonifRate * 100).toFixed(2)}%)`, bonif);
   push(
     "VAC",
     "Vacaciones truncas y no gozadas",

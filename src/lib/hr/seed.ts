@@ -188,6 +188,10 @@ function buildPeople(): Employee[] {
       pension: "integra",
       cuspp: "660661RCANU6",
       healthInsurance: "eps",
+      healthHistory: [
+        { from: "2026-01-01", healthInsurance: "essalud", note: "Cobertura de ingreso" },
+        { from: "2026-09-01", healthInsurance: "eps", epsInsurerId: "inmoa-eps-sanitas", note: "Alta en EPS" },
+      ],
       epsInsurerId: "inmoa-eps-sanitas",
       sctrInsurerId: "inmoa-sctr-pacifico",
       vidaLeyInsurerId: "inmoa-vida-rimac",
@@ -229,8 +233,12 @@ function buildPeople(): Employee[] {
       sextoGratificacion: 417.83,
       pension: "habitat",
       cuspp: "620123HABIT4",
-      healthInsurance: "essalud",
-      epsInsurerId: null,
+      healthInsurance: "eps",
+      healthHistory: [
+        { from: "2025-12-01", healthInsurance: "essalud", note: "Cobertura de ingreso" },
+        { from: "2026-09-01", healthInsurance: "eps", epsInsurerId: "inmoa-eps-sanitas", note: "Alta en EPS" },
+      ],
+      epsInsurerId: "inmoa-eps-sanitas",
       sctrInsurerId: "inmoa-sctr-pacifico",
       vidaLeyInsurerId: "inmoa-vida-rimac",
       workMode: "itinerante", // Itinerante / Viajero frecuente

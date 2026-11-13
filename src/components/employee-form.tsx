@@ -7,13 +7,16 @@ import {
   WORK_MODE_LABEL,
   todayIso,
 } from "@/lib/hr/format";
+import { sortedHealthHistory } from "@/lib/hr/health";
 import { sortedSalaryHistory } from "@/lib/hr/salary";
 import type {
   Area,
   Company,
   ContractType,
   Employee,
+  HealthChange,
   HealthInsurance,
+  Insurer,
   Pension,
   Regime,
   SalaryChange,
@@ -38,6 +41,10 @@ export function validateDraft(d: EmployeeDraft): string | null {
   for (const c of d.salaryHistory ?? []) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(c.from)) return "Hay un cambio de sueldo sin fecha válida.";
     if (!Number.isFinite(c.salary) || c.salary < 0) return "Hay un cambio de sueldo con monto inválido.";
+  }
+  for (const c of d.healthHistory ?? []) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(c.from)) return "Hay un cambio de cobertura sin fecha válida.";
+    if (c.healthInsurance === "eps" && !c.epsInsurerId) return "Elige la EPS de un cambio de cobertura.";
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.hireDate)) return "La fecha de ingreso no es válida.";
   if (d.contract === "plazo_fijo" && !d.endDate) return "Indica la fecha de fin para el contrato a plazo fijo.";
@@ -123,6 +130,116 @@ function SalaryHistoryEditor({
   );
 }
 
+/**
+ * Editor del histórico de cobertura de salud: cobertura de ingreso y cada cambio
+ * (EsSalud ↔ EPS) con su fecha. La cobertura vigente (el selector "Cobertura de
+ * salud" de arriba) es el último cambio del histórico. Las gratificaciones usan
+ * la cobertura que regía al cierre de su semestre (9% EsSalud / 6.75% EPS).
+ */
+function HealthHistoryEditor({
+  value,
+  epsOptions,
+  onChange,
+}: {
+  value: EmployeeDraft;
+  epsOptions: Insurer[];
+  onChange: (next: EmployeeDraft) => void;
+}) {
+  const history = sortedHealthHistory(value);
+  const setHistory = (next: HealthChange[]) => onChange({ ...value, healthHistory: next });
+
+  const addChange = () => {
+    const last = history[history.length - 1];
+    setHistory([
+      ...history,
+      {
+        from: todayIso(),
+        healthInsurance: last?.healthInsurance ?? value.healthInsurance,
+        epsInsurerId: last?.epsInsurerId ?? value.epsInsurerId ?? epsOptions[0]?.id ?? null,
+      },
+    ]);
+  };
+  const update = (index: number, patch: Partial<HealthChange>) =>
+    setHistory(history.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  const remove = (index: number) => setHistory(history.filter((_, i) => i !== index));
+
+  return (
+    <div className="sm:col-span-2 rounded-md border border-line bg-surface-2 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-ink">Histórico de cobertura de salud</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Registra la cobertura de ingreso y cada cambio (EsSalud ↔ EPS) con su fecha. Las gratificaciones de
+            períodos anteriores usan la cobertura que regía en su fecha (9% EsSalud / 6.75% EPS).
+          </p>
+        </div>
+        <Button tone="line" onClick={addChange}>
+          + Cambio de cobertura
+        </Button>
+      </div>
+      {history.length === 0 ? (
+        <p className="mt-3 text-xs text-muted">
+          Aún no hay cambios. La cobertura de arriba se usará desde {value.hireDate}.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {history.map((c, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-2">
+              <input
+                className={`${fieldClass} min-h-9 max-w-[11rem]`}
+                type="date"
+                value={c.from}
+                onChange={(e) => update(i, { from: e.target.value })}
+              />
+              <select
+                className={`${fieldClass} min-h-9 max-w-[9rem]`}
+                value={c.healthInsurance}
+                onChange={(e) => {
+                  const healthInsurance = e.target.value as HealthInsurance;
+                  update(i, {
+                    healthInsurance,
+                    epsInsurerId:
+                      healthInsurance === "eps" ? c.epsInsurerId ?? epsOptions[0]?.id ?? null : null,
+                  });
+                }}
+              >
+                {(Object.keys(HEALTH_INSURANCE_LABEL) as HealthInsurance[]).map((k) => (
+                  <option key={k} value={k}>
+                    {HEALTH_INSURANCE_LABEL[k]}
+                  </option>
+                ))}
+              </select>
+              <select
+                className={`${fieldClass} min-h-9 max-w-[11rem]`}
+                value={c.epsInsurerId ?? ""}
+                disabled={c.healthInsurance !== "eps"}
+                onChange={(e) => update(i, { epsInsurerId: e.target.value || null })}
+              >
+                <option value="">Sin EPS</option>
+                {epsOptions.map((ins) => (
+                  <option key={ins.id} value={ins.id}>
+                    {ins.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                className={`${fieldClass} min-h-9 flex-1`}
+                placeholder="Motivo (opcional)"
+                value={c.note ?? ""}
+                onChange={(e) => update(i, { note: e.target.value || undefined })}
+              />
+              <Button tone="ghost" className="min-h-9 px-2" onClick={() => remove(i)} aria-label="Quitar cambio">
+                Quitar
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+
 export function EmployeeForm({
   value,
   areas,
@@ -142,6 +259,7 @@ export function EmployeeForm({
   const set = <K extends keyof EmployeeDraft>(key: K, v: EmployeeDraft[K]) => onChange({ ...value, [key]: v });
 
   const history = sortedSalaryHistory(value);
+  const healthHistory = sortedHealthHistory(value);
   const activeCompany = companies?.find((c) => c.id === value.companyId);
   const insurers = activeCompany?.insurers ?? [];
   const epsOptions = insurers.filter((i) => i.kind === "eps" && i.active);
@@ -344,10 +462,14 @@ export function EmployeeForm({
           Define la cobertura de salud, el SCTR y el Seguro de Vida Ley. Las tasas se configuran por aseguradora en Empresa.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <Field label="Cobertura de salud">
+          <Field
+            label="Cobertura de salud"
+            hint={healthHistory.length > 0 ? "Es el último cambio del histórico (edítalo abajo)." : undefined}
+          >
             <select
               className={fieldClass}
-              value={value.healthInsurance}
+              value={healthHistory.at(-1)?.healthInsurance ?? value.healthInsurance}
+              disabled={healthHistory.length > 0}
               onChange={(e) => {
                 const healthInsurance = e.target.value as HealthInsurance;
                 onChange({
@@ -367,8 +489,8 @@ export function EmployeeForm({
           <Field label="EPS" hint="Solo si la cobertura es EPS.">
             <select
               className={fieldClass}
-              value={value.epsInsurerId ?? ""}
-              disabled={value.healthInsurance !== "eps"}
+              value={(healthHistory.at(-1)?.epsInsurerId ?? value.epsInsurerId) ?? ""}
+              disabled={(healthHistory.at(-1)?.healthInsurance ?? value.healthInsurance) !== "eps"}
               onChange={(e) => set("epsInsurerId", e.target.value || null)}
             >
               <option value="">Sin EPS</option>
@@ -407,6 +529,9 @@ export function EmployeeForm({
               ))}
             </select>
           </Field>
+        </div>
+        <div className="mt-3 grid gap-3">
+          <HealthHistoryEditor value={value} epsOptions={epsOptions} onChange={onChange} />
         </div>
       </div>
 
