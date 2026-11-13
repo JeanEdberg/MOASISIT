@@ -85,6 +85,18 @@ export function getCommercialMonthsAndDays(from: Date, to: Date): { months: numb
   return { months, days };
 }
 
+/**
+ * 1/6 de la gratificación que se incluye en la remuneración computable de la
+ * CTS. Se toma el valor que RR.HH. registró (el que se pagó realmente) o, si
+ * falta, se estima como la sexta parte de sueldo + asignación familiar con la
+ * bonificación extraordinaria (9% EsSalud / 6.75% EPS) que acompaña a la
+ * gratificación (Ley 29351 / 30334).
+ */
+export function sixthOfGratuity(emp: Employee, ordinary: number): number {
+  if (emp.sextoGratificacion != null) return round2(emp.sextoGratificacion);
+  return round2((ordinary * (1 + gratuityBonusRate(emp.healthInsurance))) / 6);
+}
+
 export function ctsSemester(
   emp: Employee,
   company: Company,
@@ -116,11 +128,8 @@ export function ctsSemester(
     if (hire >= limiteGratiNavidad) percibeSextoGratifi = false;
   }
 
-  // 1/6 de Gratificación percibida
-  let sextoGratificacion = 0;
-  if (percibeSextoGratifi) {
-    sextoGratificacion = emp.sextoGratificacion != null ? emp.sextoGratificacion : round2(ordinary / 6);
-  }
+  // 1/6 de Gratificación percibida (incluye la bonificación extraordinaria)
+  const sextoGratificacion = percibeSextoGratifi ? sixthOfGratuity(emp, ordinary) : 0;
 
   const computable = ordinary + sextoGratificacion;
   const share = benefitShare(normalizeCompanyRegime(company.regime));
@@ -204,7 +213,7 @@ export function calcularConsolidadoMasivo(
       
       let sextoVal = 0;
       if (incluyeSexto) {
-        sextoVal = emp.sextoGratificacion != null ? emp.sextoGratificacion : round2(ordinary / 6);
+        sextoVal = sixthOfGratuity(emp, ordinary);
       }
       
       detalle = `Sueldo + AF: S/. ${ordinary.toFixed(2)} | 1/6 Grati: ${incluyeSexto ? `S/. ${sextoVal.toFixed(2)}` : "No"}`;
@@ -212,7 +221,8 @@ export function calcularConsolidadoMasivo(
       const which = tipo === "grati-julio" ? "julio" : "navidad";
       const res = gratuityAmount(emp, company, year, which);
       monto = res.grat + res.bonif;
-      detalle = `Grati: S/. ${res.grat.toFixed(2)} + Bono 9%: S/. ${res.bonif.toFixed(2)}`;
+      const bonifPct = (gratuityBonusRate(emp.healthInsurance) * 100).toFixed(2).replace(/\.?0+$/, "");
+      detalle = `Grati: S/. ${res.grat.toFixed(2)} + Bono ${bonifPct}%: S/. ${res.bonif.toFixed(2)}`;
     }
 
     const nombreCompleto = fullName(emp);

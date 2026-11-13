@@ -127,8 +127,9 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
 - **Sin DNIs incrustados en el código**: `calc.ts` tenía casos especiales por
   DNI (`if (emp.dni === "47090484") …`) que además filtraban PII al cliente.
   Ahora el 1/6 de gratificación por CTS viene del campo del colaborador
-  `Employee.sextoGratificacion` (opcional; si falta, `sueldo/6`). No volver a
-  ramificar por DNI.
+  `Employee.sextoGratificacion` (opcional; si falta, se estima con
+  `sixthOfGratuity`: sueldo + AF con la bonificación extraordinaria del 9%
+  EsSalud / 6.75% EPS). No volver a ramificar por DNI.
 - **`updateCompany` edita `companies`** (la fuente de verdad), no solo el
   snapshot `data.company` de la vista. La acción acepta `companyId?` y el
   servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para
