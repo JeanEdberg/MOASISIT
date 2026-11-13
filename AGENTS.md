@@ -130,6 +130,14 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `Employee.sextoGratificacion` (opcional; si falta, se estima con
   `sixthOfGratuity`: sueldo + AF con la bonificación extraordinaria del 9%
   EsSalud / 6.75% EPS). No volver a ramificar por DNI.
+- **RMV histórica (asignación familiar)**: la asignación familiar es el 10% de
+  la RMV (Ley 25129). Como se generan boletas y beneficios de períodos pasados,
+  el cálculo NO usa la RMV de la empresa sino la **vigente en el período**
+  (`src/lib/hr/rmv.ts`: `rmvForDate` / `rmvForPeriod`). Regla: boletas y
+  liquidación usan la RMV del mes/fecha; CTS y gratificación, la RMV al cierre
+  del semestre (30/04, 30/06, 31/10, 31/12). La RMV del histórico es la 1230
+  desde 01/10/2026 (antes 1130 desde 2025). Mantener `RMV_HISTORY` al día con
+  los decretos supremos del MTPE.
 - **`updateCompany` edita `companies`** (la fuente de verdad), no solo el
   snapshot `data.company` de la vista. La acción acepta `companyId?` y el
   servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para

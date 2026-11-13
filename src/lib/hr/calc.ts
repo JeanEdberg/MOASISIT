@@ -2,6 +2,7 @@ import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fn
 import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
 import { todayIso, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
 import { benefitShare, employeeRegimeFor, gratificationsPerYear, gratuityBonusRate, normalizeCompanyRegime } from "@/lib/hr/regime";
+import { rmvForDate, rmvForPeriod } from "@/lib/hr/rmv";
 import type {
   Attendance,
   Company,
@@ -97,6 +98,11 @@ export function sixthOfGratuity(emp: Employee, ordinary: number): number {
   return round2((ordinary * (1 + gratuityBonusRate(emp.healthInsurance))) / 6);
 }
 
+/** Asignación familiar: 10% de la RMV vigente (Ley 25129). */
+function familyAllowanceFor(emp: Employee, rmv: number): number {
+  return emp.familyAllowance ? rmv * 0.1 : 0;
+}
+
 export function ctsSemester(
   emp: Employee,
   company: Company,
@@ -105,8 +111,9 @@ export function ctsSemester(
 ): number {
   const regime = effectiveRegime(company, emp);
   if (regime === "practicante" || regime === "micro") return 0;
+  const closeIso = which === "nov" ? `${year}-10-31` : `${year}-04-30`;
   const start = which === "nov" ? parseDay(`${year}-05-01`) : parseDay(`${year - 1}-11-01`);
-  const end = which === "nov" ? parseDay(`${year}-10-31`) : parseDay(`${year}-04-30`);
+  const end = parseDay(closeIso);
   const hire = parseDay(emp.hireDate);
   const exit = emp.endDate ? parseDay(emp.endDate) : null;
   const from = hire > start ? hire : start;
@@ -115,7 +122,8 @@ export function ctsSemester(
   const { months, days } = getCommercialMonthsAndDays(from, to);
   if (months === 0 && days === 0) return 0;
 
-  const af = emp.familyAllowance ? company.rmv * 0.1 : 0;
+  // La asignación familiar usa la RMV vigente al cierre del semestre.
+  const af = familyAllowanceFor(emp, rmvForDate(closeIso));
   const ordinary = emp.salary + af;
 
   // Validación de percepción de gratificación en el semestre anterior (para el sexto de CTS)
@@ -151,7 +159,8 @@ export function gratuityAmount(
   if (regime === "practicante" || regime === "micro") return { grat: 0, bonif: 0 };
 
   const start = which === "julio" ? parseDay(`${year}-01-01`) : parseDay(`${year}-07-01`);
-  const end = which === "julio" ? parseDay(`${year}-06-30`) : parseDay(`${year}-12-31`);
+  const closeIso = which === "julio" ? `${year}-06-30` : `${year}-12-31`;
+  const end = parseDay(closeIso);
   const hire = parseDay(emp.hireDate);
   const exit = emp.endDate ? parseDay(emp.endDate) : null;
   const from = hire > start ? hire : start;
@@ -163,7 +172,8 @@ export function gratuityAmount(
   const monthsWorked = Math.min(6, months);
   if (monthsWorked <= 0) return { grat: 0, bonif: 0 };
 
-  const af = emp.familyAllowance ? company.rmv * 0.1 : 0;
+  // La asignación familiar usa la RMV vigente al cierre del semestre.
+  const af = familyAllowanceFor(emp, rmvForDate(closeIso));
   const baseMonthly = emp.salary + af;
   const share = benefitShare(normalizeCompanyRegime(company.regime));
 
@@ -202,7 +212,13 @@ export function calcularConsolidadoMasivo(
   return employees.map((emp) => {
     let monto = 0;
     let detalle = "";
-    const af = emp.familyAllowance ? company.rmv * 0.1 : 0;
+    // La asignación familiar usa la RMV vigente al cierre del período calculado.
+    const closeIso =
+      tipo === "cts-nov" ? `${year}-10-31`
+      : tipo === "cts-may" ? `${year}-04-30`
+      : tipo === "grati-julio" ? `${year}-06-30`
+      : `${year}-12-31`;
+    const af = familyAllowanceFor(emp, rmvForDate(closeIso));
     const ordinary = emp.salary + af;
 
     if (tipo === "cts-may" || tipo === "cts-nov") {
@@ -349,7 +365,8 @@ export function calcPayslip(
   const hourly = emp.salary / 30 / 8;
 
   const basic = round2(emp.salary * factor);
-  const af = emp.familyAllowance ? round2(company.rmv * 0.1 * factor) : 0;
+  // La asignación familiar usa la RMV vigente en el mes de la boleta.
+  const af = emp.familyAllowance ? round2(rmvForPeriod(period) * 0.1 * factor) : 0;
   const he25 = round2(hourly * 1.25 * extra25);
   const he35 = round2(hourly * 1.35 * extra35);
   const extraPay = round2(he25 + he35);

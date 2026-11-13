@@ -79,3 +79,13 @@ test("ctsSemester incluye la bonificación en el 1/6 de la remuneración computa
   // CTS = 3545 * 6/12 = 1772.50. Si se omitiera el 9%, daría (3000 + 500)/2 = 1750.
   assert.equal(ctsSemester(emp(), COMPANY, 2026, "nov"), 1772.5);
 });
+
+test("la asignación familiar usa la RMV vigente del período, no la última", () => {
+  const conHijos = emp({ familyAllowance: true });
+  // Nov 2024 (may–oct 2024): RMV 1025 → AF = 102.50; computable 3102.50;
+  // 1/6 con bono = 3102.50*1.09/6 = 563.62; CTS = (3102.50+563.62)/2 = 1833.06.
+  assert.equal(ctsSemester(conHijos, COMPANY, 2024, "nov"), 1833.06);
+  // Nov 2026 (may–oct 2026): RMV 1230 → AF = 123; computable 3123;
+  // 1/6 = 3123*1.09/6 = 567.35; CTS = (3123+567.35)/2 = 1845.18.
+  assert.equal(ctsSemester(conHijos, COMPANY, 2026, "nov"), 1845.18);
+});

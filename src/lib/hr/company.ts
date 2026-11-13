@@ -1,16 +1,18 @@
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { DEFAULT_COMPANY_REGIME, normalizeCompanyRegime, requiresMypeAccreditation } from "@/lib/hr/regime";
+import { RMV_CURRENT } from "@/lib/hr/rmv";
 import { normalizeRuc } from "@/lib/hr/ruc";
 import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
 import type { Company, CompanyRegime } from "@/lib/hr/types";
 
 /**
  * Parámetros legales por defecto (referencia 2026). Varían por norma, no por
- * empresa; se guardan en cada empresa para que RR.HH. pueda ajustarlos.
+ * empresa; se guardan en cada empresa para que RR.HH. pueda ajustarlos. La RMV
+ * se mantiene solo como referencia: el cálculo aplica el histórico por período.
  */
 export const LEGAL_DEFAULTS = {
-  rmv: 1230,
+  rmv: RMV_CURRENT,
   uit: 5500,
   fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,

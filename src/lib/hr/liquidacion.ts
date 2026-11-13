@@ -21,6 +21,7 @@ import { ctsSemester, effectiveRegime, gratuityAmount, vacationBalance, vacation
 import { addMonths, differenceInCalendarDays, differenceInMonths } from "date-fns";
 import { todayIso, parseDay, round2 } from "@/lib/hr/format";
 import { gratuityBonusRate } from "@/lib/hr/regime";
+import { rmvForDate } from "@/lib/hr/rmv";
 import type { Company, Employee, Regime, TimeRequest } from "@/lib/hr/types";
 
 export type LiquidationItem = {
@@ -123,7 +124,8 @@ export function liquidationOf(
   const { grat, bonif } = gratuityAmount(empAt, company, gratPeriod.year, gratPeriod.which);
   const vac = vacationLiquidation(emp, requests, asOf, company);
 
-  const af = emp.familyAllowance ? company.rmv * 0.1 : 0;
+  // La asignación familiar usa la RMV vigente a la fecha de cese.
+  const af = emp.familyAllowance ? rmvForDate(asOf) * 0.1 : 0;
   const computable = round2(emp.salary + af);
   const gratiLabel = gratPeriod.which === "julio" ? "Fiestas Patrias" : "Navidad";
 

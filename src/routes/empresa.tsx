@@ -11,6 +11,7 @@ import { COMPANY_REGIME_LABEL, INSURER_KIND_LABEL, uid } from "@/lib/hr/format";
 import { fifthCategoryParamsOf } from "@/lib/hr/fifth";
 import { readLogoFile } from "@/lib/hr/logo";
 import { COMPANY_REGIMES, mypeAccreditationWarning, regimeBenefits, requiresMypeAccreditation } from "@/lib/hr/regime";
+import { RMV_CURRENT, RMV_CURRENT_FROM } from "@/lib/hr/rmv";
 import { useHr } from "@/lib/hr/store";
 import type { AfpFund, Company, CompanyRegime, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
 
@@ -321,8 +322,11 @@ function CompanyPage() {
         <h2 className="text-2xl">Parámetros de planilla</h2>
         <p className="mt-1 text-sm text-muted">Ajusta estas tasas cuando cambie la norma. El cálculo es referencial y no presenta el PLAME.</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <Field label="RMV (S/)">
-            <input className={fieldClass} value={String(company.rmv)} onChange={(e) => setNum("rmv", e.target.value)} />
+          <Field
+            label="RMV vigente (S/)"
+            hint={`Automática por período. Hoy S/ ${RMV_CURRENT.toLocaleString("es-PE")} (desde ${RMV_CURRENT_FROM}); las boletas anteriores usan la RMV de su fecha.`}
+          >
+            <input className={fieldClass} value={String(company.rmv)} readOnly disabled />
           </Field>
           <Field label="UIT (S/)">
             <input className={fieldClass} value={String(company.uit)} onChange={(e) => setNum("uit", e.target.value)} />

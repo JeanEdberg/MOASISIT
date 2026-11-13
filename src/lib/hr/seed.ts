@@ -1,6 +1,7 @@
 import { vacationBalance, vacationEarned, livePayslips } from "@/lib/hr/calc";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { catalogInsurers } from "@/lib/hr/insurers";
+import { RMV_CURRENT } from "@/lib/hr/rmv";
 import type {
   Attendance,
   Company,
@@ -59,7 +60,7 @@ export function withDemoFlags(data: HrData): HrData {
 
 /** Parámetros legales compartidos (varían por norma, no por empresa). */
 const LEGAL = {
-  rmv: 1230,
+  rmv: RMV_CURRENT,
   uit: 5500,
   fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,
