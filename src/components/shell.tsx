@@ -11,6 +11,7 @@ import {
   LogOut,
   Network,
   SlidersHorizontal,
+  Upload,
   UserRound,
   Users,
   type LucideIcon,
@@ -35,6 +36,7 @@ type PlainTo =
   | "/planilla"
   | "/liquidacion"
   | "/consolidado"
+  | "/importacion"
   | "/documentos"
   | "/empresa"
   | "/manual";
@@ -50,6 +52,7 @@ const RRHH: Item[] = [
   { to: "/planilla", label: "Planilla", icon: Landmark },
   { to: "/liquidacion", label: "Liquidación", icon: Calculator },
   { to: "/consolidado", label: "Consolidado Masivo", icon: Calculator },
+  { to: "/importacion", label: "Importación", icon: Upload },
   { to: "/documentos", label: "Documentos", icon: Files },
   { to: "/empresa", label: "Empresa", icon: SlidersHorizontal },
   { to: "/manual", label: "Manual", icon: BookOpen },

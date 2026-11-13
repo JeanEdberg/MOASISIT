@@ -319,6 +319,19 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   después en el archivo). La descarga agrega BOM UTF-8 para que Excel muestre
   bien los acentos. Botones en `/colaboradores` (Plantilla CSV / Importar CSV,
   solo admin).
+- **Importación SUNAT (Anexo 3)**: la pestaña `/importacion` (menú RR.HH.)
+  muestra las **30 plantillas de importación** de T-Registro y PLAME con el
+  nombre exacto del archivo, el destino y todos los campos (N°, descripción,
+  tipo, longitud y observaciones). El catálogo vive en
+  `src/lib/hr/sunat-imports.ts` (`IMPORT_STRUCTURES`), tipado y agrupado por
+  `destination` (`T-Registro`, `PLAME`, `Derechohabientes`).
+  `resolveFileName`/`resolveFileNames` arman el nombre real con el RUC, el
+  período (`ffffaaaamm###########.ext`) y, para derechohabientes, la fecha
+  (`RD_<RUC>_DDMMAAAA_ALTA.TXT`). Cada tarjeta abre un modal con la tabla de
+  campos y descarga una **guía CSV** (`buildFieldGuideCsv`): es ayuda de
+  digitación, no el archivo para subir a SUNAT (ese va sin encabezado). Al
+  agregar una estructura nueva, respeta el orden del Anexo 3 y numera los
+  campos desde 1 (hay un test que lo valida).
 - **Datos de ejemplo (`isDemo`)**: las personas del seed llevan la marca
   `isDemo: true` (`person()` en `seed.ts`). "Quitar personas de ejemplo" borra
   **solo** esas personas — de **todas** las empresas — y no por dominio de correo,

@@ -16,6 +16,7 @@ import { Route as ConsolidadoRouteImport } from './routes/consolidado'
 import { Route as ConsolidadoAsistenciaRouteImport } from './routes/consolidado-asistencia'
 import { Route as DocumentosRouteImport } from './routes/documentos'
 import { Route as EmpresaRouteImport } from './routes/empresa'
+import { Route as ImportacionRouteImport } from './routes/importacion'
 import { Route as LiquidacionRouteImport } from './routes/liquidacion'
 import { Route as ManualRouteImport } from './routes/manual'
 import { Route as OrganizacionRouteImport } from './routes/organizacion'
@@ -58,6 +59,11 @@ const EmpresaRoute = EmpresaRouteImport.update({
   path: '/empresa',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImportacionRoute = ImportacionRouteImport.update({
+  id: '/importacion',
+  path: '/importacion',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LiquidacionRoute = LiquidacionRouteImport.update({
   id: '/liquidacion',
   path: '/liquidacion',
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/importacion': typeof ImportacionRoute
   '/liquidacion': typeof LiquidacionRoute
   '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
@@ -112,6 +119,7 @@ export interface FileRoutesByTo {
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/importacion': typeof ImportacionRoute
   '/liquidacion': typeof LiquidacionRoute
   '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
@@ -128,6 +136,7 @@ export interface FileRoutesById {
   '/consolidado-asistencia': typeof ConsolidadoAsistenciaRoute
   '/documentos': typeof DocumentosRoute
   '/empresa': typeof EmpresaRoute
+  '/importacion': typeof ImportacionRoute
   '/liquidacion': typeof LiquidacionRoute
   '/manual': typeof ManualRoute
   '/organizacion': typeof OrganizacionRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/importacion'
     | '/liquidacion'
     | '/manual'
     | '/organizacion'
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/importacion'
     | '/liquidacion'
     | '/manual'
     | '/organizacion'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/consolidado-asistencia'
     | '/documentos'
     | '/empresa'
+    | '/importacion'
     | '/liquidacion'
     | '/manual'
     | '/organizacion'
@@ -191,6 +203,7 @@ export interface RootRouteChildren {
   ConsolidadoAsistenciaRoute: typeof ConsolidadoAsistenciaRoute
   DocumentosRoute: typeof DocumentosRoute
   EmpresaRoute: typeof EmpresaRoute
+  ImportacionRoute: typeof ImportacionRoute
   LiquidacionRoute: typeof LiquidacionRoute
   ManualRoute: typeof ManualRoute
   OrganizacionRoute: typeof OrganizacionRoute
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmpresaRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/importacion': {
+      id: '/importacion'
+      path: '/importacion'
+      fullPath: '/importacion'
+      preLoaderRoute: typeof ImportacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/liquidacion': {
       id: '/liquidacion'
       path: '/liquidacion'
@@ -303,6 +323,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConsolidadoAsistenciaRoute: ConsolidadoAsistenciaRoute,
   DocumentosRoute: DocumentosRoute,
   EmpresaRoute: EmpresaRoute,
+  ImportacionRoute: ImportacionRoute,
   LiquidacionRoute: LiquidacionRoute,
   ManualRoute: ManualRoute,
   OrganizacionRoute: OrganizacionRoute,
