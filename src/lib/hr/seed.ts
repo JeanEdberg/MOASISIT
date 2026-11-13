@@ -2,6 +2,7 @@ import { vacationBalance, vacationEarned, livePayslips } from "@/lib/hr/calc";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { catalogInsurers } from "@/lib/hr/insurers";
 import { RMV_CURRENT } from "@/lib/hr/rmv";
+import { UIT_CURRENT } from "@/lib/hr/uit";
 import type {
   Attendance,
   Company,
@@ -61,7 +62,7 @@ export function withDemoFlags(data: HrData): HrData {
 /** Parámetros legales compartidos (varían por norma, no por empresa). */
 const LEGAL = {
   rmv: RMV_CURRENT,
-  uit: 5500,
+  uit: UIT_CURRENT,
   fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,
   essalud: 0.09,
@@ -178,6 +179,10 @@ function buildPeople(): Employee[] {
       contract: "indefinido",
       regime: "general",
       salary: 3700,
+      salaryHistory: [
+        { from: "2026-01-01", salary: 3500, note: "Sueldo de ingreso" },
+        { from: "2026-10-01", salary: 3700, note: "Aumento" },
+      ],
       familyAllowance: false,
       sextoGratificacion: 635.83,
       pension: "integra",

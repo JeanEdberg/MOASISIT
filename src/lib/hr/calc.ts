@@ -3,6 +3,8 @@ import { fifthCategoryParamsOf, projectFifthCategory } from "@/lib/hr/fifth";
 import { todayIso, inclusiveDays, parseDay, round2, fullName } from "@/lib/hr/format";
 import { benefitShare, employeeRegimeFor, gratificationsPerYear, gratuityBonusRate, normalizeCompanyRegime } from "@/lib/hr/regime";
 import { rmvForDate, rmvForPeriod } from "@/lib/hr/rmv";
+import { salaryForDate, salaryForPeriod } from "@/lib/hr/salary";
+import { uitForPeriod } from "@/lib/hr/uit";
 import type {
   Attendance,
   Company,
@@ -103,6 +105,23 @@ function familyAllowanceFor(emp: Employee, rmv: number): number {
   return emp.familyAllowance ? rmv * 0.1 : 0;
 }
 
+/**
+ * Remuneración computable (sueldo + asignación familiar) vigente al cierre de un
+ * período. El sueldo sale del histórico de remuneraciones y la asignación
+ * familiar, de la RMV vigente a esa fecha. Si el colaborador cesó antes del
+ * cierre, se usa la remuneración a la fecha de cese.
+ */
+function computableAt(emp: Employee, closeIso: string): number {
+  const endIso = emp.endDate ? String(emp.endDate).slice(0, 10) : null;
+  const day = endIso && endIso < closeIso ? endIso : closeIso;
+  return salaryForDate(emp, day) + familyAllowanceFor(emp, rmvForDate(day));
+}
+
+/** Fecha de cierre del semestre cuya gratificación alimenta el 1/6 de la CTS. */
+function gratuityCloseIso(year: number, which: "may" | "nov"): string {
+  return which === "nov" ? `${year}-06-30` : `${year - 1}-12-31`;
+}
+
 export function ctsSemester(
   emp: Employee,
   company: Company,
@@ -122,9 +141,8 @@ export function ctsSemester(
   const { months, days } = getCommercialMonthsAndDays(from, to);
   if (months === 0 && days === 0) return 0;
 
-  // La asignación familiar usa la RMV vigente al cierre del semestre.
-  const af = familyAllowanceFor(emp, rmvForDate(closeIso));
-  const ordinary = emp.salary + af;
+  // Remuneración computable: sueldo + AF vigentes al cierre del semestre.
+  const ordinary = computableAt(emp, closeIso);
 
   // Validación de percepción de gratificación en el semestre anterior (para el sexto de CTS)
   let percibeSextoGratifi = true;
@@ -136,8 +154,11 @@ export function ctsSemester(
     if (hire >= limiteGratiNavidad) percibeSextoGratifi = false;
   }
 
-  // 1/6 de Gratificación percibida (incluye la bonificación extraordinaria)
-  const sextoGratificacion = percibeSextoGratifi ? sixthOfGratuity(emp, ordinary) : 0;
+  // 1/6 de la gratificación percibida, calculada con la remuneración vigente al
+  // cierre del semestre anterior (no la de hoy, que pudo subir).
+  const sextoGratificacion = percibeSextoGratifi
+    ? sixthOfGratuity(emp, computableAt(emp, gratuityCloseIso(year, which)))
+    : 0;
 
   const computable = ordinary + sextoGratificacion;
   const share = benefitShare(normalizeCompanyRegime(company.regime));
@@ -172,9 +193,8 @@ export function gratuityAmount(
   const monthsWorked = Math.min(6, months);
   if (monthsWorked <= 0) return { grat: 0, bonif: 0 };
 
-  // La asignación familiar usa la RMV vigente al cierre del semestre.
-  const af = familyAllowanceFor(emp, rmvForDate(closeIso));
-  const baseMonthly = emp.salary + af;
+  // Remuneración computable: sueldo + AF vigentes al cierre del semestre.
+  const baseMonthly = computableAt(emp, closeIso);
   const share = benefitShare(normalizeCompanyRegime(company.regime));
 
   const rawGrat = (baseMonthly * (monthsWorked / 6)) * share;
@@ -212,14 +232,13 @@ export function calcularConsolidadoMasivo(
   return employees.map((emp) => {
     let monto = 0;
     let detalle = "";
-    // La asignación familiar usa la RMV vigente al cierre del período calculado.
+    // Remuneración computable vigente al cierre del período calculado.
     const closeIso =
       tipo === "cts-nov" ? `${year}-10-31`
       : tipo === "cts-may" ? `${year}-04-30`
       : tipo === "grati-julio" ? `${year}-06-30`
       : `${year}-12-31`;
-    const af = familyAllowanceFor(emp, rmvForDate(closeIso));
-    const ordinary = emp.salary + af;
+    const ordinary = computableAt(emp, closeIso);
 
     if (tipo === "cts-may" || tipo === "cts-nov") {
       const which = tipo === "cts-nov" ? "nov" : "may";
@@ -229,7 +248,7 @@ export function calcularConsolidadoMasivo(
       
       let sextoVal = 0;
       if (incluyeSexto) {
-        sextoVal = sixthOfGratuity(emp, ordinary);
+        sextoVal = sixthOfGratuity(emp, computableAt(emp, gratuityCloseIso(year, which)));
       }
       
       detalle = `Sueldo + AF: S/. ${ordinary.toFixed(2)} | 1/6 Grati: ${incluyeSexto ? `S/. ${sextoVal.toFixed(2)}` : "No"}`;
@@ -362,9 +381,11 @@ export function calcPayslip(
 
   const extra25 = marks.reduce((s, a) => s + a.extra25, 0);
   const extra35 = marks.reduce((s, a) => s + a.extra35, 0);
-  const hourly = emp.salary / 30 / 8;
+  // El sueldo es el vigente en el mes de la boleta (histórico de remuneraciones).
+  const salary = salaryForPeriod(emp, period);
+  const hourly = salary / 30 / 8;
 
-  const basic = round2(emp.salary * factor);
+  const basic = round2(salary * factor);
   // La asignación familiar usa la RMV vigente en el mes de la boleta.
   const af = emp.familyAllowance ? round2(rmvForPeriod(period) * 0.1 * factor) : 0;
   const he25 = round2(hourly * 1.25 * extra25);
@@ -372,7 +393,7 @@ export function calcPayslip(
   const extraPay = round2(he25 + he35);
 
   // Cálculo de descuentos por faltas (proporcional a 30 días) y tardanzas
-  const faltaDiscount = Math.min(basic, round2((emp.salary / 30) * faltas));
+  const faltaDiscount = Math.min(basic, round2((salary / 30) * faltas));
   const tardanzaDiscount = round2((hourly / 60) * minutosTardanzaTotales);
   const paidBasic = round2(basic - faltaDiscount - tardanzaDiscount);
 
@@ -424,14 +445,15 @@ export function calcPayslip(
   const ordinary = round2(paidBasic + af);
   const gratTimes = gratificationsPerYear(normalizeCompanyRegime(company.regime));
   // La retención de quinta categoría solo aplica si el colaborador está marcado
-  // como afecto. Se proyecta su renta anual y se descuenta la doceava parte.
+  // como afecto. Se proyecta su renta anual y se descuenta la doceava parte. La
+  // UIT es la vigente en el año de la boleta (cambia cada 1 de enero).
   const fifthParams = fifthCategoryParamsOf(company);
   const projection = projectFifthCategory({
     ordinaryMonthly: ordinary,
     extrasMonthly: extraPay,
     gratificationsPerYear: gratTimes,
     params: fifthParams,
-    uit: company.uit,
+    uit: uitForPeriod(period),
   });
   const fifth = emp.fifthCategory ? projection.monthlyTax : 0;
   push("5TA", "Renta de quinta categoría", fifth, "descuento");

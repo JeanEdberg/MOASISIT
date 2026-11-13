@@ -12,6 +12,7 @@ import { fifthCategoryParamsOf } from "@/lib/hr/fifth";
 import { readLogoFile } from "@/lib/hr/logo";
 import { COMPANY_REGIMES, mypeAccreditationWarning, regimeBenefits, requiresMypeAccreditation } from "@/lib/hr/regime";
 import { RMV_CURRENT, RMV_CURRENT_FROM } from "@/lib/hr/rmv";
+import { UIT_CURRENT, UIT_CURRENT_YEAR } from "@/lib/hr/uit";
 import { useHr } from "@/lib/hr/store";
 import type { AfpFund, Company, CompanyRegime, FifthCategoryBand, Insurer, InsurerKind } from "@/lib/hr/types";
 
@@ -328,8 +329,11 @@ function CompanyPage() {
           >
             <input className={fieldClass} value={String(company.rmv)} readOnly disabled />
           </Field>
-          <Field label="UIT (S/)">
-            <input className={fieldClass} value={String(company.uit)} onChange={(e) => setNum("uit", e.target.value)} />
+          <Field
+            label="UIT vigente (S/)"
+            hint={`Automática por año. Hoy S/ ${UIT_CURRENT.toLocaleString("es-PE")} (${UIT_CURRENT_YEAR}); las boletas de años anteriores usan la UIT de su año.`}
+          >
+            <input className={fieldClass} value={String(company.uit)} readOnly disabled />
           </Field>
           <Field label="Tope AFP (S/)">
             <input className={fieldClass} value={String(company.topeAfp)} onChange={(e) => setNum("topeAfp", e.target.value)} />

@@ -138,6 +138,25 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   del semestre (30/04, 30/06, 31/10, 31/12). La RMV del histórico es la 1230
   desde 01/10/2026 (antes 1130 desde 2025). Mantener `RMV_HISTORY` al día con
   los decretos supremos del MTPE.
+- **UIT histórica (renta de 5ta)**: la UIT cambia cada 1 de enero y se usa en la
+  retención de quinta categoría (deducción de 7 UIT y escala). Como se generan
+  boletas de años anteriores, el cálculo NO usa la UIT de la empresa sino la
+  **vigente en el año del período** (`src/lib/hr/uit.ts`: `uitForYear` /
+  `uitForPeriod`). `Company.uit` queda solo como referencia editable-deshabilitada
+  en Empresa. `UIT_CURRENT` = 5500 (2026). Mantener `UIT_HISTORY` al día con los
+  D.S. del MEF (SUNAT publica la tabla de índices y tasas).
+- **Histórico de remuneraciones (aumentos de sueldo)**: el sueldo puede cambiar
+  durante el vínculo. `Employee.salaryHistory` guarda los cambios con su fecha
+  (`{ from, salary, note? }`) y `Employee.salary` sigue siendo el **sueldo
+  vigente** (último cambio). Los cálculos NO usan `emp.salary` directamente:
+  usan `salaryForDate` / `salaryForPeriod` (`src/lib/hr/salary.ts`). Regla: la
+  boleta y la liquidación usan el sueldo vigente en el mes/fecha; la CTS y la
+  gratificación, el sueldo **al cierre del semestre**; y el 1/6 de la CTS, el
+  sueldo al cierre del semestre **anterior** (la gratificación que realmente se
+  pagó). `reconcileSalary` (aplicado en `updateEmployee`, `addEmployee`,
+  `importPeople` y el normalizador del dataset) crea el histórico con el sueldo
+  de ingreso si falta, lo ordena y sincroniza `salary`. La ficha del colaborador
+  permite agregar cada aumento con su fecha.
 - **`updateCompany` edita `companies`** (la fuente de verdad), no solo el
   snapshot `data.company` de la vista. La acción acepta `companyId?` y el
   servidor lo valida contra la empresa de la sesión (`companyIdForAction`), para

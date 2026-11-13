@@ -1,11 +1,13 @@
-import { Field, fieldClass } from "@/components/ui";
+import { Button, Field, fieldClass } from "@/components/ui";
 import {
   CONTRACT_LABEL,
   HEALTH_INSURANCE_LABEL,
   PENSION_LABEL,
   REGIME_LABEL,
   WORK_MODE_LABEL,
+  todayIso,
 } from "@/lib/hr/format";
+import { sortedSalaryHistory } from "@/lib/hr/salary";
 import type {
   Area,
   Company,
@@ -14,6 +16,7 @@ import type {
   HealthInsurance,
   Pension,
   Regime,
+  SalaryChange,
   WorkMode,
 } from "@/lib/hr/types";
 
@@ -32,6 +35,10 @@ export function validateDraft(d: EmployeeDraft): string | null {
   if (!d.position.trim()) return "Indica el cargo.";
   if (!d.areaId) return "Elige un área.";
   if (!Number.isFinite(d.salary) || d.salary < 0) return "El sueldo no es válido.";
+  for (const c of d.salaryHistory ?? []) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(c.from)) return "Hay un cambio de sueldo sin fecha válida.";
+    if (!Number.isFinite(c.salary) || c.salary < 0) return "Hay un cambio de sueldo con monto inválido.";
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(d.hireDate)) return "La fecha de ingreso no es válida.";
   if (d.contract === "plazo_fijo" && !d.endDate) return "Indica la fecha de fin para el contrato a plazo fijo.";
   if (d.endDate && d.endDate < d.hireDate) return "La fecha de fin no puede ser anterior al ingreso.";
@@ -39,6 +46,81 @@ export function validateDraft(d: EmployeeDraft): string | null {
   const esAfp = d.pension !== "onp" && d.pension !== "ninguno";
   if (esAfp && !(d.cuspp ?? "").trim()) return "Indica el CUSPP del colaborador (lo entrega su AFP).";
   return null;
+}
+
+/**
+ * Editor del histórico de remuneraciones: sueldo de ingreso y cada cambio de
+ * sueldo con su fecha. El sueldo vigente (campo "Sueldo mensual") es el último
+ * cambio del histórico. Los períodos pasados se calculan con el monto que regía.
+ */
+function SalaryHistoryEditor({
+  value,
+  onChange,
+}: {
+  value: EmployeeDraft;
+  onChange: (next: EmployeeDraft) => void;
+}) {
+  const history = sortedSalaryHistory(value);
+  const setHistory = (next: SalaryChange[]) => onChange({ ...value, salaryHistory: next });
+
+  const addChange = () => {
+    const last = history[history.length - 1];
+    const from = todayIso();
+    setHistory([...history, { from, salary: last?.salary ?? value.salary }]);
+  };
+  const update = (index: number, patch: Partial<SalaryChange>) =>
+    setHistory(history.map((c, i) => (i === index ? { ...c, ...patch } : c)));
+  const remove = (index: number) => setHistory(history.filter((_, i) => i !== index));
+
+  return (
+    <div className="sm:col-span-2 rounded-md border border-line bg-surface-2 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-ink">Histórico de remuneraciones</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Registra el sueldo de ingreso y cada aumento con su fecha. Las boletas y beneficios de períodos
+            anteriores se calculan con el sueldo que regía en esa fecha.
+          </p>
+        </div>
+        <Button tone="line" onClick={addChange}>
+          + Cambio de remuneración
+        </Button>
+      </div>
+      {history.length === 0 ? (
+        <p className="mt-3 text-xs text-muted">
+          Aún no hay cambios. El sueldo de arriba se usará como sueldo de ingreso desde {value.hireDate}.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {history.map((c, i) => (
+            <li key={i} className="flex flex-wrap items-center gap-2">
+              <input
+                className={`${fieldClass} min-h-9 max-w-[11rem]`}
+                type="date"
+                value={c.from}
+                onChange={(e) => update(i, { from: e.target.value })}
+              />
+              <input
+                className={`${fieldClass} min-h-9 max-w-[8rem]`}
+                inputMode="decimal"
+                value={String(c.salary)}
+                onChange={(e) => update(i, { salary: Number(e.target.value) || 0 })}
+              />
+              <input
+                className={`${fieldClass} min-h-9 flex-1`}
+                placeholder="Motivo (opcional)"
+                value={c.note ?? ""}
+                onChange={(e) => update(i, { note: e.target.value || undefined })}
+              />
+              <Button tone="ghost" className="min-h-9 px-2" onClick={() => remove(i)} aria-label="Quitar cambio">
+                Quitar
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export function EmployeeForm({
@@ -59,6 +141,7 @@ export function EmployeeForm({
 }) {
   const set = <K extends keyof EmployeeDraft>(key: K, v: EmployeeDraft[K]) => onChange({ ...value, [key]: v });
 
+  const history = sortedSalaryHistory(value);
   const activeCompany = companies?.find((c) => c.id === value.companyId);
   const insurers = activeCompany?.insurers ?? [];
   const epsOptions = insurers.filter((i) => i.kind === "eps" && i.active);
@@ -158,14 +241,21 @@ export function EmployeeForm({
               ))}
           </select>
         </Field>
-        <Field label="Sueldo mensual (S/)">
+        <Field
+          label="Sueldo mensual (S/)"
+          hint={
+            history.length > 0 ? "Es el último cambio del histórico (edítalo abajo)." : "Sueldo de ingreso."
+          }
+        >
           <input
             className={fieldClass}
             inputMode="decimal"
-            value={String(value.salary)}
+            value={String(history.at(-1)?.salary ?? value.salary)}
+            disabled={history.length > 0}
             onChange={(e) => set("salary", Number(e.target.value))}
           />
         </Field>
+        <SalaryHistoryEditor value={value} onChange={onChange} />
         <Field label="Contrato">
           <select className={fieldClass} value={value.contract} onChange={(e) => set("contract", e.target.value as ContractType)}>
             {(Object.keys(CONTRACT_LABEL) as ContractType[]).map((k) => (

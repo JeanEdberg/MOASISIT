@@ -61,7 +61,8 @@ describe("buildContract", () => {
 
   it("escribe el plazo y el monto en letras", () => {
     const data = demo();
-    const emp = { ...data.employees[0]!, contract: "plazo_fijo" as const, hireDate: "2026-10-01", endDate: "2027-04-01", salary: 2500 };
+    // Alta nueva: sin histórico, el sueldo es el de ingreso (2500).
+    const emp = { ...data.employees[0]!, contract: "plazo_fijo" as const, hireDate: "2026-10-01", endDate: "2027-04-01", salary: 2500, salaryHistory: undefined };
     const c = buildContract(data.company, emp);
     assert.match(c.clauses[2]!.body, /SIETE \(7\) meses/);
     assert.match(c.clauses[4]!.body, /DOS MIL QUINIENTOS CON 00\/100 NUEVOS SOLES/);

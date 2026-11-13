@@ -14,6 +14,7 @@
 import { differenceInCalendarMonths } from "date-fns";
 import { CONTRACT_LABEL, fullName, parseDay, pen } from "@/lib/hr/format";
 import { logoImgHtml } from "@/lib/hr/logo";
+import { salaryForDate } from "@/lib/hr/salary";
 import type { Company, Employee } from "@/lib/hr/types";
 
 export type ContractClause = {
@@ -207,8 +208,8 @@ export function buildContract(company: Company, employee: Employee): ContractMod
       employee.workMode,
     )}, con una (1) hora de refrigerio, que no son computables para efectos de la jornada ni del horario de trabajo, según D.S. N.º 008-2002-TR. Esta jornada laboral puede variar de acuerdo a la necesidad de EL EMPLEADOR pero se respeta el tiempo establecido de acuerdo a Ley.`,
     `La remuneración que percibirá ${tratamiendo} como prestación de los servicios que se contraten será por el importe de ${pen(
-      employee.salary,
-    )} (Son: ${montoEnLetras(employee.salary)}), de la cual se deducirá las aportaciones y descuentos por tributos establecidos en la ley que le resulten aplicables.`,
+      salaryForDate(employee, employee.hireDate),
+    )} (Son: ${montoEnLetras(salaryForDate(employee, employee.hireDate))}), de la cual se deducirá las aportaciones y descuentos por tributos establecidos en la ley que le resulten aplicables.`,
     `Queda entendido que EL EMPLEADOR no está obligado a dar aviso adicional referente al término del presente ${documento}, operando su extinción en la fecha de su vencimiento conforme la cláusula tercera, oportunidad en la cual se abonará a ${tratamiendo} los beneficios sociales que le pudieran corresponder de acuerdo a ley.`,
     `Este ${documento} queda sujeto a las disposiciones que contiene el Texto Único Ordenado del D. Leg. N.º 728 aprobado por D.S. N.º 003-97-TR - Ley de Productividad y Competitividad Laboral, y demás normas legales que lo regulen o que sean dictadas durante su vigencia.`,
     `Las partes se someten a la jurisdicción y competencia de los Jueces y Tribunales de ${company.city} y señalan como sus domicilios los fijados en la introducción de este convenio, donde serán válidas todas las notificaciones judiciales y/o extrajudiciales que se pudieran cursar.`,

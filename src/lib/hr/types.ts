@@ -168,6 +168,16 @@ export type CessationRecord = {
   registeredAt: string;
 };
 
+/** Un cambio de remuneración: monto nuevo y fecha desde la que rige. */
+export type SalaryChange = {
+  /** Fecha desde la que rige el monto (inclusive), en formato ISO `YYYY-MM-DD`. */
+  from: string;
+  /** Sueldo mensual en soles desde esa fecha. */
+  salary: number;
+  /** Motivo o sustento del cambio (opcional). */
+  note?: string;
+};
+
 /** Nivel de acceso del colaborador dentro de la app. */
 export type AccessRole = ViewerMode;
 
@@ -193,6 +203,13 @@ export type Employee = {
   contract: ContractType;
   regime: Regime;
   salary: number;
+  /**
+   * Histórico de cambios de remuneración, ordenado por fecha. El primer registro
+   * suele ser el sueldo de ingreso. `salary` sigue siendo el sueldo vigente (el
+   * último cambio). Los cálculos de períodos pasados usan el monto que regía en
+   * esa fecha (ver `salaryForDate`/`salaryForPeriod` en `salary.ts`).
+   */
+  salaryHistory?: SalaryChange[];
   familyAllowance: boolean;
   /**
    * Si el colaborador está afecto a la retención de renta de quinta categoría.

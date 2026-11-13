@@ -2,6 +2,7 @@ import { catalogInsurers } from "@/lib/hr/insurers";
 import { DEFAULT_FIFTH_CATEGORY } from "@/lib/hr/fifth";
 import { DEFAULT_COMPANY_REGIME, normalizeCompanyRegime, requiresMypeAccreditation } from "@/lib/hr/regime";
 import { RMV_CURRENT } from "@/lib/hr/rmv";
+import { UIT_CURRENT } from "@/lib/hr/uit";
 import { normalizeRuc } from "@/lib/hr/ruc";
 import { DEFAULT_SUBSCRIPTION } from "@/lib/hr/subscription";
 import type { Company, CompanyRegime } from "@/lib/hr/types";
@@ -13,7 +14,7 @@ import type { Company, CompanyRegime } from "@/lib/hr/types";
  */
 export const LEGAL_DEFAULTS = {
   rmv: RMV_CURRENT,
-  uit: 5500,
+  uit: UIT_CURRENT,
   fifthCategory: DEFAULT_FIFTH_CATEGORY,
   topeAfp: 12599,
   essalud: 0.09,

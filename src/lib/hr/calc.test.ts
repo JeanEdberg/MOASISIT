@@ -85,7 +85,9 @@ test("la asignación familiar usa la RMV vigente del período, no la última", (
   // Nov 2024 (may–oct 2024): RMV 1025 → AF = 102.50; computable 3102.50;
   // 1/6 con bono = 3102.50*1.09/6 = 563.62; CTS = (3102.50+563.62)/2 = 1833.06.
   assert.equal(ctsSemester(conHijos, COMPANY, 2024, "nov"), 1833.06);
-  // Nov 2026 (may–oct 2026): RMV 1230 → AF = 123; computable 3123;
-  // 1/6 = 3123*1.09/6 = 567.35; CTS = (3123+567.35)/2 = 1845.18.
-  assert.equal(ctsSemester(conHijos, COMPANY, 2026, "nov"), 1845.18);
+  // Nov 2026 (may–oct 2026): sueldo computable al cierre (RMV 1230 → AF 123) = 3123.
+  // El 1/6 usa la gratificación de julio 2026, calculada al cierre del semestre
+  // anterior (30-jun-2026, RMV 1130 → AF 113): 3113*1.09/6 = 565.53.
+  // CTS = (3123 + 565.53)/2 = 1844.27.
+  assert.equal(ctsSemester(conHijos, COMPANY, 2026, "nov"), 1844.27);
 });

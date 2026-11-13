@@ -8,6 +8,7 @@ import { Shell } from "@/components/shell";
 import { Badge, Button, Modal } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { payslipFor, vacationBalance, vacationEarned, vacationPending, vacationTaken } from "@/lib/hr/calc";
+import { sortedSalaryHistory } from "@/lib/hr/salary";
 import {
   ageTone,
   ATTENDANCE_LABEL,
@@ -198,6 +199,7 @@ function FichaPage() {
             <Info label="Área" value={area?.name ?? "—"} />
             <Info label="Cargo" value={emp.position} />
             <Info label="Régimen" value={REGIME_LABEL[emp.regime]} />
+            {money ? <Info label="Sueldo actual" value={pen(emp.salary)} /> : null}
             <Info label="Pensión" value={PENSION_LABEL[emp.pension]} />
             {emp.pension !== "onp" && emp.pension !== "ninguno" ? (
               <Info label="CUSPP" value={emp.cuspp || "Sin registrar"} />
@@ -210,6 +212,28 @@ function FichaPage() {
             <Info label="Fin de contrato" value={emp.endDate ? shortDate(emp.endDate) : "Sin fecha"} />
             <Info label="Asignación familiar" value={emp.familyAllowance ? "Sí" : "No"} />
             <Info label="Renta 5ta categoría" value={emp.fifthCategory ? "Afecto" : "No afecto"} />
+            {money && (emp.salaryHistory?.length ?? 0) > 1 ? (
+              <div className="sm:col-span-2 rounded-lg border border-line bg-surface p-4">
+                <h3 className="text-lg">Histórico de remuneraciones</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Sueldo vigente en cada período. Las boletas y beneficios usan el monto de su fecha.
+                </p>
+                <ul className="mt-3 space-y-1 text-sm">
+                  {sortedSalaryHistory(emp).map((c, i, arr) => {
+                    const until = arr[i + 1] ? `hasta ${shortDate(arr[i + 1].from)}` : "hasta hoy";
+                    return (
+                      <li key={c.from} className="flex justify-between gap-2">
+                        <span>
+                          {shortDate(c.from)} → {until}
+                          {c.note ? ` · ${c.note}` : ""}
+                        </span>
+                        <span className="num">{pen(c.salary)}</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </div>
         ) : null}
         {tab === "seguros" ? (
