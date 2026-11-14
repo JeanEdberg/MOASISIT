@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Button, Field, fieldClass } from "@/components/ui";
 import {
   CONTRACT_LABEL,
@@ -7,12 +8,16 @@ import {
   WORK_MODE_LABEL,
   todayIso,
 } from "@/lib/hr/format";
+import { emptyDependent, withDependents } from "@/lib/hr/dependents";
 import { sortedHealthHistory } from "@/lib/hr/health";
+import { occupationName, searchOccupations } from "@/lib/hr/occupations";
 import { sortedSalaryHistory } from "@/lib/hr/salary";
+import { EDUCATION_LEVELS, NATIONALITIES, SEX_OPTIONS, DEPENDENT_OPTIONS } from "@/lib/hr/sunat-tables";
 import type {
   Area,
   Company,
   ContractType,
+  Dependent,
   Employee,
   HealthChange,
   HealthInsurance,
@@ -20,6 +25,7 @@ import type {
   Pension,
   Regime,
   SalaryChange,
+  Sex,
   WorkMode,
 } from "@/lib/hr/types";
 
@@ -240,6 +246,275 @@ function HealthHistoryEditor({
 }
 
 
+/**
+ * Editor de hijos y familiares a cargo (derechohabientes). Reemplaza la casilla
+ * numérica de hijos por una pregunta Sí/No y, si la respuesta es Sí, una ficha
+ * por cada familiar con los datos que exige el T-Registro (estructura 13).
+ * La cantidad de hijos y la asignación familiar se derivan de aquí.
+ */
+function OccupationPicker({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (code: string | undefined) => void;
+}) {
+  const selected = occupationName(value);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [highlight, setHighlight] = useState(0);
+
+  const results = useMemo(() => searchOccupations(query, 50), [query]);
+  const active = Math.min(highlight, Math.max(results.length - 1, 0));
+
+  const choose = (code: string) => {
+    onChange(code);
+    setQuery("");
+    setOpen(false);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || results.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      choose(results[active].code);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      {value ? (
+        <div className="flex items-start justify-between gap-2 rounded-md border border-line bg-surface-2 px-3 py-2">
+          <p className="text-sm text-ink">
+            <span className="font-medium">{value}</span>
+            {selected ? <span className="text-muted"> · {selected}</span> : null}
+          </p>
+          <Button
+            tone="ghost"
+            className="min-h-8 shrink-0 px-2 text-xs"
+            onClick={() => {
+              onChange(undefined);
+              setQuery("");
+              setOpen(true);
+            }}
+            aria-label="Cambiar ocupación"
+          >
+            Cambiar
+          </Button>
+        </div>
+      ) : (
+        <input
+          className={fieldClass}
+          value={query}
+          placeholder="Busca por nombre o código (ej. chofer, 411001)"
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            setHighlight(0);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKeyDown}
+        />
+      )}
+      {!value && open ? (
+        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-line bg-surface shadow-lg">
+          {results.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-muted">Sin coincidencias.</li>
+          ) : (
+            results.map((o, i) => (
+              <li key={o.code}>
+                <button
+                  type="button"
+                  className={`flex w-full items-baseline gap-2 px-3 py-2 text-left text-sm hover:bg-surface-2 ${
+                    i === active ? "bg-surface-2" : ""
+                  }`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    choose(o.code);
+                  }}
+                >
+                  <span className="font-mono text-xs text-muted">{o.code}</span>
+                  <span className="text-ink">{o.name}</span>
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function DependentsEditor({
+  value,
+  onChange,
+}: {
+  value: EmployeeDraft;
+  onChange: (next: EmployeeDraft) => void;
+}) {
+  const dependents = value.dependents ?? [];
+  const hasDependents = dependents.length > 0;
+
+  const setDependents = (next: Dependent[]) => {
+    const base = { ...value, dependents: next };
+    const withFlags = withDependents(base as Employee);
+    onChange({ ...value, dependents: next, children: withFlags.children, familyAllowance: withFlags.familyAllowance });
+  };
+
+  const add = () =>
+    setDependents([
+      ...dependents,
+      emptyDependent(`dep-${Date.now()}-${dependents.length}`),
+    ]);
+  const update = (index: number, patch: Partial<Dependent>) =>
+    setDependents(dependents.map((d, i) => (i === index ? { ...d, ...patch } : d)));
+  const remove = (index: number) => setDependents(dependents.filter((_, i) => i !== index));
+
+  return (
+    <div className="sm:col-span-2 rounded-md border border-line bg-surface-2 p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-medium text-ink">Hijos y familiares a cargo</p>
+          <p className="mt-0.5 text-xs text-muted">
+            Se declaran en el T-Registro (derechohabientes). Los hijos dan derecho a la asignación familiar.
+          </p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-muted">¿Tiene hijos o familiares a cargo?</span>
+          <select
+            className={`${fieldClass} min-h-9 max-w-[6rem]`}
+            value={hasDependents ? "si" : "no"}
+            onChange={(e) => {
+              if (e.target.value === "si") {
+                if (!hasDependents) add();
+              } else {
+                setDependents([]);
+              }
+            }}
+          >
+            <option value="no">No</option>
+            <option value="si">Sí</option>
+          </select>
+        </label>
+      </div>
+
+      {hasDependents ? (
+        <ul className="mt-3 space-y-3">
+          {dependents.map((d, i) => (
+            <li key={d.id} className="rounded-md border border-line bg-surface p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-ink">Familiar {i + 1}</p>
+                <Button tone="ghost" className="min-h-8 px-2 text-xs" onClick={() => remove(i)} aria-label="Quitar familiar">
+                  Quitar
+                </Button>
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <Field label="Vínculo">
+                  <select
+                    className={`${fieldClass} min-h-9`}
+                    value={d.kind}
+                    onChange={(e) => update(i, { kind: e.target.value as Dependent["kind"] })}
+                  >
+                    {DEPENDENT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Sexo">
+                  <select
+                    className={`${fieldClass} min-h-9`}
+                    value={d.sex}
+                    onChange={(e) => update(i, { sex: e.target.value as Sex })}
+                  >
+                    {SEX_OPTIONS.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Nombres">
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    value={d.names}
+                    onChange={(e) => update(i, { names: e.target.value })}
+                  />
+                </Field>
+                <Field label="Apellido paterno">
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    value={d.paternal}
+                    onChange={(e) => update(i, { paternal: e.target.value })}
+                  />
+                </Field>
+                <Field label="Apellido materno">
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    value={d.maternal}
+                    onChange={(e) => update(i, { maternal: e.target.value })}
+                  />
+                </Field>
+                <Field label="DNI">
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    inputMode="numeric"
+                    value={d.dni}
+                    onChange={(e) => update(i, { dni: e.target.value.replace(/\D/g, "").slice(0, 8) })}
+                  />
+                </Field>
+                <Field label="Fecha de nacimiento">
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    type="date"
+                    value={d.birthDate}
+                    onChange={(e) => update(i, { birthDate: e.target.value })}
+                  />
+                </Field>
+                <Field
+                  label="Doc. que acredita el vínculo"
+                  hint="Tabla 27. Obligatorio para concubina(o) e hijo incapacitado."
+                >
+                  <input
+                    className={`${fieldClass} min-h-9`}
+                    value={d.bondNumber ?? ""}
+                    onChange={(e) => update(i, { bondNumber: e.target.value })}
+                  />
+                </Field>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-xs text-muted">
+          Selecciona «Sí» para agregar los datos de cada hijo o familiar (T-Registro, estructura 13).
+        </p>
+      )}
+
+      {hasDependents ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs text-muted">
+            {value.children} hijo{value.children === 1 ? "" : "s"} · Asignación familiar:{" "}
+            <strong className="text-ink">{value.familyAllowance ? "Sí" : "No"}</strong>
+          </p>
+          <Button tone="line" className="min-h-9 px-3 text-xs" onClick={add}>
+            + Agregar otro familiar
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function EmployeeForm({
   value,
   areas,
@@ -322,14 +597,70 @@ export function EmployeeForm({
             onChange={(e) => set("address", e.target.value)}
           />
         </Field>
+        <Field label="Ubigeo" hint="6 dígitos del domicilio (tabla 28). Lo exige el T-Registro.">
+          <input
+            className={fieldClass}
+            inputMode="numeric"
+            value={value.ubigeo ?? ""}
+            placeholder="Ej. 170101"
+            onChange={(e) => set("ubigeo", e.target.value.replace(/\D/g, "").slice(0, 6))}
+          />
+        </Field>
         <Field label="Fecha de nacimiento">
           <input className={fieldClass} type="date" value={value.birthDate} onChange={(e) => set("birthDate", e.target.value)} />
+        </Field>
+        <Field label="Sexo" hint="Lo exige el T-Registro (estructura 4).">
+          <select
+            className={fieldClass}
+            value={value.sex ?? ""}
+            onChange={(e) => set("sex", (e.target.value || undefined) as Sex | undefined)}
+          >
+            <option value="">Sin especificar</option>
+            {SEX_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Nacionalidad" hint="Tabla 4 del Anexo 2. Por defecto, Perú.">
+          <select
+            className={fieldClass}
+            value={value.nationality ?? "9589"}
+            onChange={(e) => set("nationality", e.target.value)}
+          >
+            {NATIONALITIES.map((n) => (
+              <option key={n.code} value={n.code}>
+                {n.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Fecha de ingreso">
           <input className={fieldClass} type="date" value={value.hireDate} onChange={(e) => set("hireDate", e.target.value)} />
         </Field>
         <Field label="Cargo">
           <input className={fieldClass} value={value.position} onChange={(e) => set("position", e.target.value)} />
+        </Field>
+        <Field label="Situación educativa" hint="Tabla 9. La usa el T-Registro (estructuras 5 y 29).">
+          <select
+            className={fieldClass}
+            value={value.educationLevel ?? ""}
+            onChange={(e) => set("educationLevel", e.target.value || undefined)}
+          >
+            <option value="">Sin especificar</option>
+            {EDUCATION_LEVELS.map((x) => (
+              <option key={x.code} value={x.code}>
+                {x.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field
+          label="Ocupación"
+          hint="Tabla 30 de SUNAT (sector privado). Busca por nombre o código; la app guarda el código de 6 dígitos."
+        >
+          <OccupationPicker value={value.occupation} onChange={(code) => set("occupation", code)} />
         </Field>
         <Field label="Área">
           <select className={fieldClass} value={value.areaId} onChange={(e) => set("areaId", e.target.value)}>
@@ -443,17 +774,7 @@ export function EmployeeForm({
             ))}
           </select>
         </Field>
-        <Field label="Hijos">
-          <input
-            className={fieldClass}
-            inputMode="numeric"
-            value={String(value.children)}
-            onChange={(e) => {
-              const children = Math.max(0, Number(e.target.value) || 0);
-              onChange({ ...value, children, familyAllowance: children > 0 });
-            }}
-          />
-        </Field>
+        <DependentsEditor value={value} onChange={onChange} />
       </div>
 
       <div className="rounded-lg border border-line bg-surface-2 p-3">

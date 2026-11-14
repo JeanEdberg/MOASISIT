@@ -10,6 +10,21 @@
  * sin comas y, si llevan decimales, con punto y hasta dos decimales.
  */
 
+/** Versiones vigentes de los formatos SUNAT (investigación 2026-11). */
+export const SUNAT_VERSIONS = {
+  /** Versión del PDT PLAME exigida para declarar. */
+  plame: "4.7",
+  /** Norma que aprobó la versión vigente del PDT PLAME. */
+  plameResolution: "R.S. N.° 000213-2026/SUNAT",
+  /** Fecha desde la que la versión del PDT PLAME es obligatoria. */
+  plameFrom: "octubre 2026",
+  /** Versión del Anexo 3 de estructuras de importación. */
+  anexo3: "JUL23",
+  /** Fecha de las tablas paramétricas vigentes (Anexo 2). */
+  tablas: "12/11/2026",
+} as const;
+
+
 /** Dónde se sube cada archivo. */
 export type ImportDestination = "T-Registro" | "PLAME" | "Derechohabientes";
 
@@ -827,7 +842,7 @@ export type FileNameParts = {
   date?: string;
 };
 
-function formatDdMmYyyy(iso: string): string {
+export function formatDdMmYyyy(iso: string): string {
   const [y, m, d] = iso.slice(0, 10).split("-");
   return `${d}/${m}/${y}`;
 }

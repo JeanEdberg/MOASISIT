@@ -9,7 +9,9 @@ import { Badge, Button, Modal } from "@/components/ui";
 import { canSeeMoney, isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
 import { payslipFor, vacationBalance, vacationEarned, vacationPending, vacationTaken } from "@/lib/hr/calc";
 import { sortedHealthHistory } from "@/lib/hr/health";
+import { occupationName } from "@/lib/hr/occupations";
 import { sortedSalaryHistory } from "@/lib/hr/salary";
+import { educationName, nationalityName } from "@/lib/hr/sunat-tables";
 import {
   ageTone,
   ATTENDANCE_LABEL,
@@ -189,10 +191,26 @@ function FichaPage() {
           <div className="grid gap-3 sm:grid-cols-2">
             <Info label="DNI" value={emp.dni} />
             <Info label="Nacimiento" value={shortDate(emp.birthDate)} />
+            <Info label="Sexo" value={emp.sex ? (emp.sex === "femenino" ? "Femenino" : "Masculino") : "—"} />
+            <Info label="Nacionalidad" value={nationalityName(emp.nationality)} />
             <Info label="Correo" value={emp.email || "—"} />
             <Info label="Celular" value={emp.phone || "—"} />
             <Info label="Dirección" value={emp.address || "—"} />
+            <Info label="Ubigeo" value={emp.ubigeo || "—"} />
+            <Info label="Situación educativa" value={educationName(emp.educationLevel) || "—"} />
+            <Info
+              label="Ocupación"
+              value={
+                emp.occupation
+                  ? `${emp.occupation}${occupationName(emp.occupation) ? ` · ${occupationName(emp.occupation)}` : ""}`
+                  : "—"
+              }
+            />
             <Info label="Hijos" value={String(emp.children)} />
+            <Info
+              label="Familiares a cargo"
+              value={emp.dependents?.length ? `${emp.dependents.length} registrado(s)` : "—"}
+            />
           </div>
         ) : null}
         {tab === "laboral" ? (

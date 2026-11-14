@@ -32,6 +32,31 @@ export type EmployeeStatus = "activo" | "cesado";
 
 export type AfpFund = "habitat" | "integra" | "prima" | "profuturo";
 
+/** Sexo, tal como lo pide el T-Registro (se codifica 1/2 al generar el archivo). */
+export type Sex = "masculino" | "femenino";
+
+/** Vínculo del familiar a cargo (tabla 19 del Anexo 2 de SUNAT). */
+export type DependentKind = "conyuge" | "concubino" | "hijo" | "hijo_incapacitado" | "gestante";
+
+/**
+ * Familiar a cargo (derechohabiente) que se declara en el T-Registro. Los hijos
+ * son los que alimentan la asignación familiar y la estructura 13 (ALTAS).
+ */
+export type Dependent = {
+  id: string;
+  kind: DependentKind;
+  names: string;
+  paternal: string;
+  maternal: string;
+  dni: string;
+  birthDate: string;
+  sex: Sex;
+  /** Tipo de documento que acredita el vínculo (tabla 27). Opcional. */
+  bondType?: string;
+  /** N° del documento que acredita el vínculo. Obligatorio para concubino(a) e hijo incapacitado. */
+  bondNumber?: string;
+};
+
 export type WorkMode = 
   | "presencial"    // Oficina central (Aplica Geocerca estricta en Tambopata)
   | "campo"         // Galponeros / Operarios en campo (Modo offline-first / GPS flexible)
@@ -210,7 +235,25 @@ export type Employee = {
   email: string;
   phone: string;
   birthDate: string;
+  /**
+   * Sexo del colaborador. Lo exige el T-Registro (estructura 4) y las
+   * estructuras de derechohabientes. Opcional para no romper datasets antiguos.
+   */
+  sex?: Sex;
+  /** Nacionalidad (tabla 4 del Anexo 2). Por defecto Perú (9589) al generar. */
+  nationality?: string;
   address: string;
+  /** Ubigeo del domicilio (6 dígitos, tabla 28). Lo exige el T-Registro. */
+  ubigeo?: string;
+  /** Situación educativa (tabla 9). La exige la estructura 5 del T-Registro. */
+  educationLevel?: string;
+  /** Ocupación (tablas 10/30). La exige la estructura 5 del T-Registro. */
+  occupation?: string;
+  /**
+   * Familiares a cargo (derechohabientes) declarados en el T-Registro. Los de
+   * tipo "hijo" alimentan la asignación familiar y la estructura 13 (ALTAS).
+   */
+  dependents?: Dependent[];
   hireDate: string;
   endDate: string | null;
   status: EmployeeStatus;
@@ -282,6 +325,11 @@ export type Employee = {
   bank?: string;
   account?: string;
 
+  /**
+   * Cantidad de hijos, derivada de `dependents` (los de tipo "hijo" o
+   * "hijo_incapacitado"). Se conserva como número para la asignación familiar y
+   * compatibilidad; el detalle por hijo vive en `dependents`.
+   */
   children: number;
   /** Días de vacaciones gozados antes de entrar a Moasist. */
   vacationHistory: number;

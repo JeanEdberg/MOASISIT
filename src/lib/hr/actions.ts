@@ -1,4 +1,5 @@
 import { livePayslips } from "@/lib/hr/calc";
+import { withDependents } from "@/lib/hr/dependents";
 import { todayIso, uid } from "@/lib/hr/format";
 import { reconcileHealth } from "@/lib/hr/health";
 import { reconcileSalary } from "@/lib/hr/salary";
@@ -106,12 +107,16 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       return {
         ...data,
         employees: data.employees.map((e) =>
-          e.id === action.id ? reconcileHealth(reconcileSalary({ ...e, ...action.patch, id: e.id })) : e,
+          e.id === action.id
+            ? withDependents(reconcileHealth(reconcileSalary({ ...e, ...action.patch, id: e.id })))
+            : e,
         ),
       };
     case "addEmployee": {
-      const employee = reconcileHealth(
-        reconcileSalary({ ...action.employee, companyId: action.employee.companyId || data.company.id }),
+      const employee = withDependents(
+        reconcileHealth(
+          reconcileSalary({ ...action.employee, companyId: action.employee.companyId || data.company.id }),
+        ),
       );
       // Al dar de alta a la persona se genera su contrato como documento del
       // legajo, pendiente de firma (el texto se arma solo en el visor).

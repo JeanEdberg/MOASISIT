@@ -332,6 +332,51 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   digitación, no el archivo para subir a SUNAT (ese va sin encabezado). Al
   agregar una estructura nueva, respeta el orden del Anexo 3 y numera los
   campos desde 1 (hay un test que lo valida).
+- **Pre-llenado SUNAT con datos reales**: `src/lib/hr/sunat-generate.ts`
+  (módulo **puro**) arma los archivos de importación con la información de la
+  app (colaboradores, asistencia, boletas y derechohabientes del período).
+  `canGenerate` es `true` para **todas** las estructuras del catálogo; el mapa
+  `BUILDERS` define cuáles se arman **con datos** (E4, E5, E9, E11, E13, E14,
+  E15, E17, E18, E21, E23, E25, E26, E29, E30) y cuáles se entregan como
+  **plantilla** con la posición de cada campo entre `< >` (el resto). Si un
+  builder con datos no produce filas (p. ej. PLAME sin boletas del período),
+  `generateFiles` cae a la plantilla para que siempre se pueda descargar algo.
+  `hasAppData(id)` distingue “Con tus datos” de “Plantilla” en las tarjetas de
+  `/importacion`; el botón (solo RR.HH./superadmin) abre un modal con la vista
+  previa, los avisos (`warnings`) y los campos que faltan (`missing`) para
+  completarlos a mano. Las **versiones vigentes** (PDT PLAME **4.7** — R.S.
+  N.° 000213-2026/SUNAT, obligatoria desde octubre 2026 —; estructuras Anexo 3
+  **JUL23**; tablas paramétricas al 12/11/2026) viven en `SUNAT_VERSIONS`
+  (`sunat-imports.ts`) y se muestran en un aviso de la página. Los códigos de
+  tablas (régimen 33, contrato 12, pensión 11, bancos 36, EPS 14, suspensión 21,
+  concepto 22, sexo, nacionalidad, educación, ocupación) están en mapas dentro
+  del módulo y en `sunat-tables.ts`; al cambiar una tabla de SUNAT, actualiza el
+  mapa y sus tests. Los tests (`sunat-generate.test.ts`) cubren cada generador,
+  la generabilidad de todo el catálogo y `bankCode`.
+- **Derechohabientes (hijos y familiares a cargo)**: `src/lib/hr/dependents.ts`
+  modela `Dependent` (vínculo, nombres, DNI, nacimiento, sexo, doc. de vínculo).
+  `withDependents(emp)` deriva `children` (n° de hijos) y `familyAllowance`
+  (Ley 25129: hay al menos un hijo); si `dependents` es `undefined` (datasets
+  viejos o importados por CSV, que solo traen el número de hijos) **conserva**
+  `children`/`familyAllowance` tal cual. `actions.ts` aplica `withDependents` al
+  guardar/alta para mantener todo en sincronía. En la ficha
+  (`employee-form.tsx`) el campo hijos es un **desplegable Sí/No** que, con
+  «Sí», habilita una tarjeta por familiar (estructura 13).
+- **Tabla 30 de SUNAT (ocupación)**: `src/lib/hr/occupations.ts` trae los
+  **4 642 códigos** de 6 dígitos del sector privado en un formato compacto
+  (`codigo|descripcion` en un solo string) para no inflar el bundle. Expone
+  `OCCUPATIONS`, `occupationName(code)` y `searchOccupations(query, limit)`
+  (busca por código o texto, ignora tildes y mayúsculas). Los códigos se
+  verificaron cruzando dos fuentes independientes que coinciden. En la ficha el
+  campo ocupación es un **buscador** (`OccupationPicker` en `employee-form.tsx`)
+  que muestra `código · descripción` y guarda solo el código; el detalle del
+  colaborador muestra el mismo par.
+- **Tablas paramétricas (Anexo 2)**: `src/lib/hr/sunat-tables.ts` tiene las
+  tablas cortas (educación 9, nacionalidad 4, sexo, vínculo de derechohabiente);
+  la tabla larga (ocupación 30) vive en `occupations.ts`. Los códigos de tablas
+  de los generadores (régimen 33, contrato 12, pensión 11, bancos 36, EPS 14,
+  suspensión 21, concepto 22) están en mapas dentro de `sunat-generate.ts`. Al
+  cambiar una tabla de SUNAT, actualiza el mapa y sus tests.
 - **Datos de ejemplo (`isDemo`)**: las personas del seed llevan la marca
   `isDemo: true` (`person()` en `seed.ts`). "Quitar personas de ejemplo" borra
   **solo** esas personas — de **todas** las empresas — y no por dominio de correo,
