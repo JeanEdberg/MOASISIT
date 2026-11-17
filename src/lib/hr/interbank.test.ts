@@ -7,6 +7,7 @@ import {
   buildInterbankRemuneraciones,
   encodeInterbank,
   remuneracionBancaria,
+  toAscii,
   type InterbankRecord,
 } from "@/lib/hr/interbank";
 import type { Employee, Payslip } from "@/lib/hr/types";
@@ -191,7 +192,14 @@ describe("interbank", () => {
     assert.ok(file.count >= 1);
   });
 
-  it("codifica en Windows-1252 para no descuadrar el ancho fijo", () => {
+  it("quita ñ, tildes y símbolos del nombre (el banco los rechaza)", () => {
+    assert.equal(toAscii("Coveñas Mogollón"), "Covenas Mogollon");
+    assert.equal(toAscii("MUÑOZ  ÁGUILA"), "MUNOZ AGUILA");
+    assert.equal(toAscii("José #1 / O'Brien"), "Jose #1 / O'Brien");
+    assert.equal(toAscii("N° de casa"), "N de casa");
+  });
+
+  it("el nombre sale en ASCII puro y la línea mide 380 bytes", () => {
     const file = buildInterbankRemuneraciones(
       [emp({ paternal: "Coveñas", maternal: "Mogollón", names: "Ericka" })],
       [slip([{ code: "BAS", amount: 100 }])],
@@ -200,7 +208,9 @@ describe("interbank", () => {
     );
     const bytes = encodeInterbank(file.content);
     const lines = file.content.split("\r\n").filter((l) => l.length > 0);
-    // Cada línea de 380 caracteres debe ocupar 380 bytes (no más) en ANSI.
+    assert.equal(lines[1].slice(117, 177).trim(), "COVENAS MOGOLLON ERICKA");
+    // Ningún byte debe salir del rango ASCII (la Ñ sería 0xD1).
+    assert.equal(bytes.some((b) => b >= 0x80), false);
     assert.equal(bytes.length, file.content.length);
     assert.equal(lines[1].length, 380);
     assert.equal(bytes[bytes.length - 2], 0x0d); // CRLF final presente

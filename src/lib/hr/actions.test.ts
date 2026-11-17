@@ -71,6 +71,7 @@ describe("authorizeAction — Punto 2: el superadmin no tiene restricciones", ()
     { type: "addRequest", request: { id: "r90", employeeId: data.employees[0]!.id, companyId: "inmoa", kind: "permiso", start: "2026-11-20", end: "2026-11-20", status: "pendiente", note: "", createdAt: "2026-11-09" } },
     { type: "decideRequest", id: data.requests[0]?.id ?? "r1", status: "aprobada" },
     { type: "upsertAttendance", row: { id: "", employeeId: data.employees[0]!.id, companyId: "inmoa", date: "2026-11-09", kind: "presente", checkIn: "08:00", checkOut: "17:00", extra25: 0, extra35: 0 } },
+    { type: "removeAttendance", date: "2026-11-09", employeeId: data.employees[0]!.id },
     { type: "addDocument", doc: { id: "d90", employeeId: data.employees[0]!.id, companyId: "inmoa", title: "Doc", kind: "anexo", date: "2026-11-09", status: "pendiente" } },
     { type: "signDocument", id: data.documents[0]?.id ?? "d1" },
     { type: "closePeriod", period: "2026-10" },
@@ -178,6 +179,54 @@ describe("applyHrAction", () => {
     const real = { ...data.employees[0]!, id: "real-1", email: "jefa.real@inmoa.pe", isDemo: undefined };
     const next = applyHrAction({ ...data, employees: [...data.employees, real] }, { type: "clearDemoPeople" });
     assert.deepEqual(next.employees.map((e) => e.id), ["real-1"]);
+  });
+
+  it("removeAttendance borra solo la marca del colaborador indicado", () => {
+    let data = base();
+    const row = (id: string, employeeId: string, date: string) => ({
+      id,
+      employeeId,
+      companyId: "inmoa",
+      date,
+      kind: "presente" as const,
+      checkIn: "08:00",
+      checkOut: "17:00",
+      extra25: 0,
+      extra35: 0,
+    });
+    data = applyHrAction(data, { type: "upsertAttendance", row: row("m1", "e3", "2026-11-16") });
+    data = applyHrAction(data, { type: "upsertAttendance", row: row("m2", "e4", "2026-11-16") });
+    const next = applyHrAction(data, { type: "removeAttendance", date: "2026-11-16", employeeId: "e3" });
+    assert.equal(next.attendance.some((a) => a.employeeId === "e3" && a.date === "2026-11-16"), false);
+    assert.equal(next.attendance.some((a) => a.employeeId === "e4" && a.date === "2026-11-16"), true);
+  });
+
+  it("removeAttendance sin colaborador limpia el día completo", () => {
+    let data = base();
+    const mk = (id: string, employeeId: string) => ({
+      id,
+      employeeId,
+      companyId: "inmoa",
+      date: "2026-11-17",
+      kind: "presente" as const,
+      checkIn: "08:00",
+      checkOut: "17:00",
+      extra25: 0,
+      extra35: 0,
+    });
+    data = applyHrAction(data, { type: "upsertAttendance", row: mk("m1", "e3") });
+    data = applyHrAction(data, { type: "upsertAttendance", row: mk("m2", "e4") });
+    const next = applyHrAction(data, { type: "removeAttendance", date: "2026-11-17" });
+    assert.equal(next.attendance.some((a) => a.date === "2026-11-17"), false);
+  });
+
+  it("solo RR.HH. y el superadmin pueden restablecer un día", () => {
+    const data = base();
+    const action: HrAction = { type: "removeAttendance", date: "2026-11-17" };
+    assert.equal(authorizeAction(action, "rrhh", "e2", data), null);
+    assert.equal(authorizeAction(action, "superadmin", "", data), null);
+    assert.ok(authorizeAction(action, "colaborador", "e3", data));
+    assert.ok(authorizeAction(action, "jefatura", "e3", data));
   });
 
   it("withDemoFlags migrates an old dataset that lacks the isDemo mark", () => {

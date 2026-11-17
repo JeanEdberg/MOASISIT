@@ -31,6 +31,7 @@ export type HrAction =
   | { type: "addRequest"; request: TimeRequest }
   | { type: "decideRequest"; id: string; status: RequestStatus }
   | { type: "upsertAttendance"; row: Attendance }
+  | { type: "removeAttendance"; date: string; employeeId?: string }
   | { type: "upsertAdditional"; row: AdditionalEntry }
   | { type: "addDocument"; doc: DocItem }
   | { type: "signDocument"; id: string }
@@ -50,6 +51,7 @@ const RRHH_ONLY = new Set<HrAction["type"]>([
   "importPeople",
   "clearDemoPeople",
   "upsertAdditional",
+  "removeAttendance",
   "addDocument",
   "signDocument",
   "closePeriod",
@@ -190,6 +192,12 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       const attendance = [...data.attendance];
       if (i >= 0) attendance[i] = row;
       else attendance.push(row);
+      return { ...data, attendance };
+    }
+    case "removeAttendance": {
+      const attendance = data.attendance.filter((a) =>
+        action.employeeId ? !(a.date === action.date && a.employeeId === action.employeeId) : a.date !== action.date,
+      );
       return { ...data, attendance };
     }
     case "upsertAdditional": {

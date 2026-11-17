@@ -1,7 +1,8 @@
-import { AlertTriangle, CheckCircle2, LogIn, LogOut, MapPin, Radio, XCircle } from "lucide-react";
+import { AlertTriangle, CalendarOff, CheckCircle2, LogIn, LogOut, MapPin, Radio, XCircle } from "lucide-react";
 import { useState } from "react";
 import { AlertBanner, Badge, Button, Card, SectionHeading } from "@/components/ui";
 import { WORK_MODE_LABEL } from "@/lib/hr/format";
+import { holidayName, isSunday } from "@/lib/hr/holidays";
 import { useHr } from "@/lib/hr/store";
 import { validarYRegistrarAsistencia, type GeoLocation } from "./attendanceCalc";
 import { guardarAsistenciaOffline } from "./offlineStore";
@@ -22,6 +23,7 @@ export function AttendanceView() {
   const [resultado, setResultado] = useState<{ aprobado: boolean; mensaje: string; offline?: boolean } | null>(null);
 
   const hoyStr = new Date().toISOString().split("T")[0];
+  const restLabel = holidayName(hoyStr) ? `feriado (${holidayName(hoyStr)})` : isSunday(hoyStr) ? "domingo" : null;
 
   if (!empleadoActual) {
     return (
@@ -130,6 +132,12 @@ export function AttendanceView() {
           ? "Tu modalidad exige validar la ubicación dentro del radio de la oficina central."
           : "Tu modalidad registra la marcación sin exigir ubicación física."}
       </p>
+
+      {restLabel ? (
+        <AlertBanner tone="warn" icon={CalendarOff} className="mt-4" title={`Hoy es ${restLabel}`}>
+          Si marcas asistencia, tus horas se pagarán con recargo del 100% y aparecerán en Adicionales.
+        </AlertBanner>
+      ) : null}
 
       <div className="mt-5 grid grid-cols-2 gap-3">
         <button

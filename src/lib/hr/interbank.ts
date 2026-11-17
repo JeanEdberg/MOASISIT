@@ -63,6 +63,21 @@ function cents(amount: number): string {
   return String(Math.max(0, Math.round(round2(amount) * 100))).padStart(15, "0");
 }
 
+/**
+ * Deja el texto en ASCII puro, porque el sistema del banco **rechaza** la ñ,
+ * las tildes y cualquier símbolo parecido. Primero descompone los acentos
+ * (á → a + tilde) y los quita; luego reemplaza lo que quede fuera del rango
+ * imprimible ASCII (0x20–0x7E) por un espacio, y colapsa los espacios dobles.
+ */
+export function toAscii(text: string): string {
+  return String(text ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita tildes y diéresis
+    .replace(/[^\x20-\x7e]/g, " ") // cualquier otro símbolo → espacio
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Cabecera del archivo (104 caracteres). */
 function buildHeader(kind: InterbankKind, count: number, totalSoles: number, now: Date): string {
   return [
@@ -136,11 +151,13 @@ function buildRecord(input: RecordInput): { line: string; tipoAbono: string } | 
   const oficina = interbancario ? "" : parsed.oficina;
   // Persona jurídica solo cuando es RUC que empieza con 2; el resto, natural.
   const tipBenef = docType === "02" && input.dni.startsWith("2") ? "C" : "P";
-  const nombre = [paternal, maternal, names]
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .join(" ")
-    .toUpperCase();
+  // El banco rechaza la ñ, las tildes y símbolos: el nombre va en ASCII y mayúsculas.
+  const nombre = toAscii(
+    [paternal, maternal, names]
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .join(" "),
+  ).toUpperCase();
 
   const line = [
     "02",
@@ -163,8 +180,8 @@ function buildRecord(input: RecordInput): { line: string; tipoAbono: string } | 
     "01", // Moneda intangible
     cents(input.intangible ?? 0), // Monto intangible
     " ".repeat(6), // Relleno
-    (input.phone ?? "").slice(0, 40).padEnd(40, " "), // Celular
-    (input.email ?? "").slice(0, 140).padEnd(140, " "), // Correo
+    toAscii(input.phone ?? "").slice(0, 40).padEnd(40, " "), // Celular
+    toAscii(input.email ?? "").slice(0, 140).padEnd(140, " "), // Correo
   ].join("");
 
   return { line, tipoAbono: parsed.tipoAbono };

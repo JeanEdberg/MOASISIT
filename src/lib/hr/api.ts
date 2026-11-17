@@ -205,6 +205,10 @@ function companyIdForAction(action: HrAction, data: HrData): string | null {
       return action.employees[0]?.companyId ?? null;
     case "upsertAttendance":
       return data.employees.find((e) => e.id === action.row.employeeId)?.companyId ?? null;
+    case "removeAttendance":
+      return action.employeeId
+        ? (data.employees.find((e) => e.id === action.employeeId)?.companyId ?? null)
+        : (data.attendance.find((a) => a.date === action.date)?.companyId ?? null);
     case "addRequest":
       return data.employees.find((e) => e.id === action.request.employeeId)?.companyId ?? null;
     case "decideRequest":
