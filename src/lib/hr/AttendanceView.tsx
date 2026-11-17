@@ -135,7 +135,7 @@ export function AttendanceView() {
 
       {restLabel ? (
         <AlertBanner tone="warn" icon={CalendarOff} className="mt-4" title={`Hoy es ${restLabel}`}>
-          Si marcas asistencia, tus horas se pagarán con recargo del 100% y aparecerán en Adicionales.
+          Si marcas, RR.HH. recibirá una alerta y verificará tu asistencia.
         </AlertBanner>
       ) : null}
 
