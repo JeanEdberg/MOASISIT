@@ -34,3 +34,5 @@ public/descargas/
 # Hojas de cálculo del usuario (no versionar)
 *.xlsx
 *.xls
+Macro_Pagos_Masivos_Interbank.*
+scrip calculadora*.txt

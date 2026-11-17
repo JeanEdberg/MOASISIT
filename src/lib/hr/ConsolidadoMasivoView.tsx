@@ -1,9 +1,16 @@
 import { FileSpreadsheet, FileText, Landmark, Wallet } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { Badge, Button, Card, fieldClass, SectionHeading } from "@/components/ui";
 import { useHr } from "@/lib/hr/store";
 import { calcularConsolidadoMasivo } from "@/lib/hr/calc";
 import { pen } from "@/lib/hr/format";
+import {
+  buildInterbankFile,
+  downloadInterbank,
+  interbankFileName,
+  type InterbankRecord,
+} from "@/lib/hr/interbank";
 import { logoImgHtml } from "@/lib/hr/logo";
 
 type ConsolidadoItem = {
@@ -82,14 +89,41 @@ export function ConsolidadoMasivoView() {
       });
       descargarArchivoTxt(lineas.join("\r\n"), `BCP_Telecredito_${company.ruc}.txt`);
     } else if (bancoExportacion === "interbank") {
-      const lineas = consolidado.map((item: any) => {
-        const cta = (esCts ? item.ctsAccount : (item.salaryAccount || item.account)).replace(/-/g, "").trim();
-        const monto = (item.totalPagar || 0).toFixed(2);
-        const doc = item.dni.padEnd(12, " ");
-        const nombre = (item.name || item.nombre || "").padEnd(60, " ");
-        return `${doc}|${cta}|${monto}|S|${nombre}`;
-      });
-      descargarArchivoTxt(lineas.join("\r\n"), `Interbank_Abonos_${company.ruc}.txt`);
+      // Formato real de la macro de Pagos Masivos del Interbank (ancho fijo).
+      const records: InterbankRecord[] = consolidado
+        .map((item: any) => {
+          const emp = employees.find((e) => e.dni === item.dni);
+          return {
+            employeeId: emp?.id ?? item.dni,
+            code: emp?.code ?? item.dni,
+            dni: item.dni,
+            names: emp?.names ?? item.name ?? item.nombre ?? "",
+            paternal: emp?.paternal ?? "",
+            maternal: emp?.maternal ?? "",
+            account: (esCts ? item.ctsAccount : (item.salaryAccount || item.account) || "").replace(/-/g, "").trim(),
+            amount: item.totalPagar || 0,
+            accountType: esCts ? "007" : "002",
+            intangible: esCts ? item.totalPagar || 0 : 0,
+            email: emp?.email,
+            phone: emp?.phone,
+          } satisfies InterbankRecord;
+        })
+        .filter((r) => r.amount > 0);
+      const file = buildInterbankFile(esCts ? "cts" : "remuneraciones", records);
+      if (file.count === 0) {
+        toast.error(
+          file.incomplete.length
+            ? `No se generó el TXT: ${file.incomplete.length} beneficiario(s) sin cuenta bancaria válida.`
+            : "No hay montos para depositar.",
+        );
+        return;
+      }
+      downloadInterbank(file, interbankFileName(esCts ? "cts" : "remuneraciones", company, tipoBeneficio));
+      if (file.incomplete.length) {
+        toast.warning(`TXT generado (${file.count}). Quedaron fuera ${file.incomplete.length} sin cuenta válida.`);
+      } else {
+        toast.success(`TXT Interbank generado (${file.count})`);
+      }
     } else if (bancoExportacion === "bbva") {
       const lineas = consolidado.map((item: any) => {
         const cta = (esCts ? item.ctsAccount : (item.salaryAccount || item.account)).replace(/-/g, "").trim();

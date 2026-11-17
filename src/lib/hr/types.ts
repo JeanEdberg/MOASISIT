@@ -456,6 +456,24 @@ export type Viewer = {
   companyId: string;
 };
 
+/**
+ * Conceptos que NO afectan la planilla y se pagan aparte (pestaña Adicionales):
+ * comisiones y bonos, que se registran a mano por colaborador y período. Las
+ * horas extra, tardanzas y el trabajo en feriado/domingo NO se guardan aquí:
+ * se derivan de las marcaciones de asistencia al momento de calcular.
+ */
+export type AdditionalEntry = {
+  id: string;
+  employeeId: string;
+  companyId: string;
+  /** Período de planilla `YYYY-MM`. */
+  period: string;
+  /** Comisión del mes (S/). 0 si no se registró. */
+  commission: number;
+  /** Bono del mes (S/). 0 si no se registró. */
+  bonus: number;
+};
+
 export type HrData = {
   company: Company;
   /** Todas las empresas. Solo el superadmin puede cambiarlas; el resto ve solo la suya. */
@@ -466,5 +484,7 @@ export type HrData = {
   attendance: Attendance[];
   documents: DocItem[];
   snapshots: Record<string, Payslip[]>;
+  /** Comisiones y bonos por colaborador y período (pestaña Adicionales). */
+  additionals?: AdditionalEntry[];
   viewer: Viewer;
 };

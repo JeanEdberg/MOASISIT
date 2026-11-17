@@ -373,37 +373,19 @@ export function calcPayslip(
   // Integración automática de asistencias (faltas y tardanzas)
   const marks = attendance.filter((a) => a.employeeId === emp.id && a.date.startsWith(period));
   const faltas = marks.filter((a) => a.kind === "falta").length;
-  const tardanzas = marks.filter((a) => a.kind === "tardanza").length;
 
-  let minutosTardanzaTotales = 0;
-  for (const m of marks) {
-    if (m.kind === "tardanza" && m.checkIn) {
-      const [hIn, minIn] = m.checkIn.split(":").map(Number);
-      const totalMinIn = hIn * 60 + minIn;
-      const limiteTolerancia = 8 * 60 + 15; // Tolerancia estándar 08:15 AM
-      if (totalMinIn > limiteTolerancia) {
-        minutosTardanzaTotales += (totalMinIn - (8 * 60));
-      }
-    }
-  }
-
-  const extra25 = marks.reduce((s, a) => s + a.extra25, 0);
-  const extra35 = marks.reduce((s, a) => s + a.extra35, 0);
   // El sueldo es el vigente en el mes de la boleta (histórico de remuneraciones).
   const salary = salaryForPeriod(emp, period);
-  const hourly = salary / 30 / 8;
 
   const basic = round2(salary * factor);
   // La asignación familiar usa la RMV vigente en el mes de la boleta.
   const af = emp.familyAllowance ? round2(rmvForPeriod(period) * 0.1 * factor) : 0;
-  const he25 = round2(hourly * 1.25 * extra25);
-  const he35 = round2(hourly * 1.35 * extra35);
-  const extraPay = round2(he25 + he35);
 
-  // Cálculo de descuentos por faltas (proporcional a 30 días) y tardanzas
+  // Descuento por faltas (proporcional a 30 días). Las horas extra, tardanzas y
+  // el trabajo en feriado/domingo NO entran a la planilla: se pagan y descuentan
+  // aparte, en la pestaña Adicionales.
   const faltaDiscount = Math.min(basic, round2((salary / 30) * faltas));
-  const tardanzaDiscount = round2((hourly / 60) * minutosTardanzaTotales);
-  const paidBasic = round2(basic - faltaDiscount - tardanzaDiscount);
+  const paidBasic = round2(basic - faltaDiscount);
 
   let grat = 0;
   let bonif = 0;
@@ -424,14 +406,11 @@ export function calcPayslip(
 
   push("BAS", "Remuneración básica", basic, "ingreso");
   push("AF", "Asignación familiar", af, "ingreso");
-  push("HE25", "Horas extra 25%", he25, "ingreso");
-  push("HE35", "Horas extra 35%", he35, "ingreso");
   push("GRA", "Gratificación legal", grat, "ingreso");
   push("BON", "Bonificación extraordinaria", bonif, "ingreso");
   push("FAL", faltas === 1 ? "Falta injustificada" : `Faltas injustificadas (${faltas})`, faltaDiscount, "descuento");
-  push("TAR", tardanzas === 1 ? "Descuento por tardanza" : `Descuentos por tardanzas (${tardanzas})`, tardanzaDiscount, "descuento");
 
-  const afecto = round2(paidBasic + af + extraPay);
+  const afecto = round2(paidBasic + af);
   let pensionBase = 0;
   let cappedPension = false;
   if (emp.pension !== "ninguno" && regime !== "practicante") {
@@ -458,7 +437,7 @@ export function calcPayslip(
   const fifthParams = fifthCategoryParamsOf(company);
   const projection = projectFifthCategory({
     ordinaryMonthly: ordinary,
-    extrasMonthly: extraPay,
+    extrasMonthly: 0,
     gratificationsPerYear: gratTimes,
     params: fifthParams,
     uit: uitForPeriod(period),
@@ -469,8 +448,8 @@ export function calcPayslip(
   const gross = round2(lines.filter((l) => l.kind === "ingreso").reduce((s, l) => s + l.amount, 0));
   const discounts = round2(lines.filter((l) => l.kind === "descuento").reduce((s, l) => s + l.amount, 0));
 
-  // Base de aportes del empleador (remuneración afecta: básico pagado + AF + horas extra).
-  const essaludBase = round2(paidBasic + af + extraPay);
+  // Base de aportes del empleador (remuneración afecta: básico pagado + AF).
+  const essaludBase = round2(paidBasic + af);
 
   // Salud: EsSalud (9%) o EPS. La EPS se financia dentro del 9% de EsSalud, con
   // una porción (2.25% referencial) que se muestra aparte como aporte informativo.

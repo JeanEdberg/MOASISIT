@@ -5,6 +5,7 @@ import { reconcileHealth } from "@/lib/hr/health";
 import { reconcileSalary } from "@/lib/hr/salary";
 import { isDemoPerson } from "@/lib/hr/seed";
 import type {
+  AdditionalEntry,
   Area,
   Attendance,
   Company,
@@ -30,6 +31,7 @@ export type HrAction =
   | { type: "addRequest"; request: TimeRequest }
   | { type: "decideRequest"; id: string; status: RequestStatus }
   | { type: "upsertAttendance"; row: Attendance }
+  | { type: "upsertAdditional"; row: AdditionalEntry }
   | { type: "addDocument"; doc: DocItem }
   | { type: "signDocument"; id: string }
   | { type: "closePeriod"; period: string }
@@ -47,6 +49,7 @@ const RRHH_ONLY = new Set<HrAction["type"]>([
   "addEmployee",
   "importPeople",
   "clearDemoPeople",
+  "upsertAdditional",
   "addDocument",
   "signDocument",
   "closePeriod",
@@ -170,6 +173,7 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         requests: data.requests.filter((r) => !demo.has(r.employeeId)),
         attendance: data.attendance.filter((a) => !demo.has(a.employeeId)),
         documents: data.documents.filter((d) => !d.employeeId || !demo.has(d.employeeId)),
+        additionals: (data.additionals ?? []).filter((a) => !demo.has(a.employeeId)),
         snapshots: {},
       };
     }
@@ -187,6 +191,20 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       if (i >= 0) attendance[i] = row;
       else attendance.push(row);
       return { ...data, attendance };
+    }
+    case "upsertAdditional": {
+      const row: AdditionalEntry = {
+        ...action.row,
+        companyId: action.row.companyId || data.company.id,
+        commission: Math.max(0, Number(action.row.commission) || 0),
+        bonus: Math.max(0, Number(action.row.bonus) || 0),
+      };
+      const list = data.additionals ?? [];
+      const i = list.findIndex((a) => a.employeeId === row.employeeId && a.period === row.period);
+      const additionals = [...list];
+      if (i >= 0) additionals[i] = row;
+      else additionals.push(row);
+      return { ...data, additionals };
     }
     case "addDocument":
       return { ...data, documents: [action.doc, ...data.documents] };
@@ -251,6 +269,7 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
         requests: data.requests.filter((r) => r.companyId !== action.companyId),
         attendance: data.attendance.filter((a) => a.companyId !== action.companyId),
         documents: data.documents.filter((d) => d.companyId !== action.companyId),
+        additionals: (data.additionals ?? []).filter((a) => a.companyId !== action.companyId),
         snapshots,
       };
     }

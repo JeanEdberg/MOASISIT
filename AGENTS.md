@@ -441,6 +441,24 @@ Nitro + Tailwind; deploys to Vercel. Repo `JeanEdberg/MOASISIT`, branch `main`.
   `employee-documents.tsx` (sección "Liquidación de beneficios", visible solo
   para una ficha cesada); `colaboradores_.$id.tsx` le pasa `company` y
   `requests`. Tests en `src/lib/hr/liquidacion.test.ts`.
+- **TXT de Pagos Masivos del Interbank** (`src/lib/hr/interbank.ts`, tests en
+  `interbank.test.ts`): replica la macro oficial del banco
+  (`Macro_Pagos_Masivos_Interbank.xls`, VBA en `REM_ManejoIO`/`REM_ValidacionDatos`).
+  Archivo de **ancho fijo**: cabecera 104, detalle 380 por beneficiario. Cabecera
+  `01` + tipo (`04` remuneraciones, `06` CTS) + 36 espacios + `yyyymmddhhmmss` +
+  9 espacios + 6 dígitos de conteo + 15 dígitos soles (céntimos) + 15 dígitos
+  dólares + `MC001`. Detalle: `02` + código beneficiario (tipoDoc+documento, NO
+  el código interno) + ... + tipo de abono (`09` cuenta, `99` interbancario) +
+  tipo de cuenta (`002` ahorros, `007` CTS; **vacío** si es `99`) + oficina
+  (vacío si `99`) + cuenta/CCI (20) + tipo beneficiario (`P`/`C`) + doc (15) +
+  nombre en MAYÚSCULAS (60) + intangible + relleno + celular (40) + correo (140).
+  Reglas clave: (1) el archivo se **codifica en Windows-1252/ANSI** (`encodeInterbank`),
+  no UTF-8, o un "Ñ" ocupa 2 bytes y descuadra la línea de 380; (2) en abono
+  interbancario `99` producto/moneda/oficina van en blanco y el CCI de 20 va
+  completo en "N° cuenta"; (3) cuenta Interbank de 13 dígitos → oficina (3) +
+  cuenta (10); (4) monto en céntimos, 15 dígitos con ceros a la izquierda. Los
+  botones viven en Planilla ("Interbank (TXT)") y Consolidado Masivo
+  (banco = Interbank).
 - **Sistema de diseño (UI)**: los tokens viven en `src/styles.css` (`@theme`):
   superficies (`--color-bg/surface/surface-2/surface-3`), texto (`--color-ink`,
   `--color-muted`, `--color-line`), marca (`--color-clay` = `--brand`, que el

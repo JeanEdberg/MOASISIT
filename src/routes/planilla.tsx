@@ -11,6 +11,11 @@ import { payslipsFor } from "@/lib/hr/calc";
 import { currentPeriod, fullName, todayIso, pen, periodLabel, uid } from "@/lib/hr/format";
 import { companyPeriods } from "@/lib/hr/subscription";
 import { buildPayrollRows, exportPayrollExcel, exportPayrollPdf } from "@/lib/hr/payroll-export";
+import {
+  buildInterbankRemuneraciones,
+  downloadInterbank,
+  interbankFileName,
+} from "@/lib/hr/interbank";
 import { useHr } from "@/lib/hr/store";
 
 export const Route = createFileRoute("/planilla")({ component: PayrollPage });
@@ -88,6 +93,25 @@ function PayrollPage() {
     );
   };
 
+  /** Descarga el TXT de Pagos Masivos del Interbank (remuneraciones). */
+  const exportInterbank = () => {
+    const file = buildInterbankRemuneraciones(data.employees, slips, data.company);
+    if (file.count === 0) {
+      toast.error(
+        file.incomplete.length
+          ? `No se pudo generar: ${file.incomplete.length} colaborador(es) sin cuenta bancaria válida.`
+          : "No hay boletas con monto para depositar en este periodo.",
+      );
+      return;
+    }
+    downloadInterbank(file, interbankFileName("remuneraciones", data.company, period));
+    toast.success(
+      file.incomplete.length
+        ? `Interbank generado (${file.count}). Quedaron fuera ${file.incomplete.length} sin cuenta válida.`
+        : `Interbank generado (${file.count} colaborador${file.count === 1 ? "" : "es"})`,
+    );
+  };
+
   const publishSlips = () => {
     let n = 0;
     for (const p of slips) {
@@ -131,6 +155,9 @@ function PayrollPage() {
               </Button>
               <Button tone="line" onClick={() => exportAfpnet("txt")}>
                 AFPnet (TXT)
+              </Button>
+              <Button tone="line" onClick={exportInterbank}>
+                Interbank (TXT)
               </Button>
               <Button tone="line" onClick={publishSlips}>
                 Publicar boletas

@@ -6,6 +6,7 @@ import type { NewCompanyInput } from "@/lib/hr/company";
 import type { RucLookupResult } from "@/lib/hr/ruc";
 import type { StatusCheck } from "@/lib/hr/status";
 import type {
+  AdditionalEntry,
   Area,
   Attendance,
   Company,
@@ -65,6 +66,7 @@ type HrState = HrData & {
   addRequest: (req: TimeRequest) => void;
   decideRequest: (id: string, status: RequestStatus) => void;
   upsertAttendance: (row: Attendance) => void;
+  upsertAdditional: (row: AdditionalEntry) => void;
   addDocument: (doc: DocItem) => void;
   signDocument: (id: string) => void;
   closePeriod: (period: string) => void;
@@ -102,6 +104,7 @@ const EMPTY: HrData = {
   requests: [],
   attendance: [],
   documents: [],
+  additionals: [],
   snapshots: {},
   viewer: { mode: "colaborador", employeeId: "", companyId: "" },
 };
@@ -254,6 +257,7 @@ export const useHr = create<HrState>()((set, get) => {
     addRequest: (req) => run({ type: "addRequest", request: req }),
     decideRequest: (id, status) => run({ type: "decideRequest", id, status }),
     upsertAttendance: (row) => run({ type: "upsertAttendance", row }),
+    upsertAdditional: (row) => run({ type: "upsertAdditional", row }),
     addDocument: (doc) => run({ type: "addDocument", doc }),
     signDocument: (id) => run({ type: "signDocument", id }),
     closePeriod: (period) => run({ type: "closePeriod", period }),

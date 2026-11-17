@@ -52,6 +52,8 @@ export function sanitizeForViewer(data: HrData, session: ViewerScope): HrData {
     if (own.length) companySnapshots[period] = own;
   }
 
+  const companyAdditionals = inCompany(data.additionals ?? []);
+
   const base = {
     ...data,
     company,
@@ -61,6 +63,7 @@ export function sanitizeForViewer(data: HrData, session: ViewerScope): HrData {
     requests: companyRequests,
     attendance: companyAttendance,
     documents: companyDocs,
+    additionals: companyAdditionals,
     snapshots: companySnapshots,
     viewer: { mode: role, employeeId, companyId },
   };
@@ -91,6 +94,7 @@ export function sanitizeForViewer(data: HrData, session: ViewerScope): HrData {
     requests: companyRequests.filter((r) => inView(r.employeeId)),
     attendance: companyAttendance.filter((a) => inView(a.employeeId)),
     documents: companyDocs.filter((d) => !d.employeeId || inView(d.employeeId)),
+    additionals: companyAdditionals.filter((a) => inView(a.employeeId)),
     snapshots,
   };
 }

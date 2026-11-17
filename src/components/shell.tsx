@@ -4,6 +4,7 @@ import {
   Calculator,
   CalendarDays,
   Clock,
+  Coins,
   Files,
   KeyRound,
   Landmark,
@@ -34,6 +35,7 @@ type PlainTo =
   | "/vacaciones"
   | "/asistencia"
   | "/planilla"
+  | "/adicionales"
   | "/liquidacion"
   | "/consolidado"
   | "/importacion"
@@ -50,6 +52,7 @@ const RRHH: Item[] = [
   { to: "/vacaciones", label: "Vacaciones", icon: CalendarDays },
   { to: "/asistencia", label: "Asistencia", icon: Clock },
   { to: "/planilla", label: "Planilla", icon: Landmark },
+  { to: "/adicionales", label: "Adicionales", icon: Coins },
   { to: "/liquidacion", label: "Liquidación", icon: Calculator },
   { to: "/consolidado", label: "Consolidado Masivo", icon: Calculator },
   { to: "/importacion", label: "Importación", icon: Upload },
