@@ -1,10 +1,10 @@
-import { AlertTriangle, CalendarOff, CheckCircle2, LogIn, LogOut, MapPin, Radio, Sparkles, XCircle } from "lucide-react";
+import { AlertTriangle, BookOpen, CalendarOff, CheckCircle2, LogIn, LogOut, MapPin, Radio, XCircle } from "lucide-react";
 import { useState } from "react";
 import { AlertBanner, Badge, Button, Card, SectionHeading } from "@/components/ui";
 import { WORK_MODE_LABEL } from "@/lib/hr/format";
 import { holidayName, isSunday } from "@/lib/hr/holidays";
-import { dailyMessage } from "@/lib/hr/motivation";
 import { useHr } from "@/lib/hr/store";
+import { dailyVerse } from "@/lib/hr/verses";
 import { validarYRegistrarAsistencia, type GeoLocation } from "./attendanceCalc";
 import { guardarAsistenciaOffline } from "./offlineStore";
 import { useOfflineSync } from "./useOfflineSync";
@@ -174,8 +174,8 @@ export function AttendanceView() {
 
       {resultado?.aprobado ? (
         <p className="mt-3 flex items-start gap-2 rounded-md bg-clay/5 px-3 py-2 text-sm text-clay">
-          <Sparkles className="mt-0.5 size-4 shrink-0" aria-hidden />
-          <span>{dailyMessage()}</span>
+          <BookOpen className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span className="italic">“{dailyVerse(empleadoActual.id).text}” — {dailyVerse(empleadoActual.id).ref}</span>
         </p>
       ) : null}
 
