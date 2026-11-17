@@ -1,6 +1,7 @@
 import { differenceInCalendarDays } from "date-fns";
 import { ctsSemester, gratuityAmount, vacationBalance, vacationPending, vacationTaken } from "@/lib/hr/calc";
 import { todayIso, parseDay, periodLabel } from "@/lib/hr/format";
+import { holidayName, isSunday } from "@/lib/hr/holidays";
 import { subscriptionAlert, subscriptionOf, type SubscriptionAlert } from "@/lib/hr/subscription";
 import type { Attendance, Company, Employee, Payslip, TimeRequest } from "@/lib/hr/types";
 
@@ -32,6 +33,49 @@ export function attendanceSummary(marks: Attendance[], period: string): Attendan
     extraHours: ofPeriod.reduce((s, m) => s + m.extra25 + m.extra35, 0),
     total: ofPeriod.length,
   };
+}
+
+/** Etiqueta del día de descanso: el feriado manda sobre el domingo. */
+export function restDayLabel(iso: string): string | null {
+  const holiday = holidayName(iso);
+  if (holiday) return `Feriado: ${holiday}`;
+  if (isSunday(iso)) return "Domingo";
+  return null;
+}
+
+export type RestDayMark = {
+  id: string;
+  employee: Employee;
+  date: string;
+  label: string;
+  checkIn: string;
+  checkOut: string;
+};
+
+/** Kinds que representan asistencia real (no descanso planificado ni ausencia). */
+const WORKED_KINDS = new Set(["presente", "remoto", "tardanza"]);
+
+/**
+ * Marcaciones en domingo o feriado que RR.HH. aún no ha verificado. El
+ * colaborador ve un aviso al marcar; esta lista es la alerta real del lado de
+ * RR.HH. Ordena de la más reciente a la más antigua.
+ */
+export function pendingRestDayMarks(
+  marks: Attendance[],
+  employees: Employee[],
+  reviewed: string[] = [],
+): RestDayMark[] {
+  const done = new Set(reviewed);
+  const byId = new Map(employees.map((e) => [e.id, e]));
+  return marks
+    .filter((m) => !done.has(m.id) && WORKED_KINDS.has(m.kind) && restDayLabel(m.date) !== null)
+    .map((m) => {
+      const employee = byId.get(m.employeeId);
+      if (!employee) return null;
+      return { id: m.id, employee, date: m.date, label: restDayLabel(m.date)!, checkIn: m.checkIn, checkOut: m.checkOut };
+    })
+    .filter((x): x is RestDayMark => x !== null)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.employee.paternal.localeCompare(b.employee.paternal));
 }
 
 export type PayrollTotals = {

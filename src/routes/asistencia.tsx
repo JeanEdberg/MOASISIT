@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarOff, Clock, RotateCcw, Trash2, UserX, Zap } from "lucide-react";
+import { BellRing, CalendarOff, Clock, RotateCcw, Trash2, UserX, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Shell } from "@/components/shell";
 import { Badge, Button, Card, Field, fieldClass, Modal, PageHeader, StatCard } from "@/components/ui";
 import { isCompanyAdmin, visibleEmployees } from "@/lib/hr/access";
+import { pendingRestDayMarks } from "@/lib/hr/dashboard";
 import { ATTENDANCE_LABEL, fullName, shortDate, todayIso } from "@/lib/hr/format";
 import { holidayName, isRestDay, isSunday } from "@/lib/hr/holidays";
 import { useHr } from "@/lib/hr/store";
@@ -27,6 +28,7 @@ function AttendancePage() {
   const data = useHr();
   const upsert = useHr((s) => s.upsertAttendance);
   const removeAttendance = useHr((s) => s.removeAttendance);
+  const reviewRestMark = useHr((s) => s.reviewRestMark);
   const admin = isCompanyAdmin(data.viewer.mode);
   const people = useMemo(
     () => visibleEmployees(data.employees, data.viewer).filter((e) => e.status === "activo"),
@@ -53,6 +55,14 @@ function AttendancePage() {
   const faltas = marks.filter((m) => m.kind === "falta").length;
   const tardanzas = marks.filter((m) => m.kind === "tardanza").length;
   const extras = marks.reduce((s, m) => s + m.extra25 + m.extra35, 0);
+  // Avisos de asistencia en domingo/feriado sin verificar (alerta real a RR.HH.).
+  const restAlerts = useMemo(
+    () =>
+      data.viewer.mode === "colaborador"
+        ? []
+        : pendingRestDayMarks(data.attendance, people, data.reviewedRestMarks ?? []),
+    [data.attendance, people, data.reviewedRestMarks, data.viewer.mode],
+  );
   const closed = Boolean(data.snapshots[form.date.slice(0, 7)]);
   // La lista de colaboradores llega después del primer render (sesión + dataset),
   // así que el colaborador por defecto se resuelve aquí, no en el useState inicial.
@@ -107,7 +117,7 @@ function AttendancePage() {
       <PageHeader
         kicker="Jornada"
         title="Asistencia"
-        lede="Una falta descuenta un treintavo; las dos primeras horas extra van al 25% y el resto al 35%. El domingo y los feriados se reconocen solos: si alguien marca ese día, pasa a Adicionales con recargo del 100%."
+        lede="Una falta descuenta un treintavo; las dos primeras horas extra van al 25% y el resto al 35%. El domingo y los feriados se reconocen solos."
         actions={
           data.viewer.mode !== "colaborador" ? (
             <div className="flex flex-wrap gap-2">
@@ -129,6 +139,48 @@ function AttendancePage() {
           <AttendanceView />
         </div>
       )}
+
+      {/* Alerta real a RR.HH./jefatura: asistencia marcada en domingo o feriado. */}
+      {restAlerts.length > 0 ? (
+        <Card className="mb-4 border-warn-line bg-warn-soft p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="grid size-9 shrink-0 place-items-center rounded-md bg-warn-soft text-warn" aria-hidden>
+              <BellRing className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-warn">
+                {restAlerts.length === 1
+                  ? "1 asistencia registrada en día de descanso"
+                  : `${restAlerts.length} asistencias registradas en día de descanso`}
+              </p>
+              <p className="text-sm text-muted">Revísalas y confirma si corresponden (domingo o feriado).</p>
+            </div>
+          </div>
+          <ul className="mt-3 divide-y divide-warn-line/60">
+            {restAlerts.map((a) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink">
+                    {fullName(a.employee)} <span className="font-normal text-muted">· {a.employee.position}</span>
+                  </p>
+                  <p className="text-sm text-muted">
+                    <Badge tone="danger">
+                      <CalendarOff className="mr-1 size-3.5" aria-hidden />
+                      {a.label}
+                    </Badge>
+                    <span className="ml-2">
+                      {shortDate(a.date)} · {a.checkIn ? `${a.checkIn} – ${a.checkOut}` : "sin horario"}
+                    </span>
+                  </p>
+                </div>
+                <Button tone="line" className="min-h-9" onClick={() => reviewRestMark(a.id)}>
+                  Marcar como revisado
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatCard label="Faltas" value={String(faltas)} hint="en el periodo visible" icon={UserX} tone={faltas ? "danger" : "neutral"} />

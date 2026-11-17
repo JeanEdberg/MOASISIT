@@ -229,6 +229,48 @@ describe("applyHrAction", () => {
     assert.ok(authorizeAction(action, "jefatura", "e3", data));
   });
 
+  it("reviewRestMark registra la revisión y solo la permite RR.HH./superadmin", () => {
+    let data = base();
+    const row = {
+      id: "e3-2026-11-15",
+      employeeId: "e3",
+      companyId: "inmoa",
+      date: "2026-11-15",
+      kind: "presente" as const,
+      checkIn: "08:00",
+      checkOut: "17:00",
+      extra25: 0,
+      extra35: 0,
+    };
+    data = applyHrAction(data, { type: "upsertAttendance", row });
+    const action: HrAction = { type: "reviewRestMark", id: "e3-2026-11-15" };
+    assert.equal(authorizeAction(action, "rrhh", "e2", data), null);
+    assert.equal(authorizeAction(action, "superadmin", "", data), null);
+    assert.ok(authorizeAction(action, "colaborador", "e3", data));
+    assert.ok(authorizeAction(action, "jefatura", "e3", data));
+    const reviewed = applyHrAction(data, action);
+    assert.ok(reviewed.reviewedRestMarks?.includes("e3-2026-11-15"));
+  });
+
+  it("volver a registrar una marca descarta su revisión previa", () => {
+    let data = base();
+    const row = {
+      id: "e3-2026-11-15",
+      employeeId: "e3",
+      companyId: "inmoa",
+      date: "2026-11-15",
+      kind: "presente" as const,
+      checkIn: "08:00",
+      checkOut: "17:00",
+      extra25: 0,
+      extra35: 0,
+    };
+    data = applyHrAction(data, { type: "upsertAttendance", row });
+    data = applyHrAction(data, { type: "reviewRestMark", id: "e3-2026-11-15" });
+    data = applyHrAction(data, { type: "upsertAttendance", row: { ...row, checkIn: "09:00" } });
+    assert.equal(data.reviewedRestMarks?.includes("e3-2026-11-15"), false);
+  });
+
   it("withDemoFlags migrates an old dataset that lacks the isDemo mark", () => {
     const data = base();
     const legacy: HrData = { ...data, employees: data.employees.map(({ isDemo: _drop, ...e }) => e) };

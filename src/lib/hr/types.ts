@@ -486,5 +486,7 @@ export type HrData = {
   snapshots: Record<string, Payslip[]>;
   /** Comisiones y bonos por colaborador y período (pestaña Adicionales). */
   additionals?: AdditionalEntry[];
+  /** Marcas en domingo/feriado que RR.HH. ya revisó (ids de asistencia). */
+  reviewedRestMarks?: string[];
   viewer: Viewer;
 };

@@ -32,6 +32,7 @@ export type HrAction =
   | { type: "decideRequest"; id: string; status: RequestStatus }
   | { type: "upsertAttendance"; row: Attendance }
   | { type: "removeAttendance"; date: string; employeeId?: string }
+  | { type: "reviewRestMark"; id: string }
   | { type: "upsertAdditional"; row: AdditionalEntry }
   | { type: "addDocument"; doc: DocItem }
   | { type: "signDocument"; id: string }
@@ -52,6 +53,7 @@ const RRHH_ONLY = new Set<HrAction["type"]>([
   "clearDemoPeople",
   "upsertAdditional",
   "removeAttendance",
+  "reviewRestMark",
   "addDocument",
   "signDocument",
   "closePeriod",
@@ -192,13 +194,23 @@ export function applyHrAction(data: HrData, action: HrAction): HrData {
       const attendance = [...data.attendance];
       if (i >= 0) attendance[i] = row;
       else attendance.push(row);
-      return { ...data, attendance };
+      // Si la marca se vuelve a registrar o editar, el aviso vuelve a quedar pendiente.
+      const reviewed = (data.reviewedRestMarks ?? []).filter((id) => id !== row.id);
+      return { ...data, attendance, reviewedRestMarks: reviewed };
     }
     case "removeAttendance": {
       const attendance = data.attendance.filter((a) =>
         action.employeeId ? !(a.date === action.date && a.employeeId === action.employeeId) : a.date !== action.date,
       );
-      return { ...data, attendance };
+      // Al borrar la marca se descarta también su aviso de revisión, si lo tenía.
+      const removed = new Set(data.attendance.filter((a) => !attendance.includes(a)).map((a) => a.id));
+      const reviewed = (data.reviewedRestMarks ?? []).filter((id) => !removed.has(id));
+      return { ...data, attendance, reviewedRestMarks: reviewed };
+    }
+    case "reviewRestMark": {
+      const reviewed = new Set(data.reviewedRestMarks ?? []);
+      reviewed.add(action.id);
+      return { ...data, reviewedRestMarks: [...reviewed] };
     }
     case "upsertAdditional": {
       const row: AdditionalEntry = {

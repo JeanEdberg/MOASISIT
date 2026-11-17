@@ -20,6 +20,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Shell } from "@/components/shell";
+import { DailyMotivation } from "@/components/daily-motivation";
 import { AlertBanner, Badge, Button, Card, ProgressBar, SectionHeading, StatCard } from "@/components/ui";
 import { canSeeMoney, visibleEmployees } from "@/lib/hr/access";
 import { ctsSemester, payslipsFor, vacationBalance, vacationPending } from "@/lib/hr/calc";
@@ -122,6 +123,8 @@ function AdminDashboard({ superadmin }: { superadmin: boolean }) {
   return (
     <Shell>
       <SyncBanner />
+
+      <DailyMotivation className="mb-4" />
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
@@ -420,6 +423,7 @@ function JefaturaDashboard() {
   return (
     <Shell>
       <SyncBanner />
+      <DailyMotivation className="mb-4" />
       <div>
         <p className="text-sm text-clay">Mi equipo · {periodLabel(period)}</p>
         <h1 className="mt-1 text-4xl font-bold text-ink">{hello}</h1>
@@ -492,6 +496,7 @@ function ColaboradorDashboard() {
   return (
     <Shell>
       <SyncBanner />
+      <DailyMotivation className="mb-4" />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-clay">{periodLabel(period)} · Mi portal personal</p>

@@ -1,8 +1,9 @@
-import { AlertTriangle, CalendarOff, CheckCircle2, LogIn, LogOut, MapPin, Radio, XCircle } from "lucide-react";
+import { AlertTriangle, CalendarOff, CheckCircle2, LogIn, LogOut, MapPin, Radio, Sparkles, XCircle } from "lucide-react";
 import { useState } from "react";
 import { AlertBanner, Badge, Button, Card, SectionHeading } from "@/components/ui";
 import { WORK_MODE_LABEL } from "@/lib/hr/format";
 import { holidayName, isSunday } from "@/lib/hr/holidays";
+import { dailyMessage } from "@/lib/hr/motivation";
 import { useHr } from "@/lib/hr/store";
 import { validarYRegistrarAsistencia, type GeoLocation } from "./attendanceCalc";
 import { guardarAsistenciaOffline } from "./offlineStore";
@@ -169,6 +170,13 @@ export function AttendanceView() {
         >
           {resultado.mensaje}
         </AlertBanner>
+      ) : null}
+
+      {resultado?.aprobado ? (
+        <p className="mt-3 flex items-start gap-2 rounded-md bg-clay/5 px-3 py-2 text-sm text-clay">
+          <Sparkles className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{dailyMessage()}</span>
+        </p>
       ) : null}
 
       <div className="mt-5 flex items-center justify-center gap-2 border-t border-line pt-4 text-xs text-muted">
