@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useHr } from "@/lib/hr/store";
 import { Button, Field, fieldClass } from "@/components/ui";
 import { BrandLogo } from "@/components/brand-logo";
-import { ShieldCheck } from "lucide-react";
+import { Eye, EyeOff, ShieldCheck } from "lucide-react";
 
 /**
  * Sign-in screen. Employees use DNI + PIN; the admin uses email + password.
@@ -15,6 +15,7 @@ export function LoginScreen() {
   const [secret, setSecret] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +43,7 @@ export function LoginScreen() {
             onClick={() => {
               setMode("employee");
               setError("");
+              setShowSecret(false);
             }}
             className={`rounded-md px-3 py-2 text-xs font-semibold ${mode === "employee" ? "bg-white text-sky-700 shadow dark:bg-slate-900" : "text-slate-500"}`}
           >
@@ -52,6 +54,7 @@ export function LoginScreen() {
             onClick={() => {
               setMode("admin");
               setError("");
+              setShowSecret(false);
             }}
             className={`rounded-md px-3 py-2 text-xs font-semibold ${mode === "admin" ? "bg-white text-sky-700 shadow dark:bg-slate-900" : "text-slate-500"}`}
           >
@@ -74,13 +77,25 @@ export function LoginScreen() {
             />
           </Field>
           <Field label={mode === "employee" ? "PIN" : "Contraseña"} hint={mode === "employee" ? "PIN temporal entregado por RR.HH." : undefined}>
-            <input
-              className={fieldClass}
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              autoComplete="current-password"
-            />
+            <div className="relative">
+              <input
+                className={`${fieldClass} pr-11`}
+                type={showSecret ? "text" : "password"}
+                inputMode={mode === "employee" ? "numeric" : undefined}
+                value={secret}
+                onChange={(e) => setSecret(e.target.value)}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret((v) => !v)}
+                aria-label={showSecret ? "Ocultar" : "Mostrar"}
+                title={showSecret ? "Ocultar" : "Mostrar"}
+                className="absolute inset-y-0 right-0 grid w-11 place-items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                {showSecret ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+              </button>
+            </div>
           </Field>
 
           {error ? (
